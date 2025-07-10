@@ -1,7 +1,7 @@
 {
   "type": "Standard",
   "name": "3DFin",
-  "icon": ":/CC/plugin/3DFin/images/icon.png",
+  "icon": ":/CC/plugin/3DFin/images/3dfin_logo_plugin.png",
   "description": "Automatic dendrometry and forest inventory for terrestrial point clouds",
   "authors": [
     { "name": "Carlos Cabo", "email": "carloscabo@uniovi.es" },

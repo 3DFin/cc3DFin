@@ -1,6 +1,6 @@
 <RCC>
   <qresource prefix="/CC/plugin/3DFin" >
-    <file>images/icon.png</file>
+    <file>images/3dfin_logo_plugin.png</file>
     <file>info.json</file>
   </qresource>
 </RCC>
