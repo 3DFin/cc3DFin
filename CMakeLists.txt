@@ -1,19 +1,14 @@
-# CloudCompare example for standard plugins
-
-# REPLACE ALL 'ExamplePlugin' OCCURENCES BY YOUR PLUGIN NAME
-# AND ADAPT THE CODE BELOW TO YOUR OWN NEEDS!
+cmake_minimum_required(VERSION 3.15..3.27)
 
 # Add an option to CMake to control whether we build this plugin or not
-option( PLUGIN_EXAMPLE_STANDARD "Install example plugin" OFF )
+option( PLUGIN_STANDARD_3DFIN "Install 3DFin plugin" OFF )
 
-if ( PLUGIN_EXAMPLE_STANDARD )
-	project( ExamplePlugin )
-	 
-	AddPlugin( NAME ${PROJECT_NAME} )
-		
-	add_subdirectory( include )
-	add_subdirectory( src )
-	
-	# set dependencies to necessary libraries
-	# target_link_libraries( ${PROJECT_NAME} LIB1 )
+if ( PLUGIN_STANDARD_3DFIN  )
+    project( 3DFIN_STANDARD_PLUGIN )
+
+    AddPlugin( NAME ${PROJECT_NAME} )
+
+    add_subdirectory( include )
+    add_subdirectory( src )
+
 endif()

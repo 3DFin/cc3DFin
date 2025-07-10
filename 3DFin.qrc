@@ -1,5 +1,5 @@
 <RCC>
-  <qresource prefix="/CC/plugin/ExamplePlugin" >
+  <qresource prefix="/CC/plugin/3DFin" >
     <file>images/icon.png</file>
     <file>info.json</file>
   </qresource>

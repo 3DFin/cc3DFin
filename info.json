@@ -1,34 +1,22 @@
 {
-	"type" : "Standard",
-	"name" : "Example (Standard Plugin)",
-	"icon" : ":/CC/plugin/ExamplePlugin/images/icon.png",
-	"description": "This is a description of the marvelous Example plugin. It does nothing.",
-	"authors" : [
-		{
-			"name" : "Daniel Girardeau-Montaut",
-			"email" : "daniel.girardeau@gmail.com"
-		}
-	],
-	"maintainers" : [
-		{
-			"name" : "Andy Maloney",
-			"email" : "asmaloney@gmail.com"
-		},
-		{
-			"name" : "Example NoEmail"
-		}
-	],
-	"references" : [
-		{
-			"text" : "The unsuccessful self-treatment of a case of “writer's block”",
-			"url" : "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1311997/"
-		},
-		{
-			"text" : "Sword swallowing and its side effects",
-			"url" : "http://www.bmj.com/content/333/7582/1285"
-		},
-		{
-			"text" : "I thought of creating this wonderful plugin while I was hiking up &#x26f0; Mont Blanc"
-		}
-	]
+  "type": "Standard",
+  "name": "3DFin",
+  "icon": ":/CC/plugin/3DFin/images/icon.png",
+  "description": "Automatic dendrometry and forest inventory for terrestrial point clouds",
+  "authors": [
+    { "name": "Carlos Cabo", "email": "carloscabo@uniovi.es" },
+    { "name": "Diego Laino", "email": "diegolainor@gmail.com" }
+  ],
+  "maintainers": [
+    {
+      "name": "Romain Janvier",
+      "email": "romain.janvier@hotmail.fr"
+    }
+  ],
+  "references": [
+    {
+      "text": "Laino, D., Cabo, C., Prendes, C., Janvier, R., Ordonez, C., Nikonovas, T., Doerr, S., & Santin, C. (2024). 3DFin: a software for automated 3D forest inventories from terrestrial point clouds. Forestry: An International Journal of Forest Research.",
+      "url": "https://doi.org/10.1093/forestry/cpae020"
+    }
+  ]
 }

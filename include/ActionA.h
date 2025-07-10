@@ -4,7 +4,7 @@
 
 class ccMainAppInterface;
 
-namespace Example
+namespace tdf
 {
 	void	performActionA( ccMainAppInterface *appInterface );
 }
