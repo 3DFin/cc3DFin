@@ -8,6 +8,7 @@ if ( PLUGIN_STANDARD_3DFIN  )
 
     AddPlugin( NAME ${PROJECT_NAME} )
 
+    add_subdirectory( ui )
     add_subdirectory( include )
     add_subdirectory( src )
 
