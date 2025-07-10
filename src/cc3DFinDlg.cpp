@@ -1,5 +1,3 @@
-#pragma once
-
 // ##########################################################################
 // #                                                                        #
 // #                CLOUDCOMPARE PLUGIN: 3DFin                              #
@@ -17,32 +15,22 @@
 // #                                                                        #
 // ##########################################################################
 
-#include "ccStdPluginInterface.h"
 
-//! 3DFin qCC plugin
-class cc3DFin : public QObject
-    , public ccStdPluginInterface
+// Local
+#include "cc3DFinDlg.h"
+
+// qCC_db
+#include <ccPointCloud.h>
+// qCC_gl
+#include <ccGLWindowInterface.h>
+
+// Qt
+#include <QApplication>
+#include <QtGui>
+
+cc3DFinDlg::cc3DFinDlg(QWidget* parent)
+    : QDialog(parent, Qt::Tool)
+    , Ui::cc3DFinDlg()
 {
-	Q_OBJECT
-	Q_INTERFACES(ccPluginInterface ccStdPluginInterface)
-
-	// The info.json file provides information about the plugin to the loading system and
-	// it is displayed in the plugin information dialog.
-	Q_PLUGIN_METADATA(IID "uniovi.cloudcompare.plugin.cc3DFin" FILE "../info.json")
-
-  public:
-	explicit cc3DFin(QObject* parent = nullptr);
-	~cc3DFin() override = default;
-
-	// Inherited from ccStdPluginInterface
-	void onNewSelection(const ccHObject::Container& selectedEntities) override;
-
-	QList<QAction*> getActions() override;
-
-  private:
-	void do3DFinAction();
-
-  private:
-	//! Default action
-	QAction* m_action;
-};
+	setupUi(this);
+}

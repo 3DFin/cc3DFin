@@ -1,8 +1,9 @@
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
-          ${CMAKE_CURRENT_LIST_DIR}/expert_dlg.ui
-          ${CMAKE_CURRENT_LIST_DIR}/main_window.ui
+          ${CMAKE_CURRENT_LIST_DIR}/gui_ressources.qrc
+          ${CMAKE_CURRENT_LIST_DIR}/cc3DFinDlg.ui
+          ${CMAKE_CURRENT_LIST_DIR}/cc3DFinExpertDlg.ui
 )
 
 set_target_properties(

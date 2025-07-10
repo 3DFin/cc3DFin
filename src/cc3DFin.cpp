@@ -17,8 +17,9 @@
 
 #include "cc3DFin.h"
 
-#include "ActionA.h"
+#include "cc3DFinDlg.h"
 
+#include <QMainWindow>
 #include <QtGui>
 
 cc3DFin::cc3DFin(QObject* parent)
@@ -64,11 +65,37 @@ QList<QAction*> cc3DFin::getActions()
 		m_action = new QAction(getName(), this);
 		m_action->setToolTip(getDescription());
 		m_action->setIcon(getIcon());
-
-		// Connect appropriate signal
-		connect(m_action, &QAction::triggered, this, [this]()
-		        { tdf::performActionA(m_app); });
+		connect(m_action, &QAction::triggered, this, &cc3DFin::do3DFinAction);
 	}
 
 	return {m_action};
+}
+
+void cc3DFin::do3DFinAction()
+{
+	assert(m_app);
+	if (!m_app)
+	{
+		return;
+	}
+
+	// we need one point cloud
+	if (!m_app->haveOneSelection())
+	{
+		m_app->dispToConsole("Select only one cloud!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+		return;
+	}
+
+	// a real point cloud
+	const ccHObject::Container& selectedEntities = m_app->getSelectedEntities();
+
+	ccHObject* ent = selectedEntities[0];
+	if (!ent->isA(CC_TYPES::POINT_CLOUD))
+	{
+		m_app->dispToConsole("Select a cloud!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+		return;
+	}
+	cc3DFinDlg tdfDlg(m_app->getMainWindow());
+	tdfDlg.exec();
+	QApplication::processEvents();
 }
