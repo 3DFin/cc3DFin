@@ -6,5 +6,5 @@ class ccMainAppInterface;
 
 namespace tdf
 {
-	void	performActionA( ccMainAppInterface *appInterface );
+	void performActionA(ccMainAppInterface* appInterface);
 }
