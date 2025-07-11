@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>cc3DFinDlg</class>
- <widget class="QDialog" name="cc3DFinDlg">
+ <widget class="QWidget" name="cc3DFinDlg">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -31,7 +31,6 @@
   <property name="windowTitle">
    <string>3DFin</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QTabWidget" name="tabWidget">
@@ -2638,7 +2637,6 @@ p, li { white-space: pre-wrap; }
      </widget>
     </item>
    </layout>
-  </widget>
  </widget>
  <resources>
   <include location="gui_ressources.qrc"/>
