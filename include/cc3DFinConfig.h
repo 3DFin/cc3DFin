@@ -17,24 +17,23 @@
 // #                                                                        #
 // ##########################################################################
 
-#include "ui_cc3dfindlg.h"
+#include <QVariant>
+#include <qchar.h>
+#include <qvariant.h>
+#include <vector>
 
-#include <QDialog>
-
-//! Dialog for cc3DFin plugin
-class cc3DFinDlg : public QDialog
-    , public Ui::cc3DFinDlg
+namespace tdf
 {
-	Q_OBJECT
+	//! 3DFin configuration
+	struct Field
+	{
+		QString  name;
+		QString  label;
+		QString  description;
+		QVariant value;
+		QString  hint;
 
-  public:
-	//! Default constructor
-	cc3DFinDlg(QWidget* parent = nullptr);
+		static std::vector<Field> getConfigFields();
+	};
 
-	//! Destrcuctor
-	virtual ~cc3DFinDlg() override = default;
-
-  protected: // methods
- 	void populateFields();
-  protected: // members
-};
+} // namespace tdf

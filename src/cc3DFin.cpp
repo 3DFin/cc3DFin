@@ -96,6 +96,7 @@ void cc3DFin::do3DFinAction()
 		return;
 	}
 	cc3DFinDlg tdfDlg(m_app->getMainWindow());
+
 	tdfDlg.exec();
 	QApplication::processEvents();
 }
