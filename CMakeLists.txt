@@ -8,6 +8,10 @@ if ( PLUGIN_STANDARD_3DFIN  )
 
     AddPlugin( NAME ${PROJECT_NAME} )
 
+    set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+    set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+
     add_subdirectory( ui )
     add_subdirectory( include )
     add_subdirectory( src )

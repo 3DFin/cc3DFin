@@ -20,7 +20,7 @@
 #include <QVariant>
 #include <qchar.h>
 #include <qvariant.h>
-#include <vector>
+#include <unordered_map>
 
 namespace tdf
 {
@@ -33,7 +33,7 @@ namespace tdf
 		QVariant value;
 		QString  hint;
 
-		static const std::vector<Field> getConfigFields();
+		static const std::unordered_map<QString, Field> getConfigFields();
 	};
 
 } // namespace tdf

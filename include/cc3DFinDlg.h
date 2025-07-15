@@ -17,9 +17,13 @@
 // #                                                                        #
 // ##########################################################################
 
+#include "cc3DFinConfig.h"
 #include "ui_cc3dfindlg.h"
 
 #include <QDialog>
+#include <qkeysequence.h>
+#include <qlist.h>
+#include <unordered_map>
 
 //! Dialog for cc3DFin plugin
 class cc3DFinDlg : public QDialog
@@ -29,12 +33,17 @@ class cc3DFinDlg : public QDialog
 
   public:
 	//! Default constructor
-	cc3DFinDlg(QWidget* parent = nullptr);
+	cc3DFinDlg(QWidget* parent, const QStringList& sfNames);
 
 	//! Destrcuctor
 	virtual ~cc3DFinDlg() override = default;
 
   protected: // methods
- 	void populateFields();
+	void populateFields();
+	void populateSfCombo();
+	void populateToolTipAndLabel(const tdf::Field & field, QWidget* widget);
+
   protected: // members
+	const QStringList& m_scalarFields;
+	std::unordered_map<QString, tdf::Field> m_fields;
 };

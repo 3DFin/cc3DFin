@@ -18,9 +18,15 @@
 #include "cc3DFin.h"
 
 #include "cc3DFinDlg.h"
+#include "ccHObject.h"
+#include "ccHObjectCaster.h"
+#include "ccPointCloud.h"
 
 #include <QMainWindow>
 #include <QtGui>
+#include <ScalarField.h>
+#include <qchar.h>
+#include <qlist.h>
 
 cc3DFin::cc3DFin(QObject* parent)
     : QObject(parent)
@@ -95,7 +101,19 @@ void cc3DFin::do3DFinAction()
 		m_app->dispToConsole("Select a cloud!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
 		return;
 	}
-	cc3DFinDlg tdfDlg(m_app->getMainWindow());
+
+	// cast to PC
+	ccPointCloud* pc = static_cast<ccPointCloud*>(ent);
+
+	QStringList scalarFieldNames;
+	for (int i = 0; i < pc->getNumberOfScalarFields(); ++i)
+	{
+		const CCCoreLib::ScalarField* sf = pc->getScalarField(i);
+		if (sf)
+			scalarFieldNames.push_back(QString(sf->getName().c_str()));
+	}
+
+	cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
 	tdfDlg.exec();
 	QApplication::processEvents();
