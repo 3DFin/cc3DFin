@@ -33,7 +33,7 @@ namespace tdf
 		QVariant value;
 		QString  hint;
 
-		static std::vector<Field> getConfigFields();
+		static const std::vector<Field> getConfigFields();
 	};
 
 } // namespace tdf
