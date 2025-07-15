@@ -22,15 +22,17 @@
 #include "ccLog.h"
 
 // qCC_db
-#include <cassert>
 #include <ccPointCloud.h>
 
 // Qt
 #include <QApplication>
 #include <QComboBox>
+#include <QFileDialog>
+#include <QRadioButton>
 #include <QtGui>
-#include <qradiobutton.h>
-#include <qwidget.h>
+
+// sytem
+#include <cassert>
 
 cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
     : QDialog(parent, Qt::Tool)
@@ -39,6 +41,9 @@ cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
     , Ui::cc3DFinDlg()
 {
 	setupUi(this);
+
+	connect(output_dir_btn, &QPushButton::clicked, this, &cc3DFinDlg::askOutputPath);
+
 	populateFields();
 }
 
@@ -111,6 +116,29 @@ void cc3DFinDlg::populateFields()
 			{
 				ccLog::Warning("[3DFin] fail to configure lineEdit field: " + fieldName);
 			}
+		}
+	}
+}
+
+void cc3DFinDlg::askOutputPath()
+{
+	QString initialPathText = output_dir_in->text();
+	QDir    initialPath(initialPathText);
+
+	bool hasValidInitialDir = initialPath.exists() && initialPath.isReadable();
+	QDir initialDir         = hasValidInitialDir ? initialPath : QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
+
+	output_dir_in->setText(initialDir.absolutePath());
+	QFileDialog dialog(this, "3DFin output directory");
+	dialog.setFileMode(QFileDialog::Directory);
+	dialog.setOption(QFileDialog::ShowDirsOnly, true);
+	dialog.setOption(QFileDialog::DontUseNativeDialog, true); // issue with native dialog on macOS
+	if (dialog.exec() == QDialog::Accepted)
+	{
+		QString outputDir = dialog.selectedFiles().first();
+		if (!outputDir.isEmpty())
+		{
+			output_dir_in->setText(QDir(outputDir).absolutePath());
 		}
 	}
 }

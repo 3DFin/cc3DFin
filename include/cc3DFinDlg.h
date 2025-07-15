@@ -17,12 +17,15 @@
 // #                                                                        #
 // ##########################################################################
 
+// local
 #include "cc3DFinConfig.h"
 #include "ui_cc3dfindlg.h"
 
+// QT
 #include <QDialog>
-#include <qkeysequence.h>
-#include <qlist.h>
+#include <QStringList>
+
+// system
 #include <unordered_map>
 
 //! Dialog for cc3DFin plugin
@@ -41,9 +44,12 @@ class cc3DFinDlg : public QDialog
   protected: // methods
 	void populateFields();
 	void populateSfCombo();
-	void populateToolTipAndLabel(const tdf::Field & field, QWidget* widget);
+	void populateToolTipAndLabel(const tdf::Field& field, QWidget* widget);
+
+  protected slots:
+	void askOutputPath();
 
   protected: // members
-	const QStringList& m_scalarFields;
+	const QStringList&                      m_scalarFields;
 	std::unordered_map<QString, tdf::Field> m_fields;
 };
