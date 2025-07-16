@@ -18,41 +18,27 @@
 // ##########################################################################
 
 // local
-#include "cc3DFinConfig.h"
-#include "ui_cc3dfindlg.h"
+#include "ui_cc3dfinexpertdlg.h"
 
 // QT
 #include <QDialog>
-#include <QStringList>
-
-// system
-#include <unordered_map>
 
 //! Dialog for cc3DFin plugin
-class cc3DFinDlg : public QDialog
-    , public Ui::cc3DFinDlg
+class cc3DFinExpertDlg : public QDialog
+    , public Ui::cc3DfinExpertDlg
 {
 	Q_OBJECT
 
   public:
 	//! Default constructor
-	cc3DFinDlg(QWidget* parent, const QStringList& sfNames);
+	cc3DFinExpertDlg(QWidget* parent = nullptr)
+	    : QDialog(parent)
+	    , Ui::cc3DfinExpertDlg()
+	{
+		setupUi(this);
+        connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+	}
 
 	//! Destrcuctor
-	virtual ~cc3DFinDlg() override = default;
-
-  protected: // methods
-	void populateFields();
-	void populateSfCombo();
-	void populateToolTipAndLabel(const tdf::Field& field, QWidget* widget);
-
-  protected slots: // slots
-	void askOutputPath();
-	void showTutorial();
-	void showDocumentation();
-	void showExpertDialog();
-
-  protected: // members
-	const QStringList&                      m_scalarFields;
-	std::unordered_map<QString, tdf::Field> m_fields;
+	virtual ~cc3DFinExpertDlg() override = default;
 };

@@ -19,6 +19,7 @@
 #include "cc3DFinDlg.h"
 
 #include "cc3DFinConfig.h"
+#include "cc3DFinExpertDlg.h"
 #include "ccLog.h"
 #include "ccSerializableObject.h"
 
@@ -34,10 +35,9 @@
 
 // sytem
 #include <cassert>
-#include <qregion.h>
 
 cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
-    : QDialog(parent, Qt::Tool)
+    : QDialog(parent, Qt::Dialog)
     , m_scalarFields(sfNames)
     , m_fields(tdf::Field::getConfigFields())
     , Ui::cc3DFinDlg()
@@ -47,6 +47,7 @@ cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
 	connect(output_dir_btn, &QPushButton::clicked, this, &cc3DFinDlg::askOutputPath);
 	connect(tutorial_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showTutorial);
 	connect(documentation_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showDocumentation);
+	connect(expert_info_btn, &QPushButton::clicked, this, &cc3DFinDlg::showExpertDialog);
 
 	populateFields();
 }
@@ -156,12 +157,13 @@ void cc3DFinDlg::showDocumentation()
 {
 	QFile pdfFile(":3dfin/assets/documentation.pdf");
 
-	if (!pdfFile.open(QIODevice::ReadOnly)) {
-	    ccLog::Error("Failed to open 3DFin PDF!");
-        return;
-    }
+	if (!pdfFile.open(QIODevice::ReadOnly))
+	{
+		ccLog::Error("Failed to open 3DFin PDF!");
+		return;
+	}
 
-    // We need to create a temporary file to open with system PDF viewer
+	// We need to create a temporary file to open with system PDF viewer
 	QString tempPath  = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
 	QString outputPdf = tempPath + QDir::separator() + "3dfin_documentation.pdf";
 
@@ -179,6 +181,11 @@ void cc3DFinDlg::showDocumentation()
 	QDesktopServices::openUrl(QUrl::fromLocalFile(outputPdf));
 }
 
+void cc3DFinDlg::showExpertDialog()
+{
+    cc3DFinExpertDlg dialog(this);
+    dialog.exec();
+}
 void cc3DFinDlg::populateSfCombo()
 {
 	// populate scalar field list
