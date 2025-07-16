@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/assets">
+    <qresource prefix="/3dfin">
         <file>./assets/3dfin_logo.png</file>
         <file>./assets/normalized_cloud.png</file>
         <file>./assets/original_cloud.png</file>
@@ -22,5 +22,6 @@
         <file>./assets/swansea_logo_1.png</file>
         <file>./assets/icon_window.ico</file>
         <file>./assets/info_icon.png</file>
+        <file>./assets/documentation.pdf</file>
     </qresource>
 </RCC>

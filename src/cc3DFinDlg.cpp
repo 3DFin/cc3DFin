@@ -20,6 +20,7 @@
 
 #include "cc3DFinConfig.h"
 #include "ccLog.h"
+#include "ccSerializableObject.h"
 
 // qCC_db
 #include <ccPointCloud.h>
@@ -33,6 +34,7 @@
 
 // sytem
 #include <cassert>
+#include <qregion.h>
 
 cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
     : QDialog(parent, Qt::Tool)
@@ -43,6 +45,8 @@ cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
 	setupUi(this);
 
 	connect(output_dir_btn, &QPushButton::clicked, this, &cc3DFinDlg::askOutputPath);
+	connect(tutorial_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showTutorial);
+	connect(documentation_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showDocumentation);
 
 	populateFields();
 }
@@ -141,6 +145,38 @@ void cc3DFinDlg::askOutputPath()
 			output_dir_in->setText(QDir(outputDir).absolutePath());
 		}
 	}
+}
+
+void cc3DFinDlg::showTutorial()
+{
+	QDesktopServices::openUrl(QUrl("https://github.com/3DFin/3DFin_Tutorial/"));
+}
+
+void cc3DFinDlg::showDocumentation()
+{
+	QFile pdfFile(":3dfin/assets/documentation.pdf");
+
+	if (!pdfFile.open(QIODevice::ReadOnly)) {
+	    ccLog::Error("Failed to open 3DFin PDF!");
+        return;
+    }
+
+    // We need to create a temporary file to open with system PDF viewer
+	QString tempPath  = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+	QString outputPdf = tempPath + QDir::separator() + "3dfin_documentation.pdf";
+
+	QFile outFile(outputPdf);
+	if (!outFile.open(QIODevice::WriteOnly))
+	{
+		ccLog::Error("Failed to write temporary 3DFin PDF!");
+		return;
+	}
+
+	outFile.write(pdfFile.readAll());
+	outFile.close();
+
+	// Open with system PDF viewer
+	QDesktopServices::openUrl(QUrl::fromLocalFile(outputPdf));
 }
 
 void cc3DFinDlg::populateSfCombo()

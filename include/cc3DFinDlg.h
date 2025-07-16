@@ -46,8 +46,10 @@ class cc3DFinDlg : public QDialog
 	void populateSfCombo();
 	void populateToolTipAndLabel(const tdf::Field& field, QWidget* widget);
 
-  protected slots:
+  protected slots: // slots
 	void askOutputPath();
+	void showTutorial();
+	void showDocumentation();
 
   protected: // members
 	const QStringList&                      m_scalarFields;
