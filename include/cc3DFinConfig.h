@@ -35,5 +35,4 @@ namespace tdf
 
 		static const std::unordered_map<QString, Field> getConfigFields();
 	};
-
 } // namespace tdf

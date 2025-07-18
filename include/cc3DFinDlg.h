@@ -45,12 +45,14 @@ class cc3DFinDlg : public QDialog
 	void populateFields();
 	void populateSfCombo();
 	void populateToolTipAndLabel(const tdf::Field& field, QWidget* widget);
+	void getParameters();
 
   protected slots: // slots
 	void askOutputPath();
 	void showTutorial();
 	void showDocumentation();
 	void showExpertDialog();
+	void computeClicked();
 
   protected: // members
 	const QStringList&                      m_scalarFields;

@@ -33,7 +33,7 @@
 #include <QRadioButton>
 #include <QtGui>
 
-// sytem
+// System
 #include <cassert>
 
 cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
@@ -48,6 +48,7 @@ cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
 	connect(tutorial_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showTutorial);
 	connect(documentation_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showDocumentation);
 	connect(expert_info_btn, &QPushButton::clicked, this, &cc3DFinDlg::showExpertDialog);
+	connect(compute_btn, &QPushButton::clicked, this, &cc3DFinDlg::computeClicked);
 
 	populateFields();
 }
@@ -137,7 +138,7 @@ void cc3DFinDlg::askOutputPath()
 	QFileDialog dialog(this, "3DFin output directory");
 	dialog.setFileMode(QFileDialog::Directory);
 	dialog.setOption(QFileDialog::ShowDirsOnly, true);
-	dialog.setOption(QFileDialog::DontUseNativeDialog, true); // issue with native dialog on macOS
+	dialog.setOption(QFileDialog::DontUseNativeDialog, true); // TODO: issue with native dialog on macOS
 	if (dialog.exec() == QDialog::Accepted)
 	{
 		QString outputDir = dialog.selectedFiles().first();
@@ -183,9 +184,15 @@ void cc3DFinDlg::showDocumentation()
 
 void cc3DFinDlg::showExpertDialog()
 {
-    cc3DFinExpertDlg dialog(this);
-    dialog.exec();
+	cc3DFinExpertDlg dialog(this);
+	dialog.exec();
 }
+
+void cc3DFinDlg::computeClicked()
+{
+    //do nothing for now
+}
+
 void cc3DFinDlg::populateSfCombo()
 {
 	// populate scalar field list

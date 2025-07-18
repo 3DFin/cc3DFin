@@ -22,11 +22,13 @@
 #include "ccHObjectCaster.h"
 #include "ccPointCloud.h"
 
+#include "config.hpp"
+
+// ccCoreLib
+#include <ScalarField.h>
+
 #include <QMainWindow>
 #include <QtGui>
-#include <ScalarField.h>
-#include <qchar.h>
-#include <qlist.h>
 
 cc3DFin::cc3DFin(QObject* parent)
     : QObject(parent)
