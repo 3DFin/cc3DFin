@@ -1,0 +1,9 @@
+[submodule "lib3DFin/third_party/taskflow"]
+	path = lib3DFin/third_party/taskflow
+	url = https://github.com/taskflow/taskflow
+[submodule "lib3DFin/third_party/eigen"]
+	path = lib3DFin/third_party/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "lib3DFin/third_party/nanoflann"]
+	path = lib3DFin/third_party/nanoflann
+	url = https://github.com/jlblancoc/nanoflann

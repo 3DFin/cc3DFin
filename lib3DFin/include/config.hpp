@@ -5,6 +5,5 @@ namespace lib3dfin
 
     struct config
     {
-
     };
 }

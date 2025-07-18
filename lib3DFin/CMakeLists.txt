@@ -35,9 +35,35 @@ if (3DFin_BUILD_SHARED)
     )
 endif()
 
+# Eigen Handling (taken and modified from OpenMVG)
+# Could be improved in case of exposition of Eigen in the public API
+find_package(Eigen3 QUIET)
+if (NOT Eigen3_FOUND)
+    set(EIGEN_INCLUDE_DIR_HINTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/eigen)
+    set(3DFin_USE_INTERNAL_EIGEN ON)
+    find_package(Eigen3 REQUIRED)
+endif()
+
+# nanoflann
+# TODO issue with already defined target (CCCore nanoflann)
+#find_package(nanoflann)
+#if (NOT nanoflann)
+#    add_subdirectory(third_party/nanoflann)
+#    set(3DFin_USE_INTERNAL_NANOFLANN ON)
+#    find_package(nanoflann REQUIRED)
+#endif()
+
+# Taskflow handling
+# TODO maybe thread lib linking should be propagated...
+set(TF_BUILD_TESTS "Enables builds of tests" OFF)
+set(TF_BUILD_EXAMPLES "Enables builds of examples" OFF)
+add_subdirectory(third_party/taskflow)
+
+# All libs are private since we do not want to expose them in the public API
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen nanoflann::nanoflann Taskflow::Taskflow)
 
 # Install directories
-include( GNUInstallDirs )
+include(GNUInstallDirs)
 set(INSTALL_INCLUDE_DIR include/${PROJECT_NAME})
 set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME})
 
@@ -51,7 +77,6 @@ install(TARGETS ${PROJECT_NAME}
     EXPORT ${PROJECT_NAME}Targets
     DESTINATION lib
 )
-
 
 # Create and install CMake config files
 include(CMakePackageConfigHelpers)
