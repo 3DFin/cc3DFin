@@ -362,7 +362,7 @@ namespace tdf
 	    },
 	    {
 	        "res_ground",
-	        "(x, y) voxel resolution",
+	        "(x, y, z) voxel resolution",
 	        "(x, y, z) voxel resolution during denoising.\nNote that the whole point cloud is voxelated.",
 	        // TODO: gt=0,
 	        0.15,
