@@ -7,3 +7,6 @@
 [submodule "lib3DFin/third_party/nanoflann"]
 	path = lib3DFin/third_party/nanoflann
 	url = https://github.com/jlblancoc/nanoflann
+[submodule "lib3DFin/third_party/CSF-3DFin"]
+	path = lib3DFin/third_party/CSF-3DFin
+	url = https://github.com/3DFin/CSF-3DFin

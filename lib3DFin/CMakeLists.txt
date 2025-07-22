@@ -59,8 +59,12 @@ set(TF_BUILD_TESTS "Enables builds of tests" OFF)
 set(TF_BUILD_EXAMPLES "Enables builds of examples" OFF)
 add_subdirectory(third_party/taskflow)
 
+# csf
+add_subdirectory(third_party/CSF-3DFin)
+
 # All libs are private since we do not want to expose them in the public API
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen nanoflann::nanoflann Taskflow::Taskflow)
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen nanoflann::nanoflann Taskflow::Taskflow CSF::CSF)
+
 
 # Install directories
 include(GNUInstallDirs)
@@ -111,7 +115,6 @@ export(EXPORT ${PROJECT_NAME}Targets
     NAMESPACE ${PROJECT_NAME}::
     FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake"
 )
-#endif()
 
 # Make package available for find_package() in build dir
 export(PACKAGE ${PROJECT_NAME})
