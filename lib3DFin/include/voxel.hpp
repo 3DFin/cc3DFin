@@ -1,4 +1,9 @@
+#pragma once
+
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
-#include "config.hpp"
+namespace lib3dfin
+{
+
+}

@@ -1,11 +1,15 @@
 target_sources(${PROJECT_NAME}
  PRIVATE
+     types.hpp
      config.hpp
+     voxel.hpp
 )
 
 install(
  FILES
+  types.hpp
   config.hpp
+  voxel.hpp
  DESTINATION
   ${INSTALL_CMAKE_DIR}
 )
