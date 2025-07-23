@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
-#include "types.hpp"
 
-#include <Eigen/Dense>
-#include <Eigen/src/Core/Matrix.h>
+#include <voxel.hpp>
 #include <taskflow/taskflow.hpp>
 
 namespace lib3dfin
@@ -13,9 +11,6 @@ namespace lib3dfin
 	    const PointCloud<real_t>& xyz,
 	    const double              res_xy,
 	    const double              res_z,
-	    const uint32_t            id_x,
-	    const uint32_t            id_y,
-	    const uint32_t            id_z,
 	    const bool                verbose)
 	{
 		// number of bit used to encode one dimension
@@ -48,11 +43,11 @@ namespace lib3dfin
 		// Parallel min coeff
 		real_t min_x, min_y, min_z;
 		tf.emplace([&]()
-		           { min_one_dim(id_x, min_x); });
+		           { min_one_dim(0, min_x); });
 		tf.emplace([&]()
-		           { min_one_dim(id_y, min_y); });
+		           { min_one_dim(1, min_y); });
 		tf.emplace([&]()
-		           { min_one_dim(id_z, min_z); });
+		           { min_one_dim(2, min_z); });
 		executor.run(tf).wait();
 
 		const Vec3<real_t> min_vec(min_x, min_y, min_z);
@@ -60,7 +55,7 @@ namespace lib3dfin
 		// Lambda to compute voxel hashing
 		const auto create_hash = [&](const Vec3<real_t>& point) -> uint64_t
 		{
-			return ((static_cast<uint64_t>(std::floor((point(id_z) - min_vec(2)) / res_z)) << two_voxel_bits) | (static_cast<uint64_t>(std::floor((point(id_y) - min_vec(1)) / res_xy)) << voxel_bits)) | static_cast<uint64_t>(std::floor((point(id_x) - min_vec(0)) / res_xy));
+			return ((static_cast<uint64_t>((point(2) - min_vec(2)) / res_z) << two_voxel_bits) | (static_cast<uint64_t>((point(1) - min_vec(1) / res_xy)) << voxel_bits)) | static_cast<uint64_t>((point(0) - min_vec(0) / res_xy));
 		};
 
 		std::vector<uint64_t> hashes(num_points);
