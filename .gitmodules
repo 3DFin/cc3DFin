@@ -10,3 +10,6 @@
 [submodule "lib3DFin/third_party/CSF-3DFin"]
 	path = lib3DFin/third_party/CSF-3DFin
 	url = https://github.com/3DFin/CSF-3DFin
+[submodule "lib3DFin/third_party/dset"]
+	path = lib3DFin/third_party/dset
+	url = https://github.com/wjakob/dset

@@ -3,6 +3,7 @@ target_sources(${PROJECT_NAME}
      types.hpp
      config.hpp
      voxel.hpp
+     connected_components.hpp
 )
 
 install(
@@ -10,6 +11,7 @@ install(
   types.hpp
   config.hpp
   voxel.hpp
+  connected_components.hpp
  DESTINATION
   ${INSTALL_CMAKE_DIR}
 )
