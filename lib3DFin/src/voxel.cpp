@@ -7,8 +7,8 @@
 namespace lib3dfin
 {
 	template <typename real_t>
-	std::tuple<PointCloud<real_t>, VecIndex<uint32_t>> voxelize(
-	    const PointCloud<real_t>& xyz,
+	std::tuple<PointCloud3<real_t>, VecIndex<uint32_t>> voxelize(
+	    const PointCloud3<real_t>& xyz,
 	    const double              res_xy,
 	    const double              res_z,
 	    const bool                verbose)
@@ -60,7 +60,7 @@ namespace lib3dfin
 
 		std::vector<uint64_t> hashes(num_points);
 		VecIndex<uint32_t>    cloud_to_vox_ind(num_points);
-		PointCloud<real_t>    vox_pc;
+		PointCloud3<real_t>    vox_pc;
 		VecIndex<uint32_t>    vox_to_cloud_ind;
 
 		std::vector<uint32_t> first_point_in_vox(num_points, 0);
@@ -135,7 +135,7 @@ namespace lib3dfin
 		auto allocate = tf.emplace(
 		    [&]()
 		    {
-			    vox_pc = PointCloud<real_t>(first_point_in_vox.back(), 3);
+			    vox_pc = PointCloud3<real_t>(first_point_in_vox.back(), 3);
 		    });
 
 		// Precomputed shifts for each dimensional composant of a full hashed code

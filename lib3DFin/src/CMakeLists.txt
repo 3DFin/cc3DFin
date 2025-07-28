@@ -4,4 +4,5 @@ target_sources(${PROJECT_NAME}
         config.cpp
         voxel.cpp
         connected_components.cpp
+        ground.cpp
 )

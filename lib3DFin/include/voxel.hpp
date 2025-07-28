@@ -8,8 +8,8 @@
 namespace lib3dfin
 {
 	template <typename real_t>
-	std::tuple<PointCloud<real_t>, VecIndex<uint32_t>> voxelize(
-	    const PointCloud<real_t>& xyz,
+	std::tuple<PointCloud3<real_t>, VecIndex<uint32_t>> voxelize(
+	    const PointCloud3<real_t>& xyz,
 	    const double              res_xy,
 	    const double              res_z,
 	    const bool                verbose);

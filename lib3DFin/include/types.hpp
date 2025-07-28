@@ -9,7 +9,10 @@
 namespace lib3dfin
 {
 	template <typename real_t>
-	using PointCloud = Eigen::Matrix<real_t, Eigen::Dynamic, 3>;
+	using PointCloud3 = Eigen::Matrix<real_t, Eigen::Dynamic, 3>;
+
+	template <typename real_t>
+	using PointCloud2 = Eigen::Matrix<real_t, Eigen::Dynamic, 2>;
 
 	template <typename real_t>
 	using Vec3 = Eigen::Vector<real_t, 3>;

@@ -13,14 +13,17 @@ namespace lib3dfin
 {
 
 	template <typename real_t>
-	VecIndex<int32_t> connected_components(const PointCloud<real_t> xyz, const real_t eps, const uint32_t min_samples)
+	VecIndex<int32_t> connected_components(const PointCloud3<real_t> xyz, const real_t eps, const uint32_t min_samples)
 	{
-		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud<real_t>, 3, nanoflann::metric_L2_Simple>;
+		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud3<real_t>, 3, nanoflann::metric_L2_Simple>;
 
 		// Parallel construction of kdtree index is enabled by default, but maybe we have to adapt this
 		// for small point clouds
 		kd_tree_t    kd_tree(3, xyz, 10, 0);
 		const real_t sq_search_radius = eps * eps;
+
+		// explicitly build index to avoid to build it in the for_each loop
+		kd_tree.buildIndex();
 
 		const Eigen::Index n_points = xyz.rows();
 
