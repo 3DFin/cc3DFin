@@ -5,14 +5,18 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
+#include <Eigen/src/Core/util/Constants.h>
 
 namespace lib3dfin
 {
 	template <typename real_t>
-	using PointCloud3 = Eigen::Matrix<real_t, Eigen::Dynamic, 3>;
+	using PointCloud3 = Eigen::Matrix<real_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
 	template <typename real_t>
-	using PointCloud2 = Eigen::Matrix<real_t, Eigen::Dynamic, 2>;
+	using RefPointCloud = Eigen::Ref<const PointCloud3<real_t>>;
+
+	template <typename real_t>
+	using PointCloud2 = Eigen::Matrix<real_t, Eigen::Dynamic, 2, Eigen::RowMajor>;
 
 	template <typename real_t>
 	using Vec3 = Eigen::Vector<real_t, 3>;
