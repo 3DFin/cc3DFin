@@ -133,9 +133,8 @@ namespace lib3dfin
 		{
 			nanoflann::KNNResultSet<real_t, Eigen::Index> result(n_neighbors);
 			result.init(neighbors.data(), dists.data());
-			kd_tree.index_->findNeighbors(result, dtm2.row(i).data(), nanoflann::SearchParameters(0, true)); // explicitly tell that we want sorted values
+			kd_tree.index_->findNeighbors(result, dtm2.row(i).data());
 
-			// values are already sorted
 			for(size_t j = 0; j < n_neighbors; ++j)
 			{
 			    heights[j] = cloth(neighbors[j], 2);
@@ -188,7 +187,6 @@ namespace lib3dfin
 		using kd_tree_t                = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2<real_t>, 2, nanoflann::metric_L2_Simple>;
 		const PointCloud2<real_t> dtm2 = dtm.template leftCols<2>();
 		kd_tree_t                 kd_tree(2, dtm, 10);
-		kd_tree.index_->buildIndex();
 
 		std::vector<size_t> indices(n_neighbors);
 		std::vector<double> dists(n_neighbors);
