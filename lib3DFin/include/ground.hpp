@@ -8,7 +8,7 @@
 namespace lib3dfin
 {
 	template <typename real_t>
-	PointCloud3<real_t> generate_dtm(const RefPointCloud<real_t>& pint_cloud, const real_t resolution);
+	PointCloud3<real_t> generate_dtm(const RefPointCloud<real_t>& point_cloud, const real_t resolution);
 
 	template <typename real_t>
 	PointCloud3<real_t> clean_ground(const PointCloud3<real_t>& point_cloud, const real_t resolution, const real_t minimum_points);
@@ -17,6 +17,5 @@ namespace lib3dfin
 	PointCloud3<real_t> clean_cloth(const PointCloud3<real_t>& cloth);
 
 	template <typename real_t>
-	PointCloud3<real_t> normalize_height(const PointCloud3<real_t>& point_cloud, const PointCloud3<real_t>& dtm);
-
+	Eigen::VectorX<real_t> normalize_height(const RefPointCloud<real_t>& point_cloud, const PointCloud3<real_t>& dtm);
 } // namespace lib3dfin

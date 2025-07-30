@@ -106,28 +106,27 @@ namespace lib3dfin
 	template <typename real_t>
 	PointCloud3<real_t> clean_cloth(const PointCloud3<real_t>& cloth)
 	{
-		const size_t n_points = cloth.rows();
-		const size_t n_neighbors   = 15;
+		const size_t n_points    = cloth.rows();
+		const size_t n_neighbors = 15;
 
 		if (n_points < n_neighbors)
 			throw std::runtime_error("Input DTM too small (less than 15 points).");
 
 		if (n_points == n_neighbors)
-			std::cerr << "Warning: Input DTM has exactly 15 points, minimum accepted.\n";
+			std::cerr << "Warning: Input DTM has exactly 15 points.\n";
 
-
-		const size_t half_n_points = n_points  / 2;
+		const size_t half_n_points    = n_points / 2;
 		const size_t half_n_neighbors = n_neighbors / 2;
-		const real_t mad_factor    = 2.0;
+		const real_t mad_factor       = 2.0;
 
 		using kd_tree_t                 = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2<real_t>, 2, nanoflann::metric_L2_Simple>;
 		const PointCloud2<real_t>& dtm2 = cloth.template leftCols<2>();
 		kd_tree_t                  kd_tree(2, dtm2, 10);
 
 		std::vector<Eigen::Index> neighbors(n_neighbors);
-		std::vector<real_t> dists(n_neighbors);
-		std::vector<real_t> abs_devs(n_points);
-		std::vector<real_t> heights(n_neighbors);
+		std::vector<real_t>       dists(n_neighbors);
+		std::vector<real_t>       abs_devs(n_points);
+		std::vector<real_t>       heights(n_neighbors);
 
 		for (size_t i = 0; i < n_points; ++i)
 		{
@@ -135,9 +134,9 @@ namespace lib3dfin
 			result.init(neighbors.data(), dists.data());
 			kd_tree.index_->findNeighbors(result, dtm2.row(i).data());
 
-			for(size_t j = 0; j < n_neighbors; ++j)
+			for (size_t j = 0; j < n_neighbors; ++j)
 			{
-			    heights[j] = cloth(neighbors[j], 2);
+				heights[j] = cloth(neighbors[j], 2);
 			}
 			std::nth_element(std::begin(heights), std::begin(heights) + half_n_neighbors, std::end(heights));
 
@@ -173,46 +172,45 @@ namespace lib3dfin
 
 	// TODO share kdtree_index
 	template <typename real_t>
-	Eigen::VectorX<real_t> normalize_height(const PointCloud3<real_t>& point_cloud, const PointCloud3<real_t>& dtm)
+	Eigen::VectorX<real_t> normalize_height(const RefPointCloud<real_t>& point_cloud, const PointCloud3<real_t>& dtm)
 	{
 
-		const size_t n_points = dtm.rows();
-
-		if (n_points < 3)
-			throw std::runtime_error("Input DTM too small (less than 3 points).");
-
+		const size_t n_points    = point_cloud.rows();
 		const size_t n_neighbors = 3;
 
-		Eigen::VectorX<real_t> normalized_heights(point_cloud.rows());
+		if (n_points < n_neighbors)
+			throw std::runtime_error("Input DTM too small (less than 3 points).");
+
+		Eigen::VectorX<real_t> normalized_heights(n_points);
 		using kd_tree_t                = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2<real_t>, 2, nanoflann::metric_L2_Simple>;
-		const PointCloud2<real_t> dtm2 = dtm.template leftCols<2>();
-		kd_tree_t                 kd_tree(2, dtm, 10);
+		const PointCloud2<real_t>& dtm2 = dtm.template leftCols<2>();
+		kd_tree_t                 kd_tree(2, dtm2, 10);
 
 		std::vector<size_t> indices(n_neighbors);
-		std::vector<double> dists(n_neighbors);
+		std::vector<real_t> dists(n_neighbors);
 
-		for (size_t i = 0; i < n_neighbors; ++i)
+		for (size_t i = 0; i < n_points; ++i)
 		{
-			const auto                      query_pt = point_cloud.row(i).template head<2>().data();
 			nanoflann::KNNResultSet<real_t> result(n_neighbors);
 			result.init(indices.data(), dists.data());
+			const real_t* query_pt = point_cloud.row(i).data();
 			kd_tree.index_->findNeighbors(result, query_pt);
 
 			// Convert squared distances to actual distances
-			std::vector<double> weights(n_neighbors);
-			double              sum_weights = 0.0;
+			std::vector<real_t> weights(n_neighbors);
+			real_t              sum_weights = 0.0;
 			for (size_t j = 0; j < n_neighbors; ++j)
 			{
-				weights[j] = std::sqrt(dists[j]) + 1e-8; // epsilon to avoid division by zero
+				weights[j] = std::sqrt(dists[j]) + 1e-8; // nanoflann dist are squared and use epsilon to avoid division by zero
 				sum_weights += weights[j];
 			}
 
 			// Normalize weights
-			for (double& w : weights)
+			for (real_t& w : weights)
 				w /= sum_weights;
 
 			// Compute weighted average Z from DTM
-			double weighted_z = 0.0;
+			real_t weighted_z = 0.0;
 			for (size_t j = 0; j < n_neighbors; ++j)
 			{
 				weighted_z += weights[j] * dtm(indices[j], 2);
@@ -225,9 +223,11 @@ namespace lib3dfin
 	}
 
 	// Template instanciation
-	template PointCloud3<float>  generate_dtm<float>(const RefPointCloud<float>& point_cloud, float resolution);
-	template PointCloud3<double> generate_dtm<double>(const RefPointCloud<double>& point_cloud, double resolution);
-	template PointCloud3<float>  clean_cloth<float>(const PointCloud3<float>& cloth);
-	template PointCloud3<double> clean_cloth<double>(const PointCloud3<double>& cloth);
+	template PointCloud3<float>     generate_dtm<float>(const RefPointCloud<float>& point_cloud, float resolution);
+	template PointCloud3<double>    generate_dtm<double>(const RefPointCloud<double>& point_cloud, double resolution);
+	template PointCloud3<float>     clean_cloth<float>(const PointCloud3<float>& cloth);
+	template PointCloud3<double>    clean_cloth<double>(const PointCloud3<double>& cloth);
+	template Eigen::VectorX<float>  normalize_height<float>(const RefPointCloud<float>& point_cloud, const PointCloud3<float>& dtm);
+	template Eigen::VectorX<double> normalize_height<double>(const RefPointCloud<double>& point_cloud, const PointCloud3<double>& dtm);
 
 } // namespace lib3dfin
