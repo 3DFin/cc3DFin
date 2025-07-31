@@ -63,7 +63,7 @@ namespace lib3dfin
 		// Lambda to compute voxel hashing
 		const auto create_hash = [&](const Vec3<real_t>& point) -> uint64_t
 		{
-			return ((static_cast<uint64_t>((point(2) - min_vec(2)) / res_z) << two_voxel_bits) | (static_cast<uint64_t>((point(1) - min_vec(1) / res_xy)) << voxel_bits)) | static_cast<uint64_t>((point(0) - min_vec(0) / res_xy));
+			return ((static_cast<uint64_t>((point(2) - min_vec(2)) / res_z) << two_voxel_bits) | (static_cast<uint64_t>((point(1) - min_vec(1)) / res_xy) << voxel_bits)) | static_cast<uint64_t>((point(0) - min_vec(0)) / res_xy);
 		};
 
 		std::vector<uint64_t> hashes(num_points);
