@@ -2,28 +2,25 @@
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
 #include "connected_components.hpp"
+
 #include "../third_party/dset/dset.h"
 
 #include <nanoflann.hpp>
 #include <taskflow/algorithm/for_each.hpp>
 #include <taskflow/taskflow.hpp>
 
-
 namespace lib3dfin
 {
 
 	template <typename real_t>
-	VecIndex<int32_t> connected_components(const PointCloud3<real_t> xyz, const real_t eps, const uint32_t min_samples)
+	VecIndex<int32_t> connected_components(const RefPointCloud<real_t>& xyz, const real_t eps, const uint32_t min_samples)
 	{
-		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud3<real_t>, 3, nanoflann::metric_L2_Simple>;
+		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<RefPointCloud<real_t>, 3, nanoflann::metric_L2_Simple>;
 
 		// Parallel construction of kdtree index is enabled by default, but maybe we have to adapt this
 		// for small point clouds
 		kd_tree_t    kd_tree(3, xyz, 10, 0);
 		const real_t sq_search_radius = eps * eps;
-
-		// explicitly build index to avoid to build it in the for_each loop
-		kd_tree.buildIndex();
 
 		const Eigen::Index n_points = xyz.rows();
 
@@ -61,7 +58,7 @@ namespace lib3dfin
             }
 
             nn_cells[point_id] = std::move(nn_ids); },
-		    tf::StaticPartitioner(0));
+		    tf::StaticPartitioner());
 
 		executor.run(taskflow).get();
 
@@ -116,4 +113,8 @@ namespace lib3dfin
 
 		return cluster_id;
 	}
+
+	template VecIndex<int32_t> connected_components<float>(const RefPointCloud<float>& xyz, const float eps, const uint32_t min_samples);
+	template VecIndex<int32_t> connected_components<double>(const RefPointCloud<double>& xyz, const double eps, const uint32_t min_samples);
+
 } // namespace lib3dfin

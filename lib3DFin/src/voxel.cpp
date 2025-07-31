@@ -1,17 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
-#include <voxel.hpp>
 #include <taskflow/taskflow.hpp>
+#include <voxel.hpp>
+
+
+#include <taskflow/taskflow.hpp>
+#include <taskflow/algorithm/for_each.hpp>
+#include <taskflow/algorithm/scan.hpp>
+#include <taskflow/algorithm/sort.hpp>
+#include <taskflow/algorithm/transform.hpp>
 
 namespace lib3dfin
 {
-	template <typename real_t>
+
+   	template <typename real_t>
 	std::tuple<PointCloud3<real_t>, VecIndex<uint32_t>> voxelize(
-	    const PointCloud3<real_t>& xyz,
-	    const double              res_xy,
-	    const double              res_z,
-	    const bool                verbose)
+	    const RefPointCloud<real_t>& xyz,
+	    const real_t                 res_xy,
+	    const real_t                 res_z,
+	    const bool                   verbose)
 	{
 		// number of bit used to encode one dimension
 		constexpr uint64_t voxel_bits     = 21;
@@ -22,7 +30,7 @@ namespace lib3dfin
 		const auto start_total = std::chrono::high_resolution_clock::now();
 
 		if (verbose)
-			std::cout << "-Voxelization\n Voxel resolution: {} x {} x {} m" << std::endl;
+			std::cout << "-Voxelization\n Voxel resolution: " << res_xy <<  " x " << res_xy <<  " x " << res_z <<  " m" << std::endl;
 
 		tf::Executor executor;
 		tf::Taskflow tf;
@@ -60,7 +68,7 @@ namespace lib3dfin
 
 		std::vector<uint64_t> hashes(num_points);
 		VecIndex<uint32_t>    cloud_to_vox_ind(num_points);
-		PointCloud3<real_t>    vox_pc;
+		PointCloud3<real_t>   vox_pc;
 		VecIndex<uint32_t>    vox_to_cloud_ind;
 
 		std::vector<uint32_t> first_point_in_vox(num_points, 0);
@@ -119,10 +127,10 @@ namespace lib3dfin
 		auto unique = tf.for_each_index(
 		                    Eigen::Index(1), Eigen::Index(num_points), Eigen::Index(1), [&](const Eigen::Index point_id)
 		                    {
-                            if (hashes[sorted_indices[point_id]] != hashes[sorted_indices[point_id - 1]])
-                            {
-                                first_point_in_vox[point_id] = 1;
-                            } })
+                                  if (hashes[sorted_indices[point_id]] != hashes[sorted_indices[point_id - 1]])
+                                  {
+                                      first_point_in_vox[point_id] = 1;
+                                  } })
 		                  .name("unique");
 
 		// count and generate voxel id with a parallel scan
@@ -146,23 +154,23 @@ namespace lib3dfin
 		auto fill_vox_pc = tf.for_each_index(
 		                         Eigen::Index(0), Eigen::Index(num_points), Eigen::Index(1), [&](const Eigen::Index point_id)
 		                         {
-                                 const auto voxel_id             = first_point_in_vox[point_id] - 1;  // it starts at 1
-                                 const auto real_point_id        = sorted_indices[point_id];
-                                 cloud_to_vox_ind(real_point_id) = voxel_id;
-                                 //  we account for the first point here
-                                 //  maybe it could be better to init. it in the allocation tasks
-                                 if (point_id == 0 || voxel_id != first_point_in_vox[point_id - 1] - 1)
-                                 {
-                                     const uint64_t hash_val    = hashes[real_point_id];
+                                       const auto voxel_id             = first_point_in_vox[point_id] - 1;  // it starts at 1
+                                       const auto real_point_id        = sorted_indices[point_id];
+                                       cloud_to_vox_ind(real_point_id) = voxel_id;
+                                       //  we account for the first point here
+                                       //  maybe it could be better to init. it in the allocation tasks
+                                       if (point_id == 0 || voxel_id != first_point_in_vox[point_id - 1] - 1)
+                                       {
+                                           const uint64_t hash_val    = hashes[real_point_id];
 
-                                     const uint64_t z_code_val = hash_val >> two_voxel_bits;
-                                     const uint64_t y_code_val = (hash_val >> voxel_bits) & num_cells;
-                                     const uint64_t x_code_val = hash_val & num_cells;
+                                           const uint64_t z_code_val = hash_val >> two_voxel_bits;
+                                           const uint64_t y_code_val = (hash_val >> voxel_bits) & num_cells;
+                                           const uint64_t x_code_val = hash_val & num_cells;
 
-                                     vox_pc(voxel_id, 0) = x_code_val * res_xy + centroid_shift_x;
-                                     vox_pc(voxel_id, 1) = y_code_val * res_xy + centroid_shift_y;
-                                     vox_pc(voxel_id, 2) = z_code_val * res_z + centroid_shift_z;
-                                 } })
+                                           vox_pc(voxel_id, 0) = x_code_val * res_xy + centroid_shift_x;
+                                           vox_pc(voxel_id, 1) = y_code_val * res_xy + centroid_shift_y;
+                                           vox_pc(voxel_id, 2) = z_code_val * res_z + centroid_shift_z;
+                                       } })
 		                       .name("fill_vox_pc");
 
 		// Taskflow workflow
@@ -211,4 +219,17 @@ namespace lib3dfin
 
 		return {vox_pc, cloud_to_vox_ind};
 	}
+
+	template std::tuple<PointCloud3<float>, VecIndex<uint32_t>> voxelize<float>(
+	    const RefPointCloud<float>& xyz,
+	    const float                 res_xy,
+	    const float                 res_z,
+	    const bool                  verbose);
+
+	template std::tuple<PointCloud3<double>, VecIndex<uint32_t>> voxelize<double>(
+	    const RefPointCloud<double>& xyz,
+	    const double                 res_xy,
+	    const double                 res_z,
+	    const bool                   verbose);
+
 } // namespace lib3dfin

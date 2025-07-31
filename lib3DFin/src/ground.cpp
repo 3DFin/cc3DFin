@@ -24,11 +24,11 @@ namespace lib3dfin
 {
 
 	template <typename real_t>
-	PointCloud3<real_t> clean_ground(const PointCloud3<real_t>& point_cloud, const real_t resolution, const real_t minimum_points)
+	PointCloud3<real_t> clean_ground(const RefPointCloud<real_t>& point_cloud, const real_t resolution, const uint32_t minimum_points)
 	{
 		auto [voxel_cloud, cloud_to_vox] = voxelize(point_cloud, resolution, resolution, true);
 		// eps = res_ground * math.sqrt(3) + 1e-6
-		auto cluster_labels = connected_components(voxel_cloud, resolution * std::sqrt(3) + 1e-6, minimum_points);
+		auto cluster_labels = connected_components(RefPointCloud<real_t>(voxel_cloud), real_t(resolution * std::sqrt(real_t(3)) + 1e-6), minimum_points);
 
 		// Count occurrences of each cluster label
 		std::unordered_map<int32_t, uint32_t> label_counts;
@@ -182,16 +182,16 @@ namespace lib3dfin
 			throw std::runtime_error("Input DTM too small (less than 3 points).");
 
 		Eigen::VectorX<real_t> normalized_heights(n_points);
-		using kd_tree_t                = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2<real_t>, 2, nanoflann::metric_L2_Simple>;
+		using kd_tree_t                 = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2<real_t>, 2, nanoflann::metric_L2_Simple>;
 		const PointCloud2<real_t>& dtm2 = dtm.template leftCols<2>();
-		kd_tree_t                 kd_tree(2, dtm2, 10);
+		kd_tree_t                  kd_tree(2, dtm2, 10);
 
-		std::vector<size_t> indices(n_neighbors);
-		std::vector<real_t> dists(n_neighbors);
+		std::vector<Eigen::Index> indices(n_neighbors);
+		std::vector<real_t>       dists(n_neighbors);
 
 		for (size_t i = 0; i < n_points; ++i)
 		{
-			nanoflann::KNNResultSet<real_t> result(n_neighbors);
+			nanoflann::KNNResultSet<real_t, Eigen::Index> result(n_neighbors);
 			result.init(indices.data(), dists.data());
 			const real_t* query_pt = point_cloud.row(i).data();
 			kd_tree.index_->findNeighbors(result, query_pt);
@@ -201,7 +201,7 @@ namespace lib3dfin
 			real_t              sum_weights = 0.0;
 			for (size_t j = 0; j < n_neighbors; ++j)
 			{
-				weights[j] = std::sqrt(dists[j]) + 1e-8; // nanoflann dist are squared and use epsilon to avoid division by zero
+				weights[j] = 1.0 / std::sqrt(dists[j]) + 1e-8; // nanoflann dist are squared and use epsilon to avoid division by zero
 				sum_weights += weights[j];
 			}
 
@@ -223,6 +223,8 @@ namespace lib3dfin
 	}
 
 	// Template instanciation
+	template PointCloud3<float>     clean_ground<float>(const RefPointCloud<float>& point_cloud, const float resolution, const uint32_t minimum_points);
+	template PointCloud3<double>    clean_ground<double>(const RefPointCloud<double>& point_cloud, const double resolution, const uint32_t minimum_points);
 	template PointCloud3<float>     generate_dtm<float>(const RefPointCloud<float>& point_cloud, float resolution);
 	template PointCloud3<double>    generate_dtm<double>(const RefPointCloud<double>& point_cloud, double resolution);
 	template PointCloud3<float>     clean_cloth<float>(const PointCloud3<float>& cloth);

@@ -9,8 +9,8 @@ namespace lib3dfin
 {
 	template <typename real_t>
 	std::tuple<PointCloud3<real_t>, VecIndex<uint32_t>> voxelize(
-	    const PointCloud3<real_t>& xyz,
-	    const double              res_xy,
-	    const double              res_z,
-	    const bool                verbose);
-}
+	    const RefPointCloud<real_t>& xyz,
+	    const real_t                 res_xy,
+	    const real_t                 res_z,
+	    const bool                   verbose);
+} // namespace lib3dfin
