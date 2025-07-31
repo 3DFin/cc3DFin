@@ -26,9 +26,9 @@ namespace lib3dfin
 	template <typename real_t>
 	PointCloud3<real_t> clean_ground(const RefPointCloud<real_t>& point_cloud, const real_t resolution, const uint32_t minimum_points)
 	{
-		auto [voxel_cloud, cloud_to_vox] = voxelize(point_cloud, resolution, resolution, true);
-		// eps = res_ground * math.sqrt(3) + 1e-6
-		auto cluster_labels = connected_components(RefPointCloud<real_t>(voxel_cloud), real_t(resolution * std::sqrt(real_t(3)) + 1e-6), minimum_points);
+		const auto [voxel_cloud, cloud_to_vox] = voxelize(point_cloud, resolution, resolution, true);
+
+		const auto cluster_labels = connected_components(RefPointCloud<real_t>(voxel_cloud), real_t(resolution * std::sqrt(real_t(3)) + 1e-6), minimum_points);
 
 		// Count occurrences of each cluster label
 		std::unordered_map<int32_t, uint32_t> label_counts;
@@ -49,11 +49,14 @@ namespace lib3dfin
 		}
 
 		std::vector<Eigen::Index> valid_indices;
-		// hint to avoid to small allocation
+
+		// hint to avoid too small allocation
+		// TODO: maybe prefer a mask (more efficient but uses more memory...)
 		valid_indices.reserve(large_clusters.size());
 		for (Eigen::Index point_id = 0; point_id < point_cloud.rows(); ++point_id)
 		{
-			if (large_clusters.count(cluster_labels[cloud_to_vox(point_id)]))
+		    const auto& voxel_id = cloud_to_vox(point_id);
+			if (large_clusters.count(cluster_labels[voxel_id]))
 			{
 				valid_indices.push_back(point_id);
 			}
@@ -150,12 +153,12 @@ namespace lib3dfin
 		const real_t mad = abs_devs_copy[half_n_points];
 
 		// Filter points
-		// TODO parallelize, and do not allocate valid_indices?
+		// TODO parallelize, and does not allocate valid_indices?
 		std::vector<Eigen::Index> valid_indices;
 		valid_indices.reserve(n_points); // this should not be too far...
 		for (Eigen::Index i = 0; i < n_points; ++i)
 		{
-			if (abs_devs[i] <= mad_factor * mad)
+			if (abs_devs[i] < mad_factor * mad)
 			{
 				valid_indices.push_back(i);
 			}
