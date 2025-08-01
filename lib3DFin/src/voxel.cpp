@@ -1,20 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
-#include <taskflow/taskflow.hpp>
-#include <voxel.hpp>
-
-
-#include <taskflow/taskflow.hpp>
 #include <taskflow/algorithm/for_each.hpp>
 #include <taskflow/algorithm/scan.hpp>
 #include <taskflow/algorithm/sort.hpp>
 #include <taskflow/algorithm/transform.hpp>
+#include <taskflow/taskflow.hpp>
+#include <voxel.hpp>
 
 namespace lib3dfin
 {
 
-   	template <typename real_t>
+	template <typename real_t>
 	std::tuple<PointCloud3<real_t>, VecIndex<uint32_t>> voxelize(
 	    const RefPointCloud<real_t>& xyz,
 	    const real_t                 res_xy,
@@ -30,7 +27,7 @@ namespace lib3dfin
 		const auto start_total = std::chrono::high_resolution_clock::now();
 
 		if (verbose)
-			std::cout << "-Voxelization\n Voxel resolution: " << res_xy <<  " x " << res_xy <<  " x " << res_z <<  " m" << std::endl;
+			std::cout << "-Voxelization\n Voxel resolution: " << res_xy << " x " << res_xy << " x " << res_z << " m" << std::endl;
 
 		tf::Executor executor;
 		tf::Taskflow tf;

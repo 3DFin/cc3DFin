@@ -20,15 +20,18 @@
 #include "cc3DFinDlg.h"
 #include "ccHObject.h"
 #include "ccHObjectCaster.h"
+#include "ccLog.h"
 #include "ccPointCloud.h"
 
 #include "config.hpp"
+#include "interface.hpp"
 
 // ccCoreLib
 #include <ScalarField.h>
 
 #include <QMainWindow>
 #include <QtGui>
+#include <vector>
 
 cc3DFin::cc3DFin(QObject* parent)
     : QObject(parent)
@@ -102,8 +105,26 @@ void cc3DFin::do3DFinAction()
 			scalarFieldNames.push_back(QString(sf->getName().c_str()));
 	}
 
-	cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
+	pc->placeIteratorAtBeginning();
+	const auto z0_values = lib3dfin::process(&(pc->getNextPoint()->u[0]), static_cast<size_t>(pc->size()));
 
-	tdfDlg.exec();
+	auto sf_id = pc->addScalarField("z0_test");
+	ccLog::Print(QString(sf_id));
+
+	auto* sf = pc->getScalarField(sf_id);
+
+	size_t count = 0;
+	for(float z0_value: z0_values)
+	{
+	    sf->setLocalValue(count++, z0_value);
+	}
+
+	sf->computeMinAndMax();
+	ccLog::Print("3DFin done !");
+	pc->setCurrentDisplayedScalarField(sf_id);
+	//cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
+
+	//tdfDlg.exec();
+
 	QApplication::processEvents();
 }
