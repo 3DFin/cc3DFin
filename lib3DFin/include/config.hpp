@@ -51,10 +51,10 @@ namespace lib3dfin
 		uint32_t minimum_number_sectors       = 9; // m_number_sectors
 		double   circle_width                 = 0.02;
 
-		// Ground
-		double cloth_resolution      = 0.45; // basic / res_cloth // changed from 0.7 to 0.45
-		double res_ground            = 0.15;
-		double minimum_points_ground = 2;
+		// Height Normalization
+		double   cloth_resolution       = 0.45; // basic / res_cloth // changed from 0.7 to 0.45
+		double   denoise_resolution     = 0.15; // res_ground
+		uint32_t denoise_minimum_points = 2;    // minimum_points_ground
 
 		// draw
 		double draw_circle_sampling     = 200;  // circa;
@@ -65,7 +65,7 @@ namespace lib3dfin
 		// miscs
 		// z0_name; z0 should be computed externally.
 		bool do_normalize = true;
-		bool do_clean     = true;
+		bool do_denoise     = true;
 		bool export_txt   = true;
 	};
 } // namespace lib3dfin

@@ -387,7 +387,7 @@ namespace tdf
 	        false,
 	    },
 	    {
-	        "do_clean",
+	        "do_denoise",
 	        "Clean noise on DTM",
 	        "If it is expected to be noise below ground level (or if you know "
 	        "that there is noise), a denoising step will be added before "
