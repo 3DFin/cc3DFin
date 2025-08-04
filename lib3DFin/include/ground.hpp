@@ -33,5 +33,7 @@ namespace lib3dfin
 		const RefPointCloud<real_t>& point_cloud_;
 		Parameters                   params_;
 		PointCloud3<real_t>          dtm_;
+
 	};
+
 } // namespace lib3dfin

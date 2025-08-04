@@ -5,4 +5,6 @@ target_sources(${PROJECT_NAME}
         voxel.cpp
         connected_components.cpp
         ground.cpp
+        stripe.cpp
+        interface.cpp
 )

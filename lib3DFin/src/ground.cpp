@@ -112,6 +112,11 @@ namespace lib3dfin
 			++label_counts[cluster_labels[id_vox]];
 		}
 
+		if (label_counts.size() == 1 && label_counts.count(-1))
+		{
+			throw std::runtime_error("No valid clusters found.");
+		}
+
 		// Identify large clusters (label ≠ -1 and count > min_points)
 		// uint32_t because we
 		std::set<uint32_t> large_clusters;
@@ -126,7 +131,7 @@ namespace lib3dfin
 		std::vector<Eigen::Index> valid_indices;
 
 		// hint to avoid too small allocation
-		// TODO: maybe prefer a mask (more efficient but uses more memory...)
+		// TODO: maybe prefer a mask (more efficient - less allocations - but uses more memory...)
 		valid_indices.reserve(large_clusters.size());
 		for (Eigen::Index point_id = 0; point_id < point_cloud_.rows(); ++point_id)
 		{
