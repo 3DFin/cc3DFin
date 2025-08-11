@@ -13,6 +13,7 @@
 #include <nanoflann.hpp>
 
 // taskflow
+#include <taskflow/algorithm/for_each.hpp>
 #include <taskflow/taskflow.hpp>
 
 // std lib
@@ -21,6 +22,24 @@
 
 namespace lib3dfin
 {
+
+	template <typename real_t>
+	PointCloud3<real_t> filter_stripe(const RefPointCloud<real_t>& point_cloud, const Eigen::VectorX<real_t>& z0, real_t stripe_lower_limit, real_t stripe_upper_limit)
+	{
+		Eigen::Array<bool, Eigen::Dynamic, 1> height_mask = z0.array() > stripe_lower_limit && z0.array() < stripe_upper_limit;
+		Eigen::Index                          mask_count  = height_mask.count();
+		PointCloud3<real_t>                   stripe(mask_count, 3);
+
+		Eigen::Index stripe_id = 0;
+		for (Eigen::Index point_id = 0; point_id < point_cloud.rows(); ++point_id)
+		{
+			if (height_mask(point_id))
+			{
+				stripe.row(stripe_id++) = point_cloud.row(point_id);
+			}
+		}
+		return stripe;
+	}
 
 	template <typename real_t>
 	real_t adhoc_verticality(const PointCloud3<real_t>& cloud)
@@ -40,9 +59,7 @@ namespace lib3dfin
 	template <typename real_t>
 	Eigen::VectorX<real_t> compute_verticality_feature(const PointCloud3<real_t>& stripe, real_t scale)
 	{
-		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<const PointCloud3<real_t>, 3, nanoflann::metric_L2_Simple>;
-		// TODO: where knn < num of points
-
+		using kd_tree_t            = nanoflann::KDTreeEigenMatrixAdaptor<const PointCloud3<real_t>, 3, nanoflann::metric_L2_Simple>;
 		const size_t       max_knn = 50000;
 		kd_tree_t          kd_tree(3, stripe, 10, 0);
 		const Eigen::Index n_points         = stripe.rows();
@@ -111,7 +128,7 @@ namespace lib3dfin
 		}
 
 		PointCloud3<real_t> vox_filtered_stripe(valid_vox_indices.size(), 3);
-		for (size_t i = 0; i < vox_filtered_stripe.size(); ++i)
+		for (size_t i = 0; i < valid_vox_indices.size(); ++i)
 		{
 			vox_filtered_stripe.row(i) = voxelated_stripe.row(valid_vox_indices[i]);
 		}
@@ -191,11 +208,16 @@ namespace lib3dfin
 	template <typename real_t>
 	void verticality_clustering(const PointCloud3<real_t>& stripe, real_t scale, real_t vert_threshold, uint32_t n_points, real_t resolution_xy, real_t resolution_z, uint32_t n_iter)
 	{
+		PointCloud3<real_t> ref_stripe = stripe; // TODO avoid copy
 		for (uint32_t iter = 0; iter < n_iter; ++iter)
 		{
-			one_iter_vert_clustering(stripe, scale, vert_threshold, n_points, resolution_xy, resolution_z);
+			ref_stripe = one_iter_vert_clustering(ref_stripe, scale, vert_threshold, n_points, resolution_xy, resolution_z);
 		}
 	}
 
-	template void verticality_clustering<float>(const PointCloud3<float>& stripe, float scale, float vert_threshold, uint32_t n_points, float resolution_xy, float resolution_z, uint32_t n_iter);
+	template PointCloud3<float>  filter_stripe(const RefPointCloud<float>& point_cloud, const Eigen::VectorX<float>& z0, float stripe_lower_limit, float stripe_upper_limit);
+	template PointCloud3<double> filter_stripe(const RefPointCloud<double>& point_cloud, const Eigen::VectorX<double>& z0, double stripe_lower_limit, double stripe_upper_limit);
+	template void                verticality_clustering<float>(const PointCloud3<float>& stripe, float scale, float vert_threshold, uint32_t n_points, float resolution_xy, float resolution_z, uint32_t n_iter);
+	template void                verticality_clustering<double>(const PointCloud3<double>& stripe, double scale, double vert_threshold, uint32_t n_points, double resolution_xy, double resolution_z, uint32_t n_iter);
+
 } // namespace lib3dfin

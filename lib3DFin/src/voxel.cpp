@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
+
+#include "voxel.hpp"
+
 #include <taskflow/algorithm/for_each.hpp>
 #include <taskflow/algorithm/scan.hpp>
 #include <taskflow/algorithm/sort.hpp>
 #include <taskflow/algorithm/transform.hpp>
 #include <taskflow/taskflow.hpp>
-#include <voxel.hpp>
 
 namespace lib3dfin
 {

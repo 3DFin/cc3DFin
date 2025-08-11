@@ -9,7 +9,7 @@ namespace lib3dfin
 {
 
 	// WIP. comment show original variable names (in dendromatics) if we changed the name
-	struct params
+	struct Params
 	{
 		double stripe_upper_limit           = 3.5; // upper_limit
 		double stripe_lower_limit           = 0.7; // lower_limit
