@@ -106,40 +106,38 @@ namespace lib3dfin
 		std::cout << " -Computing verticality..." << std::endl;
 
 		// Voxelate
-		const auto [voxelated_stripe, cloud_to_vox] = voxelize(RefPointCloud<real_t>(stripe), resolution_xy, resolution_z, false);
+		const auto [voxelated_stripe, cloud_to_vox] = voxelize(RefPointCloud<real_t>(stripe), resolution_xy, resolution_z, true);
 
 		// Compute verticality feature
-		Eigen::VectorX<real_t> vert_values = compute_verticality_feature(voxelated_stripe, scale);
+		Eigen::VectorX<real_t>                vert_values     = compute_verticality_feature(voxelated_stripe, scale);
+		Eigen::Array<bool, Eigen::Dynamic, 1> valid_vox_mask  = vert_values.array() > vert_threshold;
+		auto                                  valid_vox_count = valid_vox_mask.count();
 
-		// Filter by verticality
-		// TODO: maybe prefer a mask (more efficient - less allocations -  but uses more memory...)
-		std::vector<Eigen::Index> valid_vox_indices;
-		for (Eigen::Index vox_id = 0; vox_id < voxelated_stripe.rows(); ++vox_id)
+		if (!valid_vox_count)
 		{
-			if (vert_values(vox_id) > vert_threshold)
+			throw std::runtime_error("No vertical clusters found. Try to decrease threshold or voxel size.");
+			// TODO catch this in the GUI
+		}
+		PointCloud3<real_t> vox_filtered_stripe(valid_vox_count, 3);
+		VecIndex<uint32_t>  original_vox_mapping(voxelated_stripe.rows());
+		original_vox_mapping.setConstant(0);
+
+		Eigen::Index filtered_voxel_id = 0;
+		for (Eigen::Index voxel_id = 0; voxel_id < voxelated_stripe.rows(); ++voxel_id)
+		{
+			if (valid_vox_mask(voxel_id))
 			{
-				valid_vox_indices.push_back(vox_id);
+				original_vox_mapping(voxel_id)               = filtered_voxel_id;
+				vox_filtered_stripe.row(filtered_voxel_id++) = voxelated_stripe.row(voxel_id);
 			}
 		}
 
-		if (valid_vox_indices.empty())
-		{
-			throw std::runtime_error("No vertical clusters found. Try to decrease threshold or voxel size.");
-		}
-
-		PointCloud3<real_t> vox_filtered_stripe(valid_vox_indices.size(), 3);
-		for (size_t i = 0; i < valid_vox_indices.size(); ++i)
-		{
-			vox_filtered_stripe.row(i) = voxelated_stripe.row(valid_vox_indices[i]);
-		}
+		std::cout << "filtered point cloud : " << valid_vox_count << std::endl;
 
 		auto t_mid = high_resolution_clock::now();
 		std::cout << "   " << duration<double>(t_mid - t_start).count() << " s" << std::endl;
 
 		std::cout << " -Clustering..." << std::endl;
-
-		// Unlike the original algorithm, we do not perform a potentially unnecessary re-voxelization
-		// of the filtered and remapped voxel stripe cloud. Instead, we cluster directly the filtered voxelated cloud.
 
 		real_t            eps            = resolution_xy * std::sqrt(3.0) + 1e-6;
 		VecIndex<int32_t> cluster_labels = connected_components(RefPointCloud<real_t>(vox_filtered_stripe), eps, 2);
@@ -147,9 +145,9 @@ namespace lib3dfin
 		// TODO factorise this with the ground.hpp equivalent
 		//  Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
-		for (const auto id_vox : cloud_to_vox)
+		for (size_t filtered_voxel_id = 0; filtered_voxel_id < valid_vox_count; ++filtered_voxel_id)
 		{
-			++label_counts[cluster_labels[id_vox]];
+			++label_counts[cluster_labels[filtered_voxel_id]];
 		}
 
 		if (label_counts.size() == 1 && label_counts.count(-1))
@@ -183,8 +181,14 @@ namespace lib3dfin
 		valid_indices.reserve(large_clusters.size());
 		for (Eigen::Index point_id = 0; point_id < stripe.rows(); ++point_id)
 		{
-			const auto& voxel_id = cloud_to_vox(point_id);
-			if (large_clusters.count(cluster_labels[voxel_id]))
+			auto voxel_id = cloud_to_vox(point_id);
+
+			if (!valid_vox_mask(voxel_id))
+				continue;
+
+			auto filtered_voxel_id = original_vox_mapping(voxel_id);
+			auto cluster_id        = cluster_labels[filtered_voxel_id];
+			if (cluster_id > -1 && large_clusters.count(cluster_id))
 			{
 				valid_indices.push_back(point_id);
 			}
@@ -201,6 +205,7 @@ namespace lib3dfin
 
 		std::cout << "   " << total_time << " s per iteration" << std::endl;
 		std::cout << "   " << large_clusters.size() << " clusters" << std::endl;
+		std::cout << "   " << clust_stripe_cloud.rows() << " points" << std::endl;
 
 		return clust_stripe_cloud;
 	}

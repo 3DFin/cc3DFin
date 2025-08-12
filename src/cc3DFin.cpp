@@ -17,20 +17,19 @@
 
 #include "cc3DFin.h"
 
+#include "CCGeom.h"
 #include "cc3DFinDlg.h"
 #include "ccHObject.h"
 #include "ccHObjectCaster.h"
 #include "ccLog.h"
 #include "ccPointCloud.h"
-
 #include "config.hpp"
 #include "interface.hpp"
 
 // ccCoreLib
-#include <ScalarField.h>
-
 #include <QMainWindow>
 #include <QtGui>
+#include <ScalarField.h>
 #include <vector>
 
 cc3DFin::cc3DFin(QObject* parent)
@@ -106,25 +105,22 @@ void cc3DFin::do3DFinAction()
 	}
 
 	pc->placeIteratorAtBeginning();
-	const auto z0_values = lib3dfin::process(&(pc->getNextPoint()->u[0]), static_cast<size_t>(pc->size()));
+	const auto stripe = lib3dfin::process(&(pc->getNextPoint()->u[0]), static_cast<size_t>(pc->size()));
 
-	auto sf_id = pc->addScalarField("z0_test");
-	ccLog::Print(QString(sf_id));
+	ccPointCloud * stripe_pc = new ccPointCloud;
+	//stripe_pc->reserve(stripe.size() / 3);
 
-	auto* sf = pc->getScalarField(sf_id);
-
-	size_t count = 0;
-	for(float z0_value: z0_values)
+	for (size_t point_id = 0; point_id < stripe.size() / 3; ++point_id)
 	{
-	    sf->setLocalValue(count++, z0_value);
+		auto id = point_id * 3;
+		stripe_pc->addPoint(CCVector3(stripe[id], stripe[id + 1], stripe[id + 2]));
 	}
 
-	sf->computeMinAndMax();
+	m_app->addToDB(stripe_pc);
 	ccLog::Print("3DFin done !");
-	pc->setCurrentDisplayedScalarField(sf_id);
-	//cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
+	// cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
-	//tdfDlg.exec();
+	// tdfDlg.exec();
 
 	QApplication::processEvents();
 }
