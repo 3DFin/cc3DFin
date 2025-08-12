@@ -51,8 +51,9 @@ namespace lib3dfin
 		// Compute the eigenvalues and eigenvectors of the covariance
 		Eigen::SelfAdjointEigenSolver<Eigen::Matrix<real_t, 3, 3>> es(cov);
 
-		// third eigen vector is the normal vector. its third component is the z component
-		real_t normal_z_component = es.eigenvectors().col(2)(2);
+		// eigenvalues are sorted by increasing order so
+		// first eigen vector is the normal vector. its third component is the z component
+		real_t normal_z_component = es.eigenvectors().col(0)(2);
 		return real_t(1.0) - std::abs(normal_z_component);
 	}
 
@@ -108,46 +109,51 @@ namespace lib3dfin
 		// Voxelate
 		const auto [voxelated_stripe, cloud_to_vox] = voxelize(RefPointCloud<real_t>(stripe), resolution_xy, resolution_z, true);
 
-		// Compute verticality feature
-		Eigen::VectorX<real_t>                vert_values     = compute_verticality_feature(voxelated_stripe, scale);
-		Eigen::Array<bool, Eigen::Dynamic, 1> valid_vox_mask  = vert_values.array() > vert_threshold;
-		auto                                  valid_vox_count = valid_vox_mask.count();
+		auto num_voxels = voxelated_stripe.rows();
 
-		if (!valid_vox_count)
+		// Compute verticality feature
+		Eigen::VectorX<real_t>                vert_values      = compute_verticality_feature(voxelated_stripe, scale);
+		Eigen::Array<bool, Eigen::Dynamic, 1> valid_vox_mask   = vert_values.array() > vert_threshold;
+		auto                                  num_valid_voxels = valid_vox_mask.count();
+
+		if (!num_valid_voxels)
 		{
 			throw std::runtime_error("No vertical clusters found. Try to decrease threshold or voxel size.");
 			// TODO catch this in the GUI
 		}
-		PointCloud3<real_t> vox_filtered_stripe(valid_vox_count, 3);
-		VecIndex<uint32_t>  original_vox_mapping(voxelated_stripe.rows());
-		original_vox_mapping.setConstant(0);
+
+		PointCloud3<real_t> vox_filtered_stripe(num_valid_voxels, 3);
+		VecIndex<uint32_t>  vox_to_filtered_vox(num_voxels);
+		vox_to_filtered_vox.setConstant(0); // invalid will remains 0
 
 		Eigen::Index filtered_voxel_id = 0;
 		for (Eigen::Index voxel_id = 0; voxel_id < voxelated_stripe.rows(); ++voxel_id)
 		{
 			if (valid_vox_mask(voxel_id))
 			{
-				original_vox_mapping(voxel_id)               = filtered_voxel_id;
+				vox_to_filtered_vox(voxel_id)                = filtered_voxel_id;
 				vox_filtered_stripe.row(filtered_voxel_id++) = voxelated_stripe.row(voxel_id);
 			}
 		}
 
-		std::cout << "filtered point cloud : " << valid_vox_count << std::endl;
+		std::cout << "filtered voxel number : " << num_valid_voxels << std::endl;
 
 		auto t_mid = high_resolution_clock::now();
 		std::cout << "   " << duration<double>(t_mid - t_start).count() << " s" << std::endl;
 
 		std::cout << " -Clustering..." << std::endl;
 
+		// TODO, this do not handle anisotropy in the voxelization...
+		//  this already the case in the original implementation..
 		real_t            eps            = resolution_xy * std::sqrt(3.0) + 1e-6;
 		VecIndex<int32_t> cluster_labels = connected_components(RefPointCloud<real_t>(vox_filtered_stripe), eps, 2);
 
 		// TODO factorise this with the ground.hpp equivalent
 		//  Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
-		for (size_t filtered_voxel_id = 0; filtered_voxel_id < valid_vox_count; ++filtered_voxel_id)
+		for (size_t filtered_voxel_id = 0; filtered_voxel_id < num_valid_voxels; ++filtered_voxel_id)
 		{
-			++label_counts[cluster_labels[filtered_voxel_id]];
+			++label_counts[cluster_labels(filtered_voxel_id)];
 		}
 
 		if (label_counts.size() == 1 && label_counts.count(-1))
@@ -186,7 +192,7 @@ namespace lib3dfin
 			if (!valid_vox_mask(voxel_id))
 				continue;
 
-			auto filtered_voxel_id = original_vox_mapping(voxel_id);
+			auto filtered_voxel_id = vox_to_filtered_vox(voxel_id);
 			auto cluster_id        = cluster_labels[filtered_voxel_id];
 			if (cluster_id > -1 && large_clusters.count(cluster_id))
 			{
@@ -203,7 +209,6 @@ namespace lib3dfin
 		auto   t_end      = high_resolution_clock::now();
 		double total_time = duration<double>(t_end - t_start).count();
 
-		std::cout << "   " << total_time << " s per iteration" << std::endl;
 		std::cout << "   " << large_clusters.size() << " clusters" << std::endl;
 		std::cout << "   " << clust_stripe_cloud.rows() << " points" << std::endl;
 
