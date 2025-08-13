@@ -102,7 +102,6 @@ namespace lib3dfin
 	{
 		const auto [voxel_cloud, cloud_to_vox] = voxelize(point_cloud_, params_.denoise_resolution, params_.denoise_resolution, true);
 
-
 		const auto cluster_labels = connected_components(RefPointCloud<real_t>(voxel_cloud), real_t(params_.denoise_resolution * std::sqrt(real_t(3)) + 1e-6), params_.denoise_minimum_points);
 
 		// Count occurrences of each cluster label
@@ -172,13 +171,13 @@ namespace lib3dfin
 
 		const auto  cloth     = csf.runClothSimulation();
 		const auto& particles = cloth.getParticles();
-		dtm_                   = PointCloud3<real_t>(particles.size(), 3);
+		dtm_                  = PointCloud3<real_t>(particles.size(), 3);
 		for (size_t particle_id = 0; particle_id < particles.size(); ++particle_id)
 		{
 			const auto& particle = particles[particle_id];
-			dtm_(particle_id, 0)  = static_cast<real_t>(particle.initial_pos.f[0]);
-			dtm_(particle_id, 1)  = static_cast<real_t>(particle.initial_pos.f[2]);
-			dtm_(particle_id, 2)  = static_cast<real_t>(-particles[particle_id].height);
+			dtm_(particle_id, 0) = static_cast<real_t>(particle.initial_pos.f[0]);
+			dtm_(particle_id, 1) = static_cast<real_t>(particle.initial_pos.f[2]);
+			dtm_(particle_id, 2) = static_cast<real_t>(-particles[particle_id].height);
 		}
 	}
 
@@ -189,6 +188,7 @@ namespace lib3dfin
 		const size_t n_neighbors = 15;
 
 		if (n_points < n_neighbors)
+			// TODO catch this in the GUI
 			throw std::runtime_error("Input DTM too small (less than 15 points).");
 
 		if (n_points == n_neighbors)

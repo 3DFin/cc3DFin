@@ -33,11 +33,11 @@ namespace lib3dfin
 		PointCloud3<real_t> filter_stripe();
 		PointCloud3<real_t> verticality_clustering(const PointCloud3<real_t>& stripe);
 
-
 	  private: // members
 		const RefPointCloud<real_t>&  point_cloud_;
 		const Eigen::VectorX<real_t>& z0;
-		const Parameters                    params_;
+		const Parameters              params_;
+		double total_time_ = 0.0;
 	};
 
 } // namespace lib3dfin

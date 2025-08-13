@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
-#include "stripe.hpp"
+#include "peeling.hpp"
 
 #include "connected_components.hpp"
 #include "types.hpp"
@@ -38,6 +38,8 @@ namespace lib3dfin
 	PointCloud3<real_t> TreePeeler<real_t>::peel()
 	{
 		std::cout << "[TreePeeler] Starting peeling process..." << std::endl;
+		// reset total time
+		total_time_ = 0.0;
 
 		// Get the Initial stripe
 		auto stripe = filter_stripe();
@@ -48,6 +50,8 @@ namespace lib3dfin
 		{
 			ref_stripe = verticality_clustering(ref_stripe);
 		}
+		std::cout << "[TreePeeler] total time: " << total_time_ << std::endl;
+
 		return ref_stripe;
 	}
 
@@ -130,8 +134,7 @@ namespace lib3dfin
 	template <typename real_t>
 	PointCloud3<real_t> TreePeeler<real_t>::verticality_clustering(const PointCloud3<real_t>& stripe)
 	{
-		using namespace std::chrono;
-		auto t_start = high_resolution_clock::now();
+		auto t_start = std::chrono::high_resolution_clock::now();
 		std::cout << " -Computing verticality..." << std::endl;
 
 		// Voxelate
@@ -166,8 +169,8 @@ namespace lib3dfin
 
 		std::cout << "filtered voxel number : " << num_valid_voxels << std::endl;
 
-		auto t_mid = high_resolution_clock::now();
-		std::cout << "   " << duration<double>(t_mid - t_start).count() << " s" << std::endl;
+		auto t_mid = std::chrono::high_resolution_clock::now();
+		std::cout << "   " << std::chrono::duration<double>(t_mid - t_start).count() << " s" << std::endl;
 
 		std::cout << " -Clustering..." << std::endl;
 
@@ -176,7 +179,6 @@ namespace lib3dfin
 		real_t            eps            = params_.resolution_xy * std::sqrt(3.0) + 1e-6;
 		VecIndex<int32_t> cluster_labels = connected_components(RefPointCloud<real_t>(vox_filtered_stripe), eps, 2);
 
-		// TODO factorise this with the ground.hpp equivalent
 		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
 		for (size_t filtered_voxel_id = 0; filtered_voxel_id < num_valid_voxels; ++filtered_voxel_id)
@@ -189,8 +191,8 @@ namespace lib3dfin
 			throw std::runtime_error("No valid clusters found.");
 		}
 
-		auto start_post = high_resolution_clock::now();
-		std::cout << "   " << duration<double>(start_post - t_mid).count() << " s" << std::endl;
+		auto start_post = std::chrono::high_resolution_clock::now();
+		std::cout << "   " << std::chrono::duration<double>(start_post - t_mid).count() << " s" << std::endl;
 		std::cout << " -Extracting 'candidate' stems..." << std::endl;
 
 		// Find large clusters
@@ -209,7 +211,7 @@ namespace lib3dfin
 			// TODO catch this in the GUI
 		}
 
-		// Filter cloud by valid clusters
+		// Filter cloud by valid clusters (it could be parallelized)
 		ArrayMask valid_points_mask(stripe.rows());
 		valid_points_mask.setConstant(false);
 
@@ -222,7 +224,7 @@ namespace lib3dfin
 
 			auto filtered_voxel_id = vox_to_filtered_vox(voxel_id);
 			auto cluster_id        = cluster_labels[filtered_voxel_id];
-			if (cluster_id > -1 && large_clusters.count(cluster_id))
+			if (large_clusters.count(cluster_id))
 			{
 				valid_points_mask(point_id) = true;
 			}
@@ -240,13 +242,12 @@ namespace lib3dfin
 			}
 		}
 
-		auto   t_end      = high_resolution_clock::now();
-		double total_time = duration<double>(t_end - t_start).count();
+		auto   t_end          = std::chrono::high_resolution_clock::now();
+		double iteration_time = std::chrono::duration<double>(t_end - t_start).count();
 
-		std::cout << "   " << large_clusters.size() << " clusters" << std::endl;
-		std::cout << "   " << peeled_cloud.rows() << " points" << std::endl;
-		std::cout << "   iteration took " << total_time << std::endl;
-
+		std::cout << "   " << large_clusters.size() << " clusters (" << peeled_cloud.rows() << " points)" << std::endl;
+		std::cout << "   iteration took " << iteration_time << std::endl;
+		total_time_ += iteration_time;
 		return peeled_cloud;
 	}
 
