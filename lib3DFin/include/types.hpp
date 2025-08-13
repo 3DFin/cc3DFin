@@ -23,6 +23,7 @@ namespace lib3dfin
 
 	using ArrayMask = Eigen::Array<bool, Eigen::Dynamic, 1>;
 
+	using ArrayClusterIndicator = Eigen::Array<int32_t, Eigen::Dynamic, 1>;
 
 	template <typename int_t>
 	using VecIndex = Eigen::Vector<int_t, Eigen::Dynamic>;

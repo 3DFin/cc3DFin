@@ -30,8 +30,8 @@ namespace lib3dfin
 		PointCloud3<real_t> peel();
 
 	  private: // methods
-		PointCloud3<real_t> filter_stripe();
-		PointCloud3<real_t> verticality_clustering(const PointCloud3<real_t>& stripe);
+		ArrayClusterIndicator filter_stripe();
+		ArrayClusterIndicator verticality_clustering(const ArrayClusterIndicator& stripe);
 
 	  private: // members
 		const RefPointCloud<real_t>&  point_cloud_;
