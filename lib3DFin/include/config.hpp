@@ -11,9 +11,6 @@ namespace lib3dfin
 	// WIP. comment show original variable names (in dendromatics) if we changed the name
 	struct Params
 	{
-		double stripe_upper_limit           = 3.5; // upper_limit
-		double stripe_lower_limit           = 0.7; // lower_limit
-		double peeling_number_of_iterations = 3.5; // number_of_iterations
 
 		// advanced
 		double stem_maximum_diameter = 1.0; // maximum_diameter
@@ -22,14 +19,6 @@ namespace lib3dfin
 		double maximum_height        = 25.0;
 		double section_length        = 0.2;  // section_len
 		double section_width         = 0.05; // section_wid
-
-		// expert
-		double   res_xy_stripe                = 0.02;
-		double   res_z_stripe                 = 0.02;
-		uint32_t number_of_points_stripe      = 1000; // number_of_points
-		double   verticality_scale_stripe     = 0.1;
-		double   verticality_threshold_stripe = 0.7; // verticality_thresh_stripe
-		double   height_range_stripe          = 0.7; // height_range
 
 		double   res_xy_stem             = 0.035; // res_xy
 		double   res_z_stem              = 0.035; // res_z
@@ -56,6 +45,20 @@ namespace lib3dfin
 		double   denoise_resolution     = 0.15; // res_ground
 		uint32_t denoise_minimum_points = 2;    // minimum_points_ground
 
+		// stripe
+		double stripe_upper_limit           = 3.5; // upper_limit
+		double stripe_lower_limit           = 0.7; // lower_limit
+		double peeling_number_of_iterations = 2;   // number_of_iterations
+		// stripe advanced
+		double   res_xy_stripe                = 0.02;
+		double   res_z_stripe                 = 0.02;
+		uint32_t number_of_points_stripe      = 1000; // number_of_points
+		double   verticality_scale_stripe     = 0.1;
+		double   verticality_threshold_stripe = 0.7; // verticality_thresh_stripe
+
+		// Indiv
+		double height_range = 0.7; // height_range
+
 		// draw
 		double draw_circle_sampling     = 200;  // circa;
 		double draw_axis_point_interval = 0.01; // p_interval
@@ -65,7 +68,7 @@ namespace lib3dfin
 		// miscs
 		// z0_name; z0 should be computed externally.
 		bool do_normalize = true;
-		bool do_denoise     = true;
+		bool do_denoise   = true;
 		bool export_txt   = true;
 	};
 } // namespace lib3dfin

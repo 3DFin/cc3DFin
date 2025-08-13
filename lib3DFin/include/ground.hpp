@@ -21,7 +21,7 @@ namespace lib3dfin
 		};
 
 	  public:
-		explicit HeightNormalization(const RefPointCloud<real_t>& point_cloud_, HeightNormalization::Parameters params = HeightNormalization::Parameters());
+		explicit HeightNormalization(const RefPointCloud<real_t>& point_cloud, HeightNormalization::Parameters params = HeightNormalization::Parameters());
 		Eigen::VectorX<real_t> normalize();
 
 	  private: // methods
@@ -31,7 +31,7 @@ namespace lib3dfin
 
 	  private: // members
 		const RefPointCloud<real_t>& point_cloud_;
-		Parameters                   params_;
+		const Parameters                   params_;
 		PointCloud3<real_t>          dtm_;
 
 	};
