@@ -21,6 +21,9 @@ namespace lib3dfin
 	template <typename real_t>
 	using Vec3 = Eigen::Vector<real_t, 3>;
 
+	using ArrayMask = Eigen::Array<bool, Eigen::Dynamic, 1>;
+
+
 	template <typename int_t>
 	using VecIndex = Eigen::Vector<int_t, Eigen::Dynamic>;
 

@@ -26,7 +26,7 @@ namespace lib3dfin
 	template <typename real_t>
 	PointCloud3<real_t> filter_stripe(const RefPointCloud<real_t>& point_cloud, const Eigen::VectorX<real_t>& z0, real_t stripe_lower_limit, real_t stripe_upper_limit)
 	{
-		Eigen::Array<bool, Eigen::Dynamic, 1> height_mask = z0.array() > stripe_lower_limit && z0.array() < stripe_upper_limit;
+		ArrayMask height_mask = z0.array() > stripe_lower_limit && z0.array() < stripe_upper_limit;
 		Eigen::Index                          mask_count  = height_mask.count();
 		PointCloud3<real_t>                   stripe(mask_count, 3);
 
@@ -112,9 +112,9 @@ namespace lib3dfin
 		auto num_voxels = voxelated_stripe.rows();
 
 		// Compute verticality feature
-		Eigen::VectorX<real_t>                vert_values      = compute_verticality_feature(voxelated_stripe, scale);
-		Eigen::Array<bool, Eigen::Dynamic, 1> valid_vox_mask   = vert_values.array() > vert_threshold;
-		auto                                  num_valid_voxels = valid_vox_mask.count();
+		Eigen::VectorX<real_t> vert_values      = compute_verticality_feature(voxelated_stripe, scale);
+		ArrayMask              valid_vox_mask   = vert_values.array() > vert_threshold;
+		auto                   num_valid_voxels = valid_vox_mask.count();
 
 		if (!num_valid_voxels)
 		{
@@ -124,7 +124,7 @@ namespace lib3dfin
 
 		PointCloud3<real_t> vox_filtered_stripe(num_valid_voxels, 3);
 		VecIndex<uint32_t>  vox_to_filtered_vox(num_voxels);
-		vox_to_filtered_vox.setConstant(0); // invalid will remains 0
+		vox_to_filtered_vox.setConstant(0); // beware invalid vox will remains 0, we have to check against valid_vox_mask to be sure
 
 		Eigen::Index filtered_voxel_id = 0;
 		for (Eigen::Index voxel_id = 0; voxel_id < voxelated_stripe.rows(); ++voxel_id)
@@ -143,13 +143,13 @@ namespace lib3dfin
 
 		std::cout << " -Clustering..." << std::endl;
 
-		// TODO, this do not handle anisotropy in the voxelization...
-		//  this already the case in the original implementation..
+		// TODO : this does not handle anisotropy in the voxelization...
+		// this already the case in the original implementation...
 		real_t            eps            = resolution_xy * std::sqrt(3.0) + 1e-6;
 		VecIndex<int32_t> cluster_labels = connected_components(RefPointCloud<real_t>(vox_filtered_stripe), eps, 2);
 
 		// TODO factorise this with the ground.hpp equivalent
-		//  Count clusters
+		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
 		for (size_t filtered_voxel_id = 0; filtered_voxel_id < num_valid_voxels; ++filtered_voxel_id)
 		{
@@ -178,13 +178,13 @@ namespace lib3dfin
 		if (large_clusters.empty())
 		{
 			throw std::runtime_error("Clusters found, but all are too small to be considered stems.");
+			// TODO catch this in the GUI
 		}
 
 		// Filter cloud by valid clusters
-		std::vector<Eigen::Index> valid_indices;
-		// hint to avoid too small allocation
-		// TODO: maybe prefer a mask (more efficient - less allocations - but uses more memory...)
-		valid_indices.reserve(large_clusters.size());
+		ArrayMask valid_points_mask(stripe.rows());
+		valid_points_mask.setConstant(false);
+
 		for (Eigen::Index point_id = 0; point_id < stripe.rows(); ++point_id)
 		{
 			auto voxel_id = cloud_to_vox(point_id);
@@ -196,23 +196,30 @@ namespace lib3dfin
 			auto cluster_id        = cluster_labels[filtered_voxel_id];
 			if (cluster_id > -1 && large_clusters.count(cluster_id))
 			{
-				valid_indices.push_back(point_id);
+				valid_points_mask(point_id) = true;
 			}
 		}
 
-		PointCloud3<real_t> clust_stripe_cloud(valid_indices.size(), 3);
-		for (size_t i = 0; i < valid_indices.size(); ++i)
+		auto                num_valid_points = valid_points_mask.count();
+		PointCloud3<real_t> peeled_cloud(num_valid_points, 3);
+
+		Eigen::Index valid_id = 0;
+		for (Eigen::Index base_id = 0; base_id < stripe.rows(); ++base_id)
 		{
-			clust_stripe_cloud.row(i) = stripe.row(valid_indices[i]);
+			if (valid_points_mask(base_id))
+			{
+				peeled_cloud.row(valid_id++) = stripe.row(base_id);
+			}
 		}
 
 		auto   t_end      = high_resolution_clock::now();
 		double total_time = duration<double>(t_end - t_start).count();
 
 		std::cout << "   " << large_clusters.size() << " clusters" << std::endl;
-		std::cout << "   " << clust_stripe_cloud.rows() << " points" << std::endl;
+		std::cout << "   " << peeled_cloud.rows() << " points" << std::endl;
+		std::cout << "   iteration took " << total_time << std::endl;
 
-		return clust_stripe_cloud;
+		return peeled_cloud;
 	}
 
 	template <typename real_t>
