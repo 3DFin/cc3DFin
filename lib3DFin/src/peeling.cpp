@@ -29,9 +29,11 @@ namespace lib3dfin
 	    const Eigen::VectorX<real_t>& z0_in,
 	    TreePeeler::Parameters        params_in)
 	    : point_cloud_(point_cloud)
+		, num_points_(point_cloud.rows())
 	    , z0(z0_in)
 	    , params_(std::move(params_in))
 	{
+
 	}
 
 	template <typename real_t>
@@ -42,37 +44,26 @@ namespace lib3dfin
 		total_time_ = 0.0;
 
 		// Get the Initial stripe
-		auto stripe_indicator = filter_stripe();
+		auto stripe_indicator = filterStripe();
 
 		// Perform verticality clustering
 		for (uint32_t iter = 0; iter < params_.num_iterations; ++iter)
 		{
-			stripe_indicator = verticality_clustering(stripe_indicator);
+			stripe_indicator = verticalityClustering(stripe_indicator);
 		}
 		std::cout << "[TreePeeler] total time: " << total_time_ << std::endl;
 
 		// filter stripe by cluster indicator
-		auto                num_points_stripe = (stripe_indicator >= 0).count();
-		PointCloud3<real_t> stripe_cloud(num_points_stripe, 3);
-
-		Eigen::Index stripe_id = 0;
-		for (Eigen::Index point_id = 0; point_id < point_cloud_.rows(); ++point_id)
-		{
-			if (stripe_indicator(point_id) >= 0)
-			{
-				stripe_cloud.row(stripe_id) = point_cloud_.row(point_id);
-				stripe_id++;
-			}
-		}
+		auto stripe_cloud = extractStripe(stripe_indicator);
 
 		return stripe_cloud;
 	}
 
 	template <typename real_t>
-	ArrayClusterIndicator TreePeeler<real_t>::filter_stripe()
+	ArrayClusterIndicator TreePeeler<real_t>::filterStripe()
 	{
-		ArrayClusterIndicator stripe_cluster_indicator(point_cloud_.rows());
-		stripe_cluster_indicator.setConstant(-1);
+		ArrayClusterIndicator stripe_cluster_indicator(num_points_);
+		stripe_cluster_indicator.setConstant(NO_CLUSTER_ID);
 		stripe_cluster_indicator = (z0.array() > params_.stripe_lower_limit && z0.array() < params_.stripe_upper_limit).select(0, stripe_cluster_indicator);
 		return stripe_cluster_indicator;
 	}
@@ -136,30 +127,37 @@ namespace lib3dfin
 	}
 
 	template <typename real_t>
-	ArrayClusterIndicator TreePeeler<real_t>::verticality_clustering(const ArrayClusterIndicator& stripe_indicator)
+	PointCloud3<real_t> TreePeeler<real_t>::extractStripe(const ArrayClusterIndicator& stripe_indicator)
 	{
-		auto t_start = std::chrono::high_resolution_clock::now();
-		std::cout << " -Computing verticality..." << std::endl;
-
-		// filter stripe by cluster indicator
-		auto num_points_stripe = (stripe_indicator >= 0).count();
-		std::cout << num_points_stripe << std::endl;
+		const auto num_points_stripe = (stripe_indicator != NO_CLUSTER_ID).count();
 		PointCloud3<real_t> stripe_cloud(num_points_stripe, 3);
 
 		Eigen::Index stripe_id = 0;
-		for (Eigen::Index point_id = 0; point_id < point_cloud_.rows(); ++point_id)
+		for (Eigen::Index point_id = 0; point_id < num_points_; ++point_id)
 		{
-			if (stripe_indicator(point_id) >= 0)
+			if (stripe_indicator(point_id) != NO_CLUSTER_ID)
 			{
 				stripe_cloud.row(stripe_id) = point_cloud_.row(point_id);
 				stripe_id++;
 			}
 		}
+		return stripe_cloud;
+	}
+
+	template <typename real_t>
+	ArrayClusterIndicator TreePeeler<real_t>::verticalityClustering(const ArrayClusterIndicator& stripe_indicator)
+	{
+		auto t_start = std::chrono::high_resolution_clock::now();
+		std::cout << " -Computing verticality..." << std::endl;
+
+		// filter stripe by cluster indicator
+		const auto stripe_cloud = extractStripe(stripe_indicator);
+		const auto num_point_stripe = stripe_cloud.rows();
 
 		// Voxelate stripe cloud
 		const auto [voxelated_stripe, cloud_to_vox] = voxelize(RefPointCloud<real_t>(stripe_cloud), params_.resolution_xy, params_.resolution_z, true);
 
-		auto num_voxels = voxelated_stripe.rows();
+		const auto num_voxels = voxelated_stripe.rows();
 
 		// Compute verticality feature
 		Eigen::VectorX<real_t> vert_values      = compute_verticality_feature(voxelated_stripe, params_.verticality_nn_scale);
@@ -205,7 +203,7 @@ namespace lib3dfin
 			++label_counts[cluster_labels(filtered_voxel_id)];
 		}
 
-		if (label_counts.size() == 1 && label_counts.count(-1))
+		if (label_counts.size() == 1 && label_counts.count(NO_CLUSTER_ID))
 		{
 			throw std::runtime_error("No valid clusters found.");
 		}
@@ -215,10 +213,11 @@ namespace lib3dfin
 		std::cout << " -Extracting 'candidate' stems..." << std::endl;
 
 		// Find large clusters
+		// TODO use an boolean indicator for efficiency
 		std::set<uint32_t> large_clusters;
 		for (const auto& [label, count] : label_counts)
 		{
-			if (label > -1 && count > params_.num_voxels_threshold)
+			if (label != NO_CLUSTER_ID && count > params_.num_voxels_threshold)
 			{
 				large_clusters.insert(label);
 			}
@@ -230,33 +229,24 @@ namespace lib3dfin
 			// TODO catch this in the GUI
 		}
 
-		// Create a new_cluster_indicator
-		ArrayClusterIndicator new_stripe_indicator(point_cloud_.rows());
-		new_stripe_indicator.setConstant(-1);
-
-		// iterate cluster indicator
-		stripe_id = 0;
-		for (Eigen::Index base_id = 0; base_id < point_cloud_.rows(); ++base_id)
+		// Create a new_cluster_indicator and extract it.
+		ArrayClusterIndicator new_stripe_indicator(num_points_);
+		new_stripe_indicator.setConstant(NO_CLUSTER_ID);
+		Eigen::Index stripe_id = 0;
+		for (Eigen::Index base_id = 0; base_id < num_points_; ++base_id)
 		{
-			if (stripe_indicator(base_id) > -1)
-			{
+			if (stripe_indicator(base_id) == NO_CLUSTER_ID)
+				continue;
 
-				auto voxel_id = cloud_to_vox(stripe_id);
+			auto voxel_id = cloud_to_vox(stripe_id++);
+			if (!valid_vox_mask(voxel_id))
+				continue;
 
-				if (!valid_vox_mask(voxel_id))
-				{
-					stripe_id++;
-					continue;
-				}
+			auto filtered_voxel_id = vox_to_filtered_vox(voxel_id);
+			auto cluster_id        = cluster_labels[filtered_voxel_id];
 
-				auto filtered_voxel_id = vox_to_filtered_vox(voxel_id);
-				auto cluster_id        = cluster_labels[filtered_voxel_id];
-				if (large_clusters.count(cluster_id))
-				{
-					new_stripe_indicator(base_id) = cluster_id;
-				}
-				stripe_id++;
-			}
+			if (large_clusters.count(cluster_id))
+				new_stripe_indicator(base_id) = cluster_id;
 		}
 
 		auto   t_end          = std::chrono::high_resolution_clock::now();

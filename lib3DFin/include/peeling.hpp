@@ -5,6 +5,7 @@
 
 #include "types.hpp"
 
+#include <Eigen/src/Core/util/Meta.h>
 #include <cstdint>
 
 namespace lib3dfin
@@ -30,14 +31,16 @@ namespace lib3dfin
 		PointCloud3<real_t> peel();
 
 	  private: // methods
-		ArrayClusterIndicator filter_stripe();
-		ArrayClusterIndicator verticality_clustering(const ArrayClusterIndicator& stripe);
+		ArrayClusterIndicator filterStripe();
+		PointCloud3<real_t>   extractStripe(const ArrayClusterIndicator& stripe_indicator);
+		ArrayClusterIndicator verticalityClustering(const ArrayClusterIndicator& stripe_indicator);
 
 	  private: // members
 		const RefPointCloud<real_t>&  point_cloud_;
+		const Eigen::Index            num_points_;
 		const Eigen::VectorX<real_t>& z0;
 		const Parameters              params_;
-		double total_time_ = 0.0;
+		double                        total_time_ = 0.0;
 	};
 
 } // namespace lib3dfin

@@ -28,4 +28,6 @@ namespace lib3dfin
 	template <typename int_t>
 	using VecIndex = Eigen::Vector<int_t, Eigen::Dynamic>;
 
+	inline constexpr int32_t NO_CLUSTER_ID = -1;
+
 } // namespace lib3dfin
