@@ -4,8 +4,6 @@
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
 #include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
-#include <Eigen/src/Core/util/Constants.h>
 
 namespace lib3dfin
 {

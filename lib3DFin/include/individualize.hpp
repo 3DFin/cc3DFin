@@ -1,0 +1,154 @@
+#pragma once
+
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
+
+#include "types.hpp"
+
+#include <Eigen/Dense>
+#include <cstdint>
+#include <vector>
+
+namespace lib3dfin
+{
+
+	template <typename real_t>
+	struct TreeDescriptor
+	{
+		size_t       tree_id = 0;
+		Vec3<real_t> pca; // most significant eigen vector?
+		Vec3<real_t> centroid_coordinates;
+		real_t       height_difference; // z - z0
+		real_t       vertical_deviation;
+	};
+
+	template <typename real_t>
+	std::optional<Vec3<real_t>> vector_plane_intersection(const Vec3<real_t>& axis_pos, const Vec3<real_t>& axis_dir, const Eigen::Hyperplane<real_t, 3>& plane)
+	{
+		const real_t denom = plane.normal().dot(axis_dir);
+		if (std::abs(denom) < 1e-8)
+		{
+			return std::nullopt;
+		}
+		const real_t t = -(plane.normal().dot(axis_pos) + plane.offset()) / denom;
+		return axis_pos + t * axis_dir;
+	}
+
+	template <typename real_t>
+	std::optional<std::pair<Vec3<real_t>, Vec3<real_t>>> axis_bb_intersection(const Vec3<real_t>& axis_pos, const Vec3<real_t>& axis_dir, const Vec3<real_t>& bottom_pos, const Vec3<real_t> top_pos)
+	{
+		Eigen::Hyperplane<real_t, 3> bottom_plane(Vec3<real_t>(0, 0, 1), bottom_pos);
+		const auto                   bottom_inter = vector_plane_intersection(axis_pos, axis_dir, bottom_plane);
+		if (bottom_inter == std::nullopt)
+			return std::nullopt;
+
+		Eigen::Hyperplane<real_t, 3> top_plane(Vec3<real_t>(0, 0, -1), top_pos);
+		const auto                   top_inter = vector_plane_intersection(axis_pos, axis_dir, top_plane);
+		if (top_inter == std::nullopt)
+			return std::nullopt;
+		return {*bottom_inter, *top_inter};
+	}
+
+	template <typename real_t>
+	std::vector<TreeDescriptor<real_t>> compute_axes_approximate(
+	    const RefPointCloud<real_t>&  point_cloud,
+	    const PointCloud3<real_t>&    voxelated_cloud,
+	    const real_t                  voxel_resolution, // voxelization descriptor
+	    const ArrayClusterIndicator&  clust_stripe_indicator,
+	    const real_t                  stripe_lower_limit, // stripe descriptor
+	    const real_t                  stripe_upper_limit, // stripe descriptor
+	    const Eigen::VectorX<real_t>& z0,
+	    // parameters
+	    real_t   h_range,
+	    uint32_t min_points,
+	    real_t   d_max)
+	{
+
+		// TODO chrono and progress bar...
+		constexpr uint32_t NO_ID = 100000; // ID for trees with dist_axis > d_max
+		                                   // Space between samples along the axes
+		const real_t SAMPLE_STEP = voxel_resolution;
+
+		// unique and count
+		std::unordered_map<int32_t, uint32_t> counts;
+		for (Eigen::Index point_id = 0; point_id < clust_stripe_indicator.size(); ++point_id)
+		{
+			const auto cluster_id = clust_stripe_indicator(point_id);
+			if (cluster_id != NO_CLUSTER_ID)
+			{
+				counts[cluster_id]++;
+			}
+		}
+
+		// filter clusters whithout enough points
+		// TODO: it's in the original algorithm but it seems to be a weaker filter
+		// than the minimal number of voxels in the peeling process
+		std::vector<int32_t> valid_cluster_ids;
+		valid_cluster_ids.reserve(counts.size());
+		for (const auto& [cluster_id, count] : counts)
+		{
+			if (count > min_points)
+			{
+				valid_cluster_ids.push_back(cluster_id);
+			}
+		}
+
+		// initialize result set
+		std::vector<TreeDescriptor<real_t>> detected_trees(valid_cluster_ids.size());
+
+		// Height range (actual value, not the %) that points should extend throughout
+		const real_t h_range_value = (stripe_upper_limit - stripe_lower_limit) * h_range;
+
+		// Compute bounding box of the voxelated PC
+		// TODO AdHoc bb?
+		const Vec3<real_t> bb_min = voxelated_cloud.colwise().minCoeff().transpose();
+		const Vec3<real_t> bb_max = voxelated_cloud.colwise().maxCoeff().transpose();
+
+		// TODO taskflow // when validated
+		for (const auto stem_id : valid_cluster_ids)
+		{
+			const auto                num_points      = clust_stripe_indicator.size();
+			const auto                stem_num_points = counts[stem_id];
+			const PointCloud3<real_t> stem_cloud(stem_num_points, 3);
+			// accumulate with max precision
+			double z0_accumulator;
+			double z_accumulator;
+
+			Eigen::Index stem_point_id = 0;
+			for (Eigen::Index point_id = 0; point_id < num_points; ++point_id)
+			{
+				if (clust_stripe_indicator(point_id) == stem_id)
+				{
+					auto& stem_point = stem_cloud.row(stem_point_id);
+					stem_point       = point_cloud.row(point_id);
+					z_accumulator += static_cast<double>(stem_point(2));
+					z0_accumulator += static_cast<double>(z0(point_id));
+				}
+			}
+			// get min diff in scalar type unused in 3DFin
+			const real_t diff_z_z0 = static_cast<real_t>((z_accumulator / stem_num_points) - (z0_accumulator / stem_num_points));
+
+			// TODO not sure this check should be done on Z values... maybe it's better on Z0.
+			// TODO could be more efficiently computed  in the loop above ?
+			const auto peak_to_peak = stem_cloud.col(2).maxCoeff() - stem_cloud.col(2).minCoeff();
+			if (peak_to_peak > h_range_value)
+			{
+				// TODO add a PCA helper somewhere.
+				//  compute the PCA.
+				//  Compute the (3, 3) covariance matrix
+				const PointCloud3<real_t>    centered_cloud = stem_cloud.rowwise() - stem_cloud.colwise().mean();
+				const Eigen::Matrix3<real_t> cov            = (centered_cloud.transpose() * centered_cloud) / real_t(stem_cloud.rows());
+
+				// Compute the eigenvalues and eigenvectors of the covariance
+				Eigen::SelfAdjointEigenSolver<Eigen::Matrix3<real_t>> es(cov);
+
+				// Eigen values are sorted in increasing order, we looks for the more significant (components / axis)
+				Vec3<real_t> principal_axis = es.eigenvectors().cols(2);
+
+				// TODO could be more efficiently computed  in the loop above
+				const Vec3<real_t> centroid = stem_cloud.colwise().mean();
+			}
+		}
+	}
+
+} // namespace lib3dfin

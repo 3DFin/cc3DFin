@@ -5,7 +5,6 @@
 
 #include "types.hpp"
 
-#include <Eigen/src/Core/util/Meta.h>
 #include <cstdint>
 
 namespace lib3dfin

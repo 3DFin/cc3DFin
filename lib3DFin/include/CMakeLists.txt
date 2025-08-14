@@ -6,6 +6,7 @@ target_sources(${PROJECT_NAME}
      connected_components.hpp
      ground.hpp
      peeling.hpp
+     individualize.hpp
      interface.hpp
 )
 

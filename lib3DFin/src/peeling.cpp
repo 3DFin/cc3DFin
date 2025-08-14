@@ -71,8 +71,8 @@ namespace lib3dfin
 	real_t adhoc_verticality(const PointCloud3<real_t>& cloud)
 	{
 		// Compute the (3, 3) covariance matrix
-		const PointCloud3<real_t>         centered_cloud = cloud.rowwise() - cloud.colwise().mean();
-		const Eigen::Matrix<real_t, 3, 3> cov            = (centered_cloud.transpose() * centered_cloud) / real_t(cloud.rows());
+		const PointCloud3<real_t>    centered_cloud = cloud.rowwise() - cloud.colwise().mean();
+		const Eigen::Matrix3<real_t> cov            = (centered_cloud.transpose() * centered_cloud) / real_t(cloud.rows());
 
 		// Compute the eigenvalues and eigenvectors of the covariance
 		Eigen::SelfAdjointEigenSolver<Eigen::Matrix3<real_t>> es(cov);
@@ -90,7 +90,7 @@ namespace lib3dfin
 		const size_t       max_knn = 50000;
 		kd_tree_t          kd_tree(3, stripe, 10, 0);
 		const Eigen::Index n_points         = stripe.rows();
-		const real_t             sq_search_radius = scale * scale;
+		const real_t       sq_search_radius = scale * scale;
 
 		Eigen::VectorX<real_t> verticality(n_points);
 

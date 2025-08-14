@@ -22,7 +22,7 @@ namespace lib3dfin
 
 		double   res_xy_stem             = 0.035; // res_xy
 		double   res_z_stem              = 0.035; // res_z
-		uint32_t minimum_points          = 20;    // TODO minimum_points_stem ?
+		uint32_t minimum_points          = 20;    // TODO minimum_points_stem ? // this is incoherent it should be >= to number_of_point
 		double   verticality_scale_stem  = 0.1;   // verticality_thresh_stems
 		double   verticality_thresh_stem = 0.7;
 		double   maximum_distance        = 15.0; // maximum_d
@@ -41,15 +41,18 @@ namespace lib3dfin
 		double   circle_width                 = 0.02;
 
 		// Height Normalization
+		// basic
 		double   cloth_resolution       = 0.45; // basic / res_cloth // changed from 0.7 to 0.45
+		// expert
 		double   denoise_resolution     = 0.15; // res_ground
 		uint32_t denoise_minimum_points = 2;    // minimum_points_ground
 
-		// stripe
+		// Stripe
+		// basic
 		double stripe_upper_limit           = 3.5; // upper_limit
 		double stripe_lower_limit           = 0.7; // lower_limit
 		double peeling_number_of_iterations = 2;   // number_of_iterations
-		// stripe advanced
+		//  advanced
 		double   res_xy_stripe                = 0.02;
 		double   res_z_stripe                 = 0.02;
 		uint32_t number_of_points_stripe      = 1000; // number_of_points
@@ -60,6 +63,7 @@ namespace lib3dfin
 		double height_range = 0.7; // height_range
 
 		// draw
+		// expert
 		double draw_circle_sampling     = 200;  // circa;
 		double draw_axis_point_interval = 0.01; // p_interval
 		double draw_axis_downstep       = 0.5;  // axis_upstep

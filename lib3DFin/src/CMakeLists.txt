@@ -6,5 +6,6 @@ target_sources(${PROJECT_NAME}
         connected_components.cpp
         ground.cpp
         peeling.cpp
+        individualize.cpp
         interface.cpp
 )
