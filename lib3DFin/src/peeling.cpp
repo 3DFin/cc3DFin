@@ -29,11 +29,10 @@ namespace lib3dfin
 	    const Eigen::VectorX<real_t>& z0_in,
 	    TreePeeler::Parameters        params_in)
 	    : point_cloud_(point_cloud)
-		, num_points_(point_cloud.rows())
+	    , num_points_(point_cloud.rows())
 	    , z0(z0_in)
 	    , params_(std::move(params_in))
 	{
-
 	}
 
 	template <typename real_t>
@@ -76,7 +75,7 @@ namespace lib3dfin
 		const Eigen::Matrix<real_t, 3, 3> cov            = (centered_cloud.transpose() * centered_cloud) / real_t(cloud.rows());
 
 		// Compute the eigenvalues and eigenvectors of the covariance
-		Eigen::SelfAdjointEigenSolver<Eigen::Matrix<real_t, 3, 3>> es(cov);
+		Eigen::SelfAdjointEigenSolver<Eigen::Matrix3<real_t>> es(cov);
 
 		// eigenvalues are sorted by increasing order so
 		// first eigen vector is the normal vector. its third component is the z component
@@ -91,7 +90,7 @@ namespace lib3dfin
 		const size_t       max_knn = 50000;
 		kd_tree_t          kd_tree(3, stripe, 10, 0);
 		const Eigen::Index n_points         = stripe.rows();
-		real_t             sq_search_radius = scale * scale;
+		const real_t             sq_search_radius = scale * scale;
 
 		Eigen::VectorX<real_t> verticality(n_points);
 
@@ -129,7 +128,7 @@ namespace lib3dfin
 	template <typename real_t>
 	PointCloud3<real_t> TreePeeler<real_t>::extractStripe(const ArrayClusterIndicator& stripe_indicator)
 	{
-		const auto num_points_stripe = (stripe_indicator != NO_CLUSTER_ID).count();
+		const auto          num_points_stripe = (stripe_indicator != NO_CLUSTER_ID).count();
 		PointCloud3<real_t> stripe_cloud(num_points_stripe, 3);
 
 		Eigen::Index stripe_id = 0;
@@ -151,13 +150,12 @@ namespace lib3dfin
 		std::cout << " -Computing verticality..." << std::endl;
 
 		// filter stripe by cluster indicator
-		const auto stripe_cloud = extractStripe(stripe_indicator);
+		const auto stripe_cloud     = extractStripe(stripe_indicator);
 		const auto num_point_stripe = stripe_cloud.rows();
 
 		// Voxelate stripe cloud
 		const auto [voxelated_stripe, cloud_to_vox] = voxelize(RefPointCloud<real_t>(stripe_cloud), params_.resolution_xy, params_.resolution_z, true);
-
-		const auto num_voxels = voxelated_stripe.rows();
+		const auto num_voxels                       = voxelated_stripe.rows();
 
 		// Compute verticality feature
 		Eigen::VectorX<real_t> vert_values      = compute_verticality_feature(voxelated_stripe, params_.verticality_nn_scale);
@@ -172,7 +170,7 @@ namespace lib3dfin
 
 		PointCloud3<real_t> vox_filtered_stripe(num_valid_voxels, 3);
 		VecIndex<uint32_t>  vox_to_filtered_vox(num_voxels);
-		vox_to_filtered_vox.setConstant(0); // beware invalid vox will remains 0, we have to check against valid_vox_mask to be sure
+		vox_to_filtered_vox.setConstant(0); // beware invalid vox will remains 0, we have to check against valid_vox_mask to desanbiguate between id == 0 and 0 == INVALID
 
 		Eigen::Index filtered_voxel_id = 0;
 		for (Eigen::Index voxel_id = 0; voxel_id < voxelated_stripe.rows(); ++voxel_id)
@@ -184,7 +182,7 @@ namespace lib3dfin
 			}
 		}
 
-		std::cout << "filtered voxel number : " << num_valid_voxels << std::endl;
+		std::cout << "number of filtered voxels: " << num_valid_voxels << std::endl;
 
 		auto t_mid = std::chrono::high_resolution_clock::now();
 		std::cout << "   " << std::chrono::duration<double>(t_mid - t_start).count() << " s" << std::endl;
@@ -192,8 +190,8 @@ namespace lib3dfin
 		std::cout << " -Clustering..." << std::endl;
 
 		// TODO : this does not handle anisotropy in the voxelization...
-		// this already the case in the original implementation...
-		real_t            eps            = params_.resolution_xy * std::sqrt(3.0) + 1e-6;
+		// this is already the case in the original implementation...
+		const real_t      eps            = params_.resolution_xy * std::sqrt(3.0) + 1e-6;
 		VecIndex<int32_t> cluster_labels = connected_components(RefPointCloud<real_t>(vox_filtered_stripe), eps, 2);
 
 		// Count clusters
@@ -213,7 +211,6 @@ namespace lib3dfin
 		std::cout << " -Extracting 'candidate' stems..." << std::endl;
 
 		// Find large clusters
-		// TODO use an boolean indicator for efficiency
 		std::set<uint32_t> large_clusters;
 		for (const auto& [label, count] : label_counts)
 		{
