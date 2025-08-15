@@ -105,14 +105,18 @@ namespace lib3dfin
 		const Vec3<real_t> bb_max = voxelated_cloud.colwise().maxCoeff().transpose();
 
 		// TODO taskflow // when validated
+		std::vector<PointCloud3<real_t>> vec_axis_point_clouds;
+
+		Eigen::Index total_axis_point = 0;
+
 		for (const auto stem_id : valid_cluster_ids)
 		{
-			const auto                num_points      = clust_stripe_indicator.size();
-			const auto                stem_num_points = counts[stem_id];
-			const PointCloud3<real_t> stem_cloud(stem_num_points, 3);
+			const auto          num_points      = clust_stripe_indicator.size();
+			const auto          stem_num_points = counts[stem_id];
+			PointCloud3<real_t> stem_cloud(stem_num_points, 3);
 			// accumulate with max precision
-			double z0_accumulator;
-			double z_accumulator;
+			double z0_accumulator = 0.0;
+			double z_accumulator  = 0.0;
 
 			Eigen::Index stem_point_id = 0;
 			for (Eigen::Index point_id = 0; point_id < num_points; ++point_id)
@@ -123,6 +127,7 @@ namespace lib3dfin
 					stem_point       = point_cloud.row(point_id);
 					z_accumulator += static_cast<double>(stem_point(2));
 					z0_accumulator += static_cast<double>(z0(point_id));
+					stem_point_id++;
 				}
 			}
 			// get min diff in scalar type unused in 3DFin
@@ -143,12 +148,48 @@ namespace lib3dfin
 				Eigen::SelfAdjointEigenSolver<Eigen::Matrix3<real_t>> es(cov);
 
 				// Eigen values are sorted in increasing order, we looks for the more significant (components / axis)
-				Vec3<real_t> principal_axis = es.eigenvectors().cols(2);
+				const Vec3<real_t> principal_axis = es.eigenvectors().col(2);
 
-				// TODO could be more efficiently computed  in the loop above
+				// TODO could be more efficiently computed in the loop above
 				const Vec3<real_t> centroid = stem_cloud.colwise().mean();
+
+				const auto maybe_range = axis_bb_intersection(centroid, principal_axis, bb_min, bb_max);
+
+				// TODO numbering could be non contiguous.
+				if (!maybe_range)
+					continue;
+
+				const auto          bottom_point   = maybe_range.value().first;
+				const auto          top_point      = maybe_range.value().second;
+				const auto          range_distance = (top_point - bottom_point).norm();
+				const auto          num_sample     = static_cast<size_t>(std::ceil(range_distance / SAMPLE_STEP));
+				PointCloud3<real_t> axis_point_cloud(num_sample, 3);
+				// get the upward pointing vector
+				const auto axis_sample_axis = principal_axis(2) < 0 ? -principal_axis : principal_axis;
+				for (Eigen::Index point_id = 0; point_id < num_sample; ++point_id)
+				{
+					axis_point_cloud.row(point_id) = bottom_point + axis_sample_axis * (static_cast<real_t>(point_id) * SAMPLE_STEP);
+				}
+				vec_axis_point_clouds.push_back(std::move(axis_point_cloud));
+				total_axis_point += num_sample;
 			}
 		}
+
+		// Concat axis cloud
+		ArrayClusterIndicator axis_indicator(total_axis_point);
+		PointCloud3<real_t>   concat_axis_point_cloud(total_axis_point, 3);
+		Eigen::Index          padding = 0;
+		Eigen::Index          axis_id = 0;
+		for (const auto& axis_pointcloud : vec_axis_point_clouds)
+		{
+			const auto axis_num_points                                    = axis_pointcloud.rows();
+			concat_axis_point_cloud.block(padding, 0, axis_num_points, 3) = axis_pointcloud;
+			axis_indicator.segment(padding, axis_num_points).setConstant(axis_id);
+			padding += axis_pointcloud.rows();
+			++axis_id;
+		}
+
+		//KD-tree search
 	}
 
 } // namespace lib3dfin
