@@ -27,7 +27,7 @@ namespace lib3dfin
 
 	  public:
 		explicit TreePeeler(const RefPointCloud<real_t>& point_cloud, const Eigen::VectorX<real_t>& z0, TreePeeler::Parameters params = TreePeeler::Parameters());
-		PointCloud3<real_t> peel();
+		ArrayClusterIndicator peel();
 
 	  private: // methods
 		ArrayClusterIndicator filterStripe();

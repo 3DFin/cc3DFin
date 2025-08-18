@@ -4,8 +4,16 @@
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
 #include "types.hpp"
+#include "voxel.hpp"
 
-#include <Eigen/Dense>
+// nanoflann
+#include <nanoflann.hpp>
+
+// taskflow
+#include <taskflow/algorithm/for_each.hpp>
+#include <taskflow/taskflow.hpp>
+
+// stdlib
 #include <cstdint>
 #include <vector>
 
@@ -20,6 +28,14 @@ namespace lib3dfin
 		Vec3<real_t> centroid_coordinates;
 		real_t       height_difference; // z - z0
 		real_t       vertical_deviation;
+	};
+
+	template <typename real_t>
+	struct AxesData
+	{
+		std::vector<TreeDescriptor<real_t>> tree_descriptors;
+		Eigen::VectorX<real_t>              axis_distance;
+		ArrayClusterIndicator               axis_cluster_indicator;
 	};
 
 	template <typename real_t>
@@ -46,11 +62,11 @@ namespace lib3dfin
 		const auto                   top_inter = vector_plane_intersection(axis_pos, axis_dir, top_plane);
 		if (top_inter == std::nullopt)
 			return std::nullopt;
-		return {*bottom_inter, *top_inter};
+		return std::make_pair(bottom_inter.value(), top_inter.value());
 	}
 
 	template <typename real_t>
-	std::vector<TreeDescriptor<real_t>> compute_axes_approximate(
+	AxesData<real_t> compute_axes_approximate(
 	    const RefPointCloud<real_t>&  point_cloud,
 	    const PointCloud3<real_t>&    voxelated_cloud,
 	    const real_t                  voxel_resolution, // voxelization descriptor
@@ -65,9 +81,9 @@ namespace lib3dfin
 	{
 
 		// TODO chrono and progress bar...
-		constexpr uint32_t NO_ID = 100000; // ID for trees with dist_axis > d_max
-		                                   // Space between samples along the axes
+		// Space between samples along the axes
 		const real_t SAMPLE_STEP = voxel_resolution;
+		const auto   num_voxels  = voxelated_cloud.rows();
 
 		// unique and count
 		std::unordered_map<int32_t, uint32_t> counts;
@@ -94,7 +110,10 @@ namespace lib3dfin
 		}
 
 		// initialize result set
-		std::vector<TreeDescriptor<real_t>> detected_trees(valid_cluster_ids.size());
+		AxesData<real_t> result;
+		result.tree_descriptors.reserve(valid_cluster_ids.size());
+		result.axis_cluster_indicator = ArrayClusterIndicator(num_voxels);
+		result.axis_distance          = Eigen::VectorX<real_t>(num_voxels);
 
 		// Height range (actual value, not the %) that points should extend throughout
 		const real_t h_range_value = (stripe_upper_limit - stripe_lower_limit) * h_range;
@@ -123,10 +142,10 @@ namespace lib3dfin
 			{
 				if (clust_stripe_indicator(point_id) == stem_id)
 				{
-					auto& stem_point = stem_cloud.row(stem_point_id);
-					stem_point       = point_cloud.row(point_id);
+					const Vec3<real_t>& stem_point = point_cloud.row(point_id);
 					z_accumulator += static_cast<double>(stem_point(2));
 					z0_accumulator += static_cast<double>(z0(point_id));
+					stem_cloud.row(stem_point_id) = stem_point;
 					stem_point_id++;
 				}
 			}
@@ -138,7 +157,7 @@ namespace lib3dfin
 			const auto peak_to_peak = stem_cloud.col(2).maxCoeff() - stem_cloud.col(2).minCoeff();
 			if (peak_to_peak > h_range_value)
 			{
-				// TODO add a PCA helper somewhere.
+				// TODO add a PCA helper somewhere to factorize PCA computation
 				//  compute the PCA.
 				//  Compute the (3, 3) covariance matrix
 				const PointCloud3<real_t>    centered_cloud = stem_cloud.rowwise() - stem_cloud.colwise().mean();
@@ -157,12 +176,19 @@ namespace lib3dfin
 
 				// TODO numbering could be non contiguous.
 				if (!maybe_range)
+				{
+					std::cout << "invalid axis, tree skipped" << std::endl;
 					continue;
+				}
 
-				const auto          bottom_point   = maybe_range.value().first;
-				const auto          top_point      = maybe_range.value().second;
-				const auto          range_distance = (top_point - bottom_point).norm();
-				const auto          num_sample     = static_cast<size_t>(std::ceil(range_distance / SAMPLE_STEP));
+				std::cout << centroid(0) << " " << centroid(1) << " " << centroid(2) << std::endl;
+				std::cout << principal_axis(0) << " " << principal_axis(1) << " " << principal_axis(2) << std::endl;
+
+				const auto bottom_point   = maybe_range.value().first;
+				const auto top_point      = maybe_range.value().second;
+				const auto range_distance = (top_point - bottom_point).norm();
+
+				const auto          num_sample = static_cast<size_t>(std::ceil(range_distance / SAMPLE_STEP));
 				PointCloud3<real_t> axis_point_cloud(num_sample, 3);
 				// get the upward pointing vector
 				const auto axis_sample_axis = principal_axis(2) < 0 ? -principal_axis : principal_axis;
@@ -183,13 +209,66 @@ namespace lib3dfin
 		for (const auto& axis_pointcloud : vec_axis_point_clouds)
 		{
 			const auto axis_num_points                                    = axis_pointcloud.rows();
-			concat_axis_point_cloud.block(padding, 0, axis_num_points, 3) = axis_pointcloud;
+			concat_axis_point_cloud.block(padding, 0, axis_num_points, 3) = std::move(axis_pointcloud);
 			axis_indicator.segment(padding, axis_num_points).setConstant(axis_id);
 			padding += axis_pointcloud.rows();
 			++axis_id;
 		}
+		vec_axis_point_clouds.clear();
+		vec_axis_point_clouds.shrink_to_fit();
 
-		//KD-tree search
+		// KD-tree search
+		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<const PointCloud3<real_t>, 3, nanoflann::metric_L2_Simple>;
+		kd_tree_t kd_tree(3, concat_axis_point_cloud, 10, 0);
+
+		tf::Executor executor;
+		tf::Taskflow taskflow;
+		// for point in voxelated-cloud, query
+		taskflow.for_each_index(
+		    Eigen::Index(0), num_voxels, Eigen::Index(1), [&](Eigen::Index point_id)
+		    {
+			    Eigen::Index                                            index;
+			    real_t * distance = result.axis_distance.data() + point_id;
+
+				kd_tree.index_->knnSearch(voxelated_cloud.row(point_id).data(), 1, &index, distance);
+
+				if(*distance > d_max)
+				{
+				    result.axis_cluster_indicator(point_id) = NO_CLUSTER_ID;
+					*distance = d_max;
+				} else {
+				    result.axis_cluster_indicator(point_id) = index;
+				} });
+		executor.run(taskflow).get();
+
+		return result;
+	}
+
+	template <typename real_t>
+	void individualize_trees(
+	    const RefPointCloud<real_t>&  point_cloud,
+	    const ArrayClusterIndicator&  clust_stripe_indicator,
+	    const real_t                  stripe_lower_limit, // stripe descriptor
+	    const real_t                  stripe_upper_limit, // stripe descriptor
+	    const Eigen::VectorX<real_t>& z0,
+	    // params
+	    const real_t   resolution_z,
+	    const real_t   resolution_xy,
+	    const real_t   h_range,
+	    const real_t   d_max,
+	    const uint32_t min_points,
+	    const real_t   d,
+	    const real_t   max_dev,
+	    const real_t   resolution_heights)
+	{
+
+		const auto [voxelated_cloud, cloud_to_vox] = voxelize(point_cloud, resolution_xy, resolution_z, true);
+		auto                          t0           = std::chrono::high_resolution_clock::now();
+		const auto                    axes         = compute_axes_approximate(point_cloud, voxelated_cloud, resolution_xy, clust_stripe_indicator, stripe_lower_limit, stripe_upper_limit, z0, h_range, min_points, d_max);
+		auto                          t1           = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> elapsed      = t1 - t0;
+		std::cout << "compute_axes_approximate: "
+		          << elapsed.count() << " seconds\n";
 	}
 
 } // namespace lib3dfin

@@ -8,15 +8,13 @@
 #include "voxel.hpp"
 
 // nanoflann
-#include <Eigen/src/Core/Matrix.h>
-#include <Eigen/src/Core/util/Meta.h>
 #include <nanoflann.hpp>
 
 // taskflow
 #include <taskflow/algorithm/for_each.hpp>
 #include <taskflow/taskflow.hpp>
 
-// std lib
+// stdlib
 #include <cstdint>
 #include <iostream>
 
@@ -36,7 +34,7 @@ namespace lib3dfin
 	}
 
 	template <typename real_t>
-	PointCloud3<real_t> TreePeeler<real_t>::peel()
+	ArrayClusterIndicator TreePeeler<real_t>::peel()
 	{
 		std::cout << "[TreePeeler] Starting peeling process..." << std::endl;
 		// reset total time
@@ -53,9 +51,8 @@ namespace lib3dfin
 		std::cout << "[TreePeeler] total time: " << total_time_ << std::endl;
 
 		// filter stripe by cluster indicator
-		auto stripe_cloud = extractStripe(stripe_indicator);
 
-		return stripe_cloud;
+		return stripe_indicator;
 	}
 
 	template <typename real_t>
