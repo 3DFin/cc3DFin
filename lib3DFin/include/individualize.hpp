@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
+#include "connected_components.hpp"
 #include "types.hpp"
 #include "voxel.hpp"
 
@@ -55,10 +56,17 @@ namespace lib3dfin
 		{
 		}
 
-		void setAxis(const Vec3<real_t>& axis_)
+		void setAxis(const Vec3<real_t>& axis_, const real_t max_deviation)
 		{
 			axis                    = axis_;
 			axis_vertical_deviation = std::abs(std::atan(std::hypot(axis(0), axis(1)) / axis(2)) * (180.0 / M_PI));
+			valid                   = axis_vertical_deviation < max_deviation;
+		}
+
+		void setHeighestPoint(const Vec3<real_t>& heighest_point_)
+		{
+			heighest_point = heighest_point_;
+			heighest_z0    = heighest_point(2) - height_difference;
 		}
 
 		PointCloud3<real_t> computeAxisSampling(const Vec3<real_t>& bb_min, const Vec3<real_t> bb_max, real_t sample_step) const
@@ -83,6 +91,9 @@ namespace lib3dfin
 		Vec3<real_t> centroid_coordinates{0., 0., 0.};
 		Vec3<real_t> axis{0., 0., 0.}; // most significant eigen vector?
 		real_t       axis_vertical_deviation{0.};
+		bool         valid; // under max deviation threshold
+		Vec3<real_t> heighest_point{0.0, 0.0, 0.0};
+		real_t       heighest_z0{0};
 	};
 
 	template <typename real_t>
@@ -105,7 +116,8 @@ namespace lib3dfin
 	    // parameters
 	    real_t   h_range,
 	    uint32_t min_points,
-	    real_t   d_max)
+	    real_t   d_max,
+	    real_t   max_dev)
 	{
 
 		// TODO chrono and progress bar...
@@ -186,7 +198,7 @@ namespace lib3dfin
 				Eigen::SelfAdjointEigenSolver<Eigen::Matrix3<real_t>> es(covariance);
 
 				// Eigen values are sorted in increasing order, we looks for the more significant component / axis
-				tree_descriptor.setAxis(es.eigenvectors().col(2));
+				tree_descriptor.setAxis(es.eigenvectors().col(2), max_dev);
 
 				// safe guard
 				if (tree_descriptor.axis_vertical_deviation > 88.0)
@@ -253,6 +265,64 @@ namespace lib3dfin
 	}
 
 	template <typename real_t>
+	void compute_heights(
+	    const PointCloud3<real_t>& voxelated_cloud,
+	    AxesData<real_t>&          axis_data,
+	    // params
+	    const real_t d,
+	    const real_t resolution_height)
+	{
+		// large voxel to avoid underpopulated cells
+		const auto [large_voxels_cloud, vox_to_large_vox] = voxelize(RefPointCloud<real_t>(voxelated_cloud), resolution_height, resolution_height, true);
+		const real_t      eps                             = resolution_height * std::sqrt(3) + 1e-6;
+		VecIndex<int32_t> cluster_labels                  = connected_components(RefPointCloud<real_t>(large_voxels_cloud), eps, 2);
+
+		// Count clusters
+		std::unordered_map<int32_t, uint32_t> label_counts;
+		for (size_t voxel_id = 0; voxel_id < cluster_labels.size(); ++voxel_id)
+		{
+			++label_counts[cluster_labels(voxel_id)];
+		}
+
+		// Find large clusters
+		std::set<uint32_t> valid_clusters;
+		for (const auto& [label, count] : label_counts)
+		{
+			if (label != NO_CLUSTER_ID && count > 3)
+			{
+				valid_clusters.insert(label);
+			}
+		}
+
+		// Eliminating all points that belong to clusters with less than 4 points (large voxels), and which dist_axis < d and in not valid_tree_id set
+		// TODO could be //
+		for (TreeDescriptor<real_t>& tree_descriptor : axis_data.tree_descriptors)
+		{
+			real_t       max_z    = std::numeric_limits<real_t>::min();
+			Eigen::Index max_z_id = 0;
+			const auto   tree_id  = tree_descriptor.tree_id;
+			for (size_t voxel_id = 0; voxel_id < voxelated_cloud.rows(); ++voxel_id)
+			{
+				const auto point_tree_id = axis_data.axis_cluster_indicator[voxel_id];
+				if (point_tree_id != tree_id)
+					continue;
+				const auto large_vox_id = vox_to_large_vox[voxel_id];
+				if (!valid_clusters.count(cluster_labels[large_vox_id]))
+					continue;
+				if (axis_data.axis_distance[voxel_id] > d)
+					continue;
+
+				if (voxelated_cloud(voxel_id, 2) > max_z)
+				{
+					max_z_id = voxel_id;
+					max_z    = voxelated_cloud(voxel_id, 2);
+				}
+			}
+			tree_descriptor.setHeighestPoint(voxelated_cloud.row(max_z_id));
+		}
+	}
+
+	template <typename real_t>
 	void individualize_trees(
 	    const RefPointCloud<real_t>&  point_cloud,
 	    const ArrayClusterIndicator&  clust_stripe_indicator,
@@ -272,10 +342,16 @@ namespace lib3dfin
 
 		const auto [voxelated_cloud, cloud_to_vox] = voxelize(point_cloud, resolution_xy, resolution_z, true);
 		auto                          t0           = std::chrono::high_resolution_clock::now();
-		const auto                    axes         = compute_axes_approximate(point_cloud, voxelated_cloud, resolution_xy, clust_stripe_indicator, stripe_lower_limit, stripe_upper_limit, z0, h_range, min_points, d_max);
+		auto                          axes_data    = compute_axes_approximate(point_cloud, voxelated_cloud, resolution_xy, clust_stripe_indicator, stripe_lower_limit, stripe_upper_limit, z0, h_range, min_points, d_max, max_dev);
 		auto                          t1           = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> elapsed      = t1 - t0;
 		std::cout << "[Individualize] compute_axes_approximate: "
+		          << elapsed.count() << " seconds\n";
+		t0 = std::chrono::high_resolution_clock::now();
+		compute_heights(voxelated_cloud, axes_data, d, resolution_heights);
+		t1      = std::chrono::high_resolution_clock::now();
+		elapsed = t1 - t0;
+		std::cout << "[Individualize] compute_height: "
 		          << elapsed.count() << " seconds\n";
 	}
 
