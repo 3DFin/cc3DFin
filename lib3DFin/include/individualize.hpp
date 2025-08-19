@@ -21,24 +21,6 @@ namespace lib3dfin
 {
 
 	template <typename real_t>
-	struct TreeDescriptor
-	{
-		size_t       tree_id = 0;
-		Vec3<real_t> pca; // most significant eigen vector?
-		Vec3<real_t> centroid_coordinates;
-		real_t       height_difference; // z - z0
-		real_t       vertical_deviation;
-	};
-
-	template <typename real_t>
-	struct AxesData
-	{
-		std::vector<TreeDescriptor<real_t>> tree_descriptors;
-		Eigen::VectorX<real_t>              axis_distance;
-		ArrayClusterIndicator               axis_cluster_indicator;
-	};
-
-	template <typename real_t>
 	std::optional<Vec3<real_t>> vector_plane_intersection(const Vec3<real_t>& axis_pos, const Vec3<real_t>& axis_dir, const Eigen::Hyperplane<real_t, 3>& plane)
 	{
 		const real_t denom = plane.normal().dot(axis_dir);
@@ -66,6 +48,52 @@ namespace lib3dfin
 	}
 
 	template <typename real_t>
+	struct TreeDescriptor
+	{
+		TreeDescriptor(Eigen::Index tree_id_)
+		    : tree_id(tree_id_)
+		{
+		}
+
+		void setAxis(const Vec3<real_t>& axis_)
+		{
+			axis                    = axis_;
+			axis_vertical_deviation = std::abs(std::atan(std::hypot(axis(0), axis(1)) / axis(2)) * (180.0 / M_PI));
+		}
+
+		PointCloud3<real_t> computeAxisSampling(const Vec3<real_t>& bb_min, const Vec3<real_t> bb_max, real_t sample_step) const
+		{
+			const auto          maybe_range    = axis_bb_intersection(centroid_coordinates, axis, bb_min, bb_max);
+			const auto          bottom_point   = maybe_range.value().first;
+			const auto          top_point      = maybe_range.value().second;
+			const auto          range_distance = (top_point - bottom_point).norm();
+			const auto          num_sample     = static_cast<size_t>(std::ceil(range_distance / sample_step));
+			PointCloud3<real_t> axis_point_cloud(num_sample, 3);
+			// get the upward pointing vector
+			const auto axis_sample_axis = axis(2) < 0 ? -axis : axis;
+			for (Eigen::Index point_id = 0; point_id < num_sample; ++point_id)
+			{
+				axis_point_cloud.row(point_id) = bottom_point + axis_sample_axis * (static_cast<real_t>(point_id) * sample_step);
+			}
+			return axis_point_cloud;
+		}
+
+		Eigen::Index tree_id{0};
+		real_t       height_difference{0}; // z - z0
+		Vec3<real_t> centroid_coordinates{0., 0., 0.};
+		Vec3<real_t> axis{0., 0., 0.}; // most significant eigen vector?
+		real_t       axis_vertical_deviation{0.};
+	};
+
+	template <typename real_t>
+	struct AxesData
+	{
+		std::vector<TreeDescriptor<real_t>> tree_descriptors;
+		Eigen::VectorX<real_t>              axis_distance;
+		ArrayClusterIndicator               axis_cluster_indicator;
+	};
+
+	template <typename real_t>
 	AxesData<real_t> compute_axes_approximate(
 	    const RefPointCloud<real_t>&  point_cloud,
 	    const PointCloud3<real_t>&    voxelated_cloud,
@@ -82,7 +110,7 @@ namespace lib3dfin
 
 		// TODO chrono and progress bar...
 		// Space between samples along the axes
-		const real_t SAMPLE_STEP = voxel_resolution;
+		const real_t sample_step = voxel_resolution;
 		const auto   num_voxels  = voxelated_cloud.rows();
 
 		// unique and count
@@ -117,16 +145,9 @@ namespace lib3dfin
 
 		// Height range (actual value, not the %) that points should extend throughout
 		const real_t h_range_value = (stripe_upper_limit - stripe_lower_limit) * h_range;
-
-		// Compute bounding box of the voxelated PC
-		// TODO AdHoc bb?
+		// Compute bounding box of the voxelated point cloud
 		const Vec3<real_t> bb_min = voxelated_cloud.colwise().minCoeff().transpose();
 		const Vec3<real_t> bb_max = voxelated_cloud.colwise().maxCoeff().transpose();
-
-		// TODO taskflow // when validated
-		std::vector<PointCloud3<real_t>> vec_axis_point_clouds;
-
-		Eigen::Index total_axis_point = 0;
 
 		for (const auto stem_id : valid_cluster_ids)
 		{
@@ -134,8 +155,8 @@ namespace lib3dfin
 			const auto          stem_num_points = counts[stem_id];
 			PointCloud3<real_t> stem_cloud(stem_num_points, 3);
 			// accumulate with max precision
-			double z0_accumulator = 0.0;
-			double z_accumulator  = 0.0;
+			double       z0_accumulator = 0.0;
+			Vec3<double> coord_accumulator(0.0, 0.0, 0.0);
 
 			Eigen::Index stem_point_id = 0;
 			for (Eigen::Index point_id = 0; point_id < num_points; ++point_id)
@@ -143,76 +164,63 @@ namespace lib3dfin
 				if (clust_stripe_indicator(point_id) == stem_id)
 				{
 					const Vec3<real_t>& stem_point = point_cloud.row(point_id);
-					z_accumulator += static_cast<double>(stem_point(2));
+					coord_accumulator += stem_point.template cast<double>();
 					z0_accumulator += static_cast<double>(z0(point_id));
 					stem_cloud.row(stem_point_id) = stem_point;
 					stem_point_id++;
 				}
 			}
-			// get min diff in scalar type unused in 3DFin
-			const real_t diff_z_z0 = static_cast<real_t>((z_accumulator / stem_num_points) - (z0_accumulator / stem_num_points));
-
-			// TODO not sure this check should be done on Z values... maybe it's better on Z0.
-			// TODO could be more efficiently computed  in the loop above ?
-			const auto peak_to_peak = stem_cloud.col(2).maxCoeff() - stem_cloud.col(2).minCoeff();
-			if (peak_to_peak > h_range_value)
+			const auto stem_heigh_range = stem_cloud.col(2).maxCoeff() - stem_cloud.col(2).minCoeff();
+			if (stem_heigh_range > h_range_value)
 			{
-				// TODO add a PCA helper somewhere to factorize PCA computation
-				//  compute the PCA.
-				//  Compute the (3, 3) covariance matrix
-				const PointCloud3<real_t>    centered_cloud = stem_cloud.rowwise() - stem_cloud.colwise().mean();
-				const Eigen::Matrix3<real_t> cov            = (centered_cloud.transpose() * centered_cloud) / real_t(stem_cloud.rows());
+				TreeDescriptor<real_t> tree_descriptor(stem_id);
+				// get min diff in scalar type unused in 3DFin
+				tree_descriptor.centroid_coordinates = (coord_accumulator / stem_num_points).cast<real_t>();
+				tree_descriptor.height_difference    = static_cast<real_t>(tree_descriptor.centroid_coordinates(2) - (z0_accumulator / stem_num_points));
 
-				// Compute the eigenvalues and eigenvectors of the covariance
-				Eigen::SelfAdjointEigenSolver<Eigen::Matrix3<real_t>> es(cov);
+				// compute the (3, 3) covariance matrix
+				const PointCloud3<real_t>    centered_cloud = stem_cloud.rowwise() - tree_descriptor.centroid_coordinates.transpose();
+				const Eigen::Matrix3<real_t> covariance     = (centered_cloud.transpose() * centered_cloud) / real_t(stem_num_points);
 
-				// Eigen values are sorted in increasing order, we looks for the more significant (components / axis)
-				const Vec3<real_t> principal_axis = es.eigenvectors().col(2);
+				// Eigen decomposition of the covariance
+				Eigen::SelfAdjointEigenSolver<Eigen::Matrix3<real_t>> es(covariance);
 
-				// TODO could be more efficiently computed in the loop above
-				const Vec3<real_t> centroid = stem_cloud.colwise().mean();
+				// Eigen values are sorted in increasing order, we looks for the more significant component / axis
+				tree_descriptor.setAxis(es.eigenvectors().col(2));
 
-				const auto maybe_range = axis_bb_intersection(centroid, principal_axis, bb_min, bb_max);
-
-				// TODO numbering could be non contiguous.
-				if (!maybe_range)
+				// safe guard
+				if (tree_descriptor.axis_vertical_deviation > 88.0)
 				{
-					std::cout << "invalid axis, tree skipped" << std::endl;
+					std::cout << "[Individualize] invalid axis, tree skipped" << std::endl;
 					continue;
 				}
 
-				std::cout << centroid(0) << " " << centroid(1) << " " << centroid(2) << std::endl;
-				std::cout << principal_axis(0) << " " << principal_axis(1) << " " << principal_axis(2) << std::endl;
-
-				const auto bottom_point   = maybe_range.value().first;
-				const auto top_point      = maybe_range.value().second;
-				const auto range_distance = (top_point - bottom_point).norm();
-
-				const auto          num_sample = static_cast<size_t>(std::ceil(range_distance / SAMPLE_STEP));
-				PointCloud3<real_t> axis_point_cloud(num_sample, 3);
-				// get the upward pointing vector
-				const auto axis_sample_axis = principal_axis(2) < 0 ? -principal_axis : principal_axis;
-				for (Eigen::Index point_id = 0; point_id < num_sample; ++point_id)
-				{
-					axis_point_cloud.row(point_id) = bottom_point + axis_sample_axis * (static_cast<real_t>(point_id) * SAMPLE_STEP);
-				}
-				vec_axis_point_clouds.push_back(std::move(axis_point_cloud));
-				total_axis_point += num_sample;
+				result.tree_descriptors.push_back(tree_descriptor);
 			}
 		}
 
-		// Concat axis cloud
+		// Generate axis clouds
+		Eigen::Index                           total_axis_point = 0;
+		std::vector<const PointCloud3<real_t>> vec_axis_point_clouds;
+		for (const auto& tree_descriptor : result.tree_descriptors)
+		{
+			auto axis_point_cloud = tree_descriptor.computeAxisSampling(bb_min, bb_max, sample_step);
+			total_axis_point += axis_point_cloud.rows();
+			vec_axis_point_clouds.push_back(std::move(axis_point_cloud));
+		}
+
+		// Concat axis clouds
 		ArrayClusterIndicator axis_indicator(total_axis_point);
 		PointCloud3<real_t>   concat_axis_point_cloud(total_axis_point, 3);
 		Eigen::Index          padding = 0;
-		Eigen::Index          axis_id = 0;
-		for (const auto& axis_pointcloud : vec_axis_point_clouds)
+		for (size_t valid_tree_number = 0; valid_tree_number < result.tree_descriptors.size(); ++valid_tree_number)
 		{
-			const auto axis_num_points                                    = axis_pointcloud.rows();
+			Eigen::Index               axis_id                            = result.tree_descriptors[valid_tree_number].tree_id;
+			const PointCloud3<real_t>& axis_pointcloud                    = vec_axis_point_clouds[valid_tree_number];
+			const auto                 axis_num_points                    = axis_pointcloud.rows();
 			concat_axis_point_cloud.block(padding, 0, axis_num_points, 3) = std::move(axis_pointcloud);
 			axis_indicator.segment(padding, axis_num_points).setConstant(axis_id);
 			padding += axis_pointcloud.rows();
-			++axis_id;
 		}
 		vec_axis_point_clouds.clear();
 		vec_axis_point_clouds.shrink_to_fit();
@@ -267,7 +275,7 @@ namespace lib3dfin
 		const auto                    axes         = compute_axes_approximate(point_cloud, voxelated_cloud, resolution_xy, clust_stripe_indicator, stripe_lower_limit, stripe_upper_limit, z0, h_range, min_points, d_max);
 		auto                          t1           = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> elapsed      = t1 - t0;
-		std::cout << "compute_axes_approximate: "
+		std::cout << "[Individualize] compute_axes_approximate: "
 		          << elapsed.count() << " seconds\n";
 	}
 
