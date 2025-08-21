@@ -34,7 +34,7 @@ namespace lib3dfin
 	}
 
 	template <typename real_t>
-	std::optional<std::pair<Vec3<real_t>, Vec3<real_t>>> axis_bb_intersection(const Vec3<real_t>& axis_pos, const Vec3<real_t>& axis_dir, const Vec3<real_t>& bottom_pos, const Vec3<real_t> top_pos)
+	std::optional<std::pair<Vec3<real_t>, Vec3<real_t>>> axis_bb_intersection(const Vec3<real_t>& axis_pos, const Vec3<real_t>& axis_dir, const Vec3<real_t>& bottom_pos, const Vec3<real_t>& top_pos)
 	{
 		Eigen::Hyperplane<real_t, 3> bottom_plane(Vec3<real_t>(0, 0, 1), bottom_pos);
 		const auto                   bottom_inter = vector_plane_intersection(axis_pos, axis_dir, bottom_plane);
@@ -91,7 +91,7 @@ namespace lib3dfin
 		Vec3<real_t> centroid_coordinates{0., 0., 0.};
 		Vec3<real_t> axis{0., 0., 0.}; // most significant eigen vector?
 		real_t       axis_vertical_deviation{0.};
-		bool         valid; // under max deviation threshold
+		bool         valid{false}; // under max deviation threshold
 		Vec3<real_t> heighest_point{0.0, 0.0, 0.0};
 		real_t       heighest_z0{0};
 	};
@@ -212,8 +212,8 @@ namespace lib3dfin
 		}
 
 		// Generate axis clouds
-		Eigen::Index                           total_axis_point = 0;
-		std::vector<const PointCloud3<real_t>> vec_axis_point_clouds;
+		Eigen::Index                     total_axis_point = 0;
+		std::vector<PointCloud3<real_t>> vec_axis_point_clouds;
 		for (const auto& tree_descriptor : result.tree_descriptors)
 		{
 			auto axis_point_cloud = tree_descriptor.computeAxisSampling(bb_min, bb_max, sample_step);
@@ -232,7 +232,7 @@ namespace lib3dfin
 			const auto                 axis_num_points                    = axis_pointcloud.rows();
 			concat_axis_point_cloud.block(padding, 0, axis_num_points, 3) = std::move(axis_pointcloud);
 			axis_indicator.segment(padding, axis_num_points).setConstant(axis_id);
-			padding += axis_pointcloud.rows();
+			padding += axis_num_points;
 		}
 		vec_axis_point_clouds.clear();
 		vec_axis_point_clouds.shrink_to_fit();
@@ -244,20 +244,21 @@ namespace lib3dfin
 		tf::Executor executor;
 		tf::Taskflow taskflow;
 		// for point in voxelated-cloud, query
+		const real_t sq_dmax = d_max * d_max;
 		taskflow.for_each_index(
 		    Eigen::Index(0), num_voxels, Eigen::Index(1), [&](Eigen::Index point_id)
 		    {
-			    Eigen::Index                                            index;
-			    real_t * distance = result.axis_distance.data() + point_id;
+			    Eigen::Index                                         index;
+			    real_t sq_distance = 0.0;
+				kd_tree.index_->knnSearch(voxelated_cloud.row(point_id).data(), 1, &index, &sq_distance);
 
-				kd_tree.index_->knnSearch(voxelated_cloud.row(point_id).data(), 1, &index, distance);
-
-				if(*distance > d_max)
+				if(sq_distance > sq_dmax)
 				{
 				    result.axis_cluster_indicator(point_id) = NO_CLUSTER_ID;
-					*distance = d_max;
+					result.axis_distance(point_id) = d_max;
 				} else {
-				    result.axis_cluster_indicator(point_id) = index;
+				    result.axis_cluster_indicator(point_id) =  axis_indicator(index);
+					result.axis_distance(point_id) = std::sqrt(sq_distance);
 				} });
 		executor.run(taskflow).get();
 
@@ -323,7 +324,7 @@ namespace lib3dfin
 	}
 
 	template <typename real_t>
-	void individualize_trees(
+	AxesData<real_t> individualize_trees(
 	    const RefPointCloud<real_t>&  point_cloud,
 	    const ArrayClusterIndicator&  clust_stripe_indicator,
 	    const real_t                  stripe_lower_limit, // stripe descriptor
@@ -339,20 +340,30 @@ namespace lib3dfin
 	    const real_t   max_dev,
 	    const real_t   resolution_heights)
 	{
-
-		const auto [voxelated_cloud, cloud_to_vox] = voxelize(point_cloud, resolution_xy, resolution_z, true);
-		auto                          t0           = std::chrono::high_resolution_clock::now();
-		auto                          axes_data    = compute_axes_approximate(point_cloud, voxelated_cloud, resolution_xy, clust_stripe_indicator, stripe_lower_limit, stripe_upper_limit, z0, h_range, min_points, d_max, max_dev);
-		auto                          t1           = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<double> elapsed      = t1 - t0;
+		const auto [voxelated_cloud, cloud_to_vox]        = voxelize(point_cloud, resolution_xy, resolution_z, true);
+		auto                          t0                  = std::chrono::high_resolution_clock::now();
+		auto                          voxelated_axes_data = compute_axes_approximate(point_cloud, voxelated_cloud, resolution_xy, clust_stripe_indicator, stripe_lower_limit, stripe_upper_limit, z0, h_range, min_points, d_max, max_dev);
+		auto                          t1                  = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> elapsed             = t1 - t0;
 		std::cout << "[Individualize] compute_axes_approximate: "
 		          << elapsed.count() << " seconds\n";
 		t0 = std::chrono::high_resolution_clock::now();
-		compute_heights(voxelated_cloud, axes_data, d, resolution_heights);
+		compute_heights(voxelated_cloud, voxelated_axes_data, d, resolution_heights);
 		t1      = std::chrono::high_resolution_clock::now();
 		elapsed = t1 - t0;
 		std::cout << "[Individualize] compute_height: "
 		          << elapsed.count() << " seconds\n";
+
+		AxesData<real_t> axes_data;
+		axes_data.tree_descriptors = std::move(voxelated_axes_data.tree_descriptors);
+		axes_data.axis_cluster_indicator.resize(point_cloud.rows());
+		axes_data.axis_distance.resize(point_cloud.rows());
+		for (Eigen::Index point_id = 0; point_id < point_cloud.rows(); ++point_id)
+		{
+			axes_data.axis_cluster_indicator(point_id) = voxelated_axes_data.axis_cluster_indicator(cloud_to_vox(point_id));
+			axes_data.axis_distance(point_id) = voxelated_axes_data.axis_distance(cloud_to_vox(point_id));
+		}
+		return axes_data;
 	}
 
 } // namespace lib3dfin
