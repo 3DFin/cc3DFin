@@ -74,9 +74,11 @@ namespace lib3dfin
 			// Convert squared distances to actual distances
 			std::vector<real_t> weights(n_neighbors);
 			real_t              sum_weights = 0.0;
+			// TODO, here we use distances to compute weights like the original code
+			// but it should be inverse distances...
 			for (size_t j = 0; j < n_neighbors; ++j)
 			{
-				weights[j] = 1.0 / std::sqrt(dists[j]) + 1e-8; // nanoflann dist are squared and use epsilon to avoid division by zero
+				weights[j] = std::sqrt(dists[j]); // nanoflann dist are squared
 				sum_weights += weights[j];
 			}
 
@@ -108,7 +110,7 @@ namespace lib3dfin
 		std::unordered_map<int32_t, uint32_t> label_counts;
 		for (const auto id_vox : cloud_to_vox)
 		{
-			++label_counts[cluster_labels[id_vox]];
+			++label_counts[cluster_labels(id_vox)];
 		}
 
 		if (label_counts.size() == 1 && label_counts.count(-1))
@@ -162,11 +164,11 @@ namespace lib3dfin
 
 		auto& csf_pc = csf.getPointCloud();
 		csf_pc.clear();
-		csf_pc.resize(point_cloud_.rows());
+		csf_pc.resize(dtm_point_cloud_.rows());
 
-		for (Eigen::Index point_id = 0; point_id < point_cloud_.rows(); ++point_id)
+		for (Eigen::Index point_id = 0; point_id < dtm_point_cloud_.rows(); ++point_id)
 		{
-			csf_pc[point_id] = {static_cast<double>(point_cloud_(point_id, 0)), static_cast<double>(-point_cloud_(point_id, 2)), static_cast<double>(point_cloud_(point_id, 1))};
+			csf_pc[point_id] = {static_cast<double>(dtm_point_cloud_(point_id, 0)), static_cast<double>(-dtm_point_cloud_(point_id, 2)), static_cast<double>(dtm_point_cloud_(point_id, 1))};
 		}
 
 		const auto  cloth     = csf.runClothSimulation();

@@ -75,7 +75,7 @@ namespace lib3dfin
 		valid_cluster_ids.reserve(counts.size());
 		for (const auto& [cluster_id, count] : counts)
 		{
-			if (count > params_.mininimum_points_stem)
+			if (count > params_.minimum_points_stem)
 			{
 				valid_cluster_ids.push_back(cluster_id);
 			}
@@ -113,8 +113,9 @@ namespace lib3dfin
 					stem_point_id++;
 				}
 			}
-			const auto stem_heigh_range = stem_cloud.col(2).maxCoeff() - stem_cloud.col(2).minCoeff();
-			if (stem_heigh_range > h_range_value)
+			const auto stem_height_range = stem_cloud.col(2).maxCoeff() - stem_cloud.col(2).minCoeff();
+			std::cout << " ptp value: " << stem_height_range << std::endl;
+			if (stem_height_range > h_range_value)
 			{
 				TreeDescriptor<real_t> tree_descriptor(stem_id);
 				// get min diff in scalar type unused in 3DFin
@@ -152,6 +153,8 @@ namespace lib3dfin
 			vec_axis_point_clouds.push_back(std::move(axis_point_cloud));
 		}
 
+		std::cout << "[Individualize] num valid trees: " << result.tree_descriptors.size() << std::endl;
+
 		// Concat axis clouds
 		ArrayClusterIndicator axis_indicator(total_axis_point);
 		PointCloud3<real_t>   concat_axis_point_cloud(total_axis_point, 3);
@@ -177,19 +180,19 @@ namespace lib3dfin
 		// for point in voxelated-cloud, query
 		const real_t sq_dmax = params_.maximum_dist_axis * params_.maximum_dist_axis;
 		taskflow.for_each_index(
-		    Eigen::Index(0), num_voxels, Eigen::Index(1), [&](Eigen::Index point_id)
+		    Eigen::Index(0), num_voxels, Eigen::Index(1), [&](Eigen::Index voxel_id)
 		    {
 				    Eigen::Index                                         index;
 				    real_t sq_distance = 0.0;
-					kd_tree.index_->knnSearch(voxelated_cloud.row(point_id).data(), 1, &index, &sq_distance);
+					kd_tree.index_->knnSearch(voxelated_cloud.row(voxel_id).data(), 1, &index, &sq_distance);
 
 					if(sq_distance > sq_dmax)
 					{
-					    result.axis_cluster_indicator(point_id) = NO_CLUSTER_ID;
-						result.axis_distance(point_id) = params_.maximum_dist_axis;
+					    result.axis_cluster_indicator(voxel_id) = NO_CLUSTER_ID;
+						result.axis_distance(voxel_id) = params_.maximum_dist_axis;
 					} else {
-					    result.axis_cluster_indicator(point_id) =  axis_indicator(index);
-						result.axis_distance(point_id) = std::sqrt(sq_distance);
+					    result.axis_cluster_indicator(voxel_id) =  axis_indicator(index);
+						result.axis_distance(voxel_id) = std::sqrt(sq_distance);
 					} });
 		executor.run(taskflow).get();
 

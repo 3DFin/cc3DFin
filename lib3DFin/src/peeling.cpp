@@ -94,6 +94,7 @@ namespace lib3dfin
 		const real_t       sq_search_radius = scale * scale;
 
 		Eigen::VectorX<real_t> verticality(n_points);
+		verticality.setZero();
 
 		tf::Executor executor;
 		tf::Taskflow taskflow;
@@ -155,7 +156,7 @@ namespace lib3dfin
 		const auto num_point_stripe = stripe_cloud.rows();
 
 		// Voxelate stripe cloud
-		const auto [voxelated_stripe, cloud_to_vox] = voxelize(RefPointCloud<real_t>(stripe_cloud), params_.resolution_xy, params_.resolution_z, true);
+		const auto [voxelated_stripe, stripe_cloud_to_vox] = voxelize(RefPointCloud<real_t>(stripe_cloud), params_.resolution_xy, params_.resolution_z, true);
 		const auto num_voxels                       = voxelated_stripe.rows();
 
 		// Compute verticality feature
@@ -236,12 +237,12 @@ namespace lib3dfin
 			if (stripe_indicator(base_id) == NO_CLUSTER_ID)
 				continue;
 
-			auto voxel_id = cloud_to_vox(stripe_id++);
+			auto voxel_id = stripe_cloud_to_vox(stripe_id++);
 			if (!valid_vox_mask(voxel_id))
 				continue;
 
 			auto filtered_voxel_id = vox_to_filtered_vox(voxel_id);
-			auto cluster_id        = cluster_labels[filtered_voxel_id];
+			auto cluster_id        = cluster_labels(filtered_voxel_id);
 
 			if (large_clusters.count(cluster_id))
 				new_stripe_indicator(base_id) = cluster_id;
