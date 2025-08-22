@@ -13,11 +13,11 @@ namespace lib3dfin
 	  public: // struct
 		struct Parameters
 		{
-			real_t   cloth_resolution       = 0.45; // basic / res_cloth // changed from 0.7 to 0.45
-			bool     denoise_point_cloud    = false;
-			real_t   denoise_resolution     = 0.15; // res_ground
-			uint32_t denoise_minimum_points = 2;    // minimum_points_ground
-			bool     clean_dtm              = true;
+			real_t   cloth_resolution{0.45}; // basic / res_cloth // changed from 0.7 to 0.45
+			bool     denoise_point_cloud{false};
+			real_t   denoise_resolution{0.15};  // res_ground
+			uint32_t denoise_minimum_points{2}; // minimum_points_ground
+			bool     clean_dtm{true};
 		};
 
 	  public:
@@ -31,9 +31,8 @@ namespace lib3dfin
 
 	  private: // members
 		const RefPointCloud<real_t>& point_cloud_;
-		const Parameters                   params_;
+		const Parameters             params_;
 		PointCloud3<real_t>          dtm_;
-
 	};
 
 } // namespace lib3dfin

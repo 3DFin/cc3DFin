@@ -15,19 +15,19 @@ namespace lib3dfin
 	  public: // struct
 		struct Parameters
 		{
-			real_t   stripe_lower_limit    = 0.7;  // lower_limit
-			real_t   stripe_upper_limit    = 3.5;  // lower_limit
-			real_t   verticality_nn_scale  = 0.1;  // verticality_scale_stripe
-			real_t   verticality_threshold = 0.7;  // / verticality_thresh_stripe
-			uint32_t num_voxels_threshold  = 1000; // number_of_points
-			real_t   resolution_xy         = 0.02;
-			real_t   resolution_z          = 0.02;
-			uint32_t num_iterations        = 2; // number_of_iterations
+			real_t   stripe_lower_limit{0.7};    // lower_limit
+			real_t   stripe_upper_limit{3.5};    // lower_limit
+			real_t   verticality_nn_scale{0.1};  // verticality_scale_stripe
+			real_t   verticality_threshold{0.7}; // / verticality_thresh_stripe
+			uint32_t num_voxels_threshold{1000}; // number_of_points
+			real_t   resolution_xy{0.02};
+			real_t   resolution_z{0.02};
+			uint32_t num_iterations{2}; // number_of_iterations
 		};
 
 	  public:
 		explicit TreePeeler(const RefPointCloud<real_t>& point_cloud, const Eigen::VectorX<real_t>& z0, TreePeeler::Parameters params = TreePeeler::Parameters());
-		ArrayClusterIndicator peel();
+		Stripe<real_t> peel();
 
 	  private: // methods
 		ArrayClusterIndicator filterStripe();

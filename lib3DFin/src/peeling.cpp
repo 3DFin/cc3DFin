@@ -34,25 +34,29 @@ namespace lib3dfin
 	}
 
 	template <typename real_t>
-	ArrayClusterIndicator TreePeeler<real_t>::peel()
+	Stripe<real_t> TreePeeler<real_t>::peel()
 	{
 		std::cout << "[TreePeeler] Starting peeling process..." << std::endl;
 		// reset total time
 		total_time_ = 0.0;
 
+		Stripe<real_t> stripe(params_.stripe_lower_limit, params_.stripe_upper_limit);
+
 		// Get the Initial stripe
-		auto stripe_indicator = filterStripe();
+		stripe.cluster_indicator = filterStripe();
 
 		// Perform verticality clustering
 		for (uint32_t iter = 0; iter < params_.num_iterations; ++iter)
 		{
-			stripe_indicator = verticalityClustering(stripe_indicator);
+			stripe.cluster_indicator = verticalityClustering(stripe.cluster_indicator);
 		}
+
+
 		std::cout << "[TreePeeler] total time: " << total_time_ << std::endl;
 
 		// filter stripe by cluster indicator
 
-		return stripe_indicator;
+		return stripe;
 	}
 
 	template <typename real_t>
