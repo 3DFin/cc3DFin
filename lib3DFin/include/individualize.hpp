@@ -28,7 +28,7 @@ namespace lib3dfin
 		};
 
 	  public: // methods
-		TreeIndividualizer(
+		explicit TreeIndividualizer(
 		    const RefPointCloud<real_t>&  point_cloud,
 		    const Stripe<real_t>&         stripe,
 		    const Eigen::VectorX<real_t>& z0,

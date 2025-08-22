@@ -14,7 +14,6 @@
 #include <taskflow/algorithm/for_each.hpp>
 #include <taskflow/taskflow.hpp>
 
-
 namespace lib3dfin
 {
 
@@ -197,16 +196,17 @@ namespace lib3dfin
 		return result;
 	}
 
-
-	template<typename real_t>
+	template <typename real_t>
 	void TreeIndividualizer<real_t>::compute_heights(
 	    const PointCloud3<real_t>& voxelated_cloud,
 	    AxesData<real_t>&          axis_data)
 	{
 		// large voxel to avoid underpopulated cells
-		const auto [large_voxels_cloud, vox_to_large_vox] = voxelize(RefPointCloud<real_t>(voxelated_cloud), params_.resolution_height, params_.resolution_height, true);
-		const real_t      eps                             = params_.resolution_height * std::sqrt(3) + 1e-6;
-		VecIndex<int32_t> cluster_labels                  = connected_components(RefPointCloud<real_t>(large_voxels_cloud), eps, 2);
+		PointCloud3<real_t> large_voxels_cloud;
+		VecIndex<uint32_t>  vox_to_large_vox;
+		std::tie(large_voxels_cloud, vox_to_large_vox) = voxelize(RefPointCloud<real_t>(voxelated_cloud), params_.resolution_height, params_.resolution_height, true);
+		const real_t      eps                          = params_.resolution_height * std::sqrt(3) + 1e-6;
+		VecIndex<int32_t> cluster_labels               = connected_components(RefPointCloud<real_t>(large_voxels_cloud), eps, 2);
 
 		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
@@ -226,9 +226,10 @@ namespace lib3dfin
 		}
 
 		// Eliminating all points that belong to clusters with less than 4 points (large voxels), and which dist_axis < d and in not valid_tree_id set
-		// TODO could be //
-		for (TreeDescriptor<real_t>& tree_descriptor : axis_data.tree_descriptors)
-		{
+		tf::Executor executor;
+		tf::Taskflow taskflow;
+		taskflow.for_each(std::begin(axis_data.tree_descriptors), std::end(axis_data.tree_descriptors), [&](TreeDescriptor<real_t>& tree_descriptor)
+		                  {
 			real_t       max_z    = std::numeric_limits<real_t>::min();
 			Eigen::Index max_z_id = 0;
 			const auto   tree_id  = tree_descriptor.tree_id;
@@ -237,7 +238,7 @@ namespace lib3dfin
 				const auto point_tree_id = axis_data.axis_cluster_indicator[voxel_id];
 				if (point_tree_id != tree_id)
 					continue;
-				const auto large_vox_id = vox_to_large_vox[voxel_id];
+				const auto large_vox_id = vox_to_large_vox(voxel_id);
 				if (!valid_clusters.count(cluster_labels[large_vox_id]))
 					continue;
 				if (axis_data.axis_distance[voxel_id] > params_.height_distance_from_axis)
@@ -249,8 +250,9 @@ namespace lib3dfin
 					max_z    = voxelated_cloud(voxel_id, 2);
 				}
 			}
-			tree_descriptor.setHeighestPoint(voxelated_cloud.row(max_z_id));
-		}
+			tree_descriptor.setHeighestPoint(voxelated_cloud.row(max_z_id)); });
+
+		executor.run(taskflow).get();
 	}
 
 	template class TreeIndividualizer<float>;
