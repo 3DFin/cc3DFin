@@ -14,6 +14,10 @@
 // nanoflann
 #include <nanoflann.hpp>
 
+// Taskflow
+#include <taskflow/algorithm/for_each.hpp>
+#include <taskflow/taskflow.hpp>
+
 // System
 #include <cmath>
 #include <cstddef>
@@ -50,52 +54,59 @@ namespace lib3dfin
 			cleanDTM();
 		}
 
-		const size_t n_points    = point_cloud_.rows();
-		const size_t n_neighbors = 3;
+		constexpr size_t N_NEIGHBORS = 3;
+		const size_t     n_points    = point_cloud_.rows();
 
-		if (n_points < n_neighbors)
+		if (n_points < N_NEIGHBORS)
 			throw std::runtime_error("Input DTM too small (less than 3 points).");
 
 		Eigen::VectorX<real_t> normalized_heights(n_points);
 		using kd_tree_t                 = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2<real_t>, 2, nanoflann::metric_L2_Simple>;
 		const PointCloud2<real_t>& dtm2 = dtm_.template leftCols<2>();
 		kd_tree_t                  kd_tree(2, dtm2, 10);
+		tf::Executor               executor;
+		tf::Taskflow               taskflow;
 
-		std::vector<Eigen::Index> indices(n_neighbors);
-		std::vector<real_t>       dists(n_neighbors);
+		const size_t num_workers = executor.num_workers();
 
-		for (size_t i = 0; i < n_points; ++i)
-		{
-			nanoflann::KNNResultSet<real_t, Eigen::Index> result(n_neighbors);
-			result.init(indices.data(), dists.data());
-			const real_t* query_pt = point_cloud_.row(i).data();
-			kd_tree.index_->findNeighbors(result, query_pt);
+		// Pre-allocate worker local storage to avoid allocations inloop
+		std::vector<Eigen::Index> neighbors_buffer(N_NEIGHBORS * num_workers);
+		std::vector<real_t>       dists_buffer(N_NEIGHBORS * num_workers);
+		std::vector<real_t>       heights_buffer(N_NEIGHBORS * num_workers);
 
-			// Convert squared distances to actual distances
-			std::vector<real_t> weights(n_neighbors);
-			real_t              sum_weights = 0.0;
-			// TODO, here we use distances to compute weights like the original code
-			// but it should be inverse distances...
-			for (size_t j = 0; j < n_neighbors; ++j)
-			{
-				weights[j] = std::sqrt(dists[j]); // nanoflann dist are squared
-				sum_weights += weights[j];
-			}
+		taskflow.for_each_index(
+		    size_t(0), n_points, size_t(1), [&](size_t i)
+		    {
+			    const int worker_id = executor.this_worker_id();
+				const size_t offset = worker_id * N_NEIGHBORS;
 
-			// Normalize weights
-			for (real_t& w : weights)
-				w /= sum_weights;
+			    // Use this worker's dedicated storage
+			    Eigen::Index* indices = neighbors_buffer.data() + offset;
+			    real_t* dists = dists_buffer.data() + offset;
+			    real_t* weights = heights_buffer.data() + offset;
 
-			// Compute weighted average Z from DTM
-			real_t weighted_z = 0.0;
-			for (size_t j = 0; j < n_neighbors; ++j)
-			{
-				weighted_z += weights[j] * dtm_(indices[j], 2);
-			}
+			    kd_tree.index_->knnSearch(point_cloud_.row(i).data(), N_NEIGHBORS, indices, dists);
 
-			normalized_heights(i) = point_cloud_(i, 2) - weighted_z;
-		}
+			    // Convert squared distances to actual distances and compute weights
+			    real_t sum_weights = 0.0;
+			    for (size_t j = 0; j < N_NEIGHBORS; ++j)
+			    {
+				    weights[j] = std::sqrt(dists[j]); // nanoflann dist are squared
+				    sum_weights += weights[j];
+			    }
 
+			    // Normalize weights and compute weighted average Z
+			    real_t weighted_z = 0.0;
+			    const real_t inv_sum_weights = real_t(1.0) / sum_weights;
+			    for (size_t j = 0; j < N_NEIGHBORS; ++j)
+			    {
+				    const real_t normalized_weight = weights[j] * inv_sum_weights;
+				    weighted_z += normalized_weight * dtm_(indices[j], 2);
+			    }
+
+			    normalized_heights(i) = point_cloud_(i, 2) - weighted_z; },
+		    tf::StaticPartitioner()); // worker ID
+		executor.run(taskflow).get();
 		return normalized_heights;
 	}
 
@@ -133,7 +144,7 @@ namespace lib3dfin
 
 		// hint to avoid too small allocation
 		// TODO: maybe prefer a mask (more efficient - less allocations - but uses more memory...)
-		valid_indices.reserve(large_clusters.size());
+		valid_indices.reserve(large_clusters.size() * params_.denoise_minimum_points);
 		for (Eigen::Index point_id = 0; point_id < point_cloud_.rows(); ++point_id)
 		{
 			const auto& voxel_id = cloud_to_vox(point_id);
@@ -186,49 +197,76 @@ namespace lib3dfin
 	template <typename real_t>
 	void HeightNormalization<real_t>::cleanDTM()
 	{
-		const size_t n_points    = dtm_.rows();
-		const size_t n_neighbors = 15;
+		constexpr size_t N_NEIGHBORS      = 15;
+		constexpr size_t HALF_N_NEIGHBORS = N_NEIGHBORS / 2;
+		constexpr real_t MAD_FACTOR       = 2.0;
 
-		if (n_points < n_neighbors)
+		const size_t n_points = dtm_.rows();
+
+		if (n_points < N_NEIGHBORS)
 			// TODO catch this in the GUI
 			throw std::runtime_error("Input DTM too small (less than 15 points).");
 
-		if (n_points == n_neighbors)
+		if (n_points == N_NEIGHBORS)
 			std::cerr << "Warning: Input DTM has exactly 15 points.\n";
 
-		const size_t half_n_points    = n_points / 2;
-		const size_t half_n_neighbors = n_neighbors / 2;
-		const real_t mad_factor       = 2.0;
+		const size_t half_n_points = n_points / 2;
 
 		using kd_tree_t                 = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2<real_t>, 2, nanoflann::metric_L2_Simple>;
 		const PointCloud2<real_t>& dtm2 = dtm_.template leftCols<2>();
 		kd_tree_t                  kd_tree(2, dtm2, 10);
 
-		std::vector<Eigen::Index> neighbors(n_neighbors);
-		std::vector<real_t>       dists(n_neighbors);
-		std::vector<real_t>       abs_devs(n_points);
-		std::vector<real_t>       heights(n_neighbors);
+		tf::Executor executor;
+		tf::Taskflow taskflow;
 
-		for (size_t i = 0; i < n_points; ++i)
-		{
-			nanoflann::KNNResultSet<real_t, Eigen::Index> result(n_neighbors);
-			result.init(neighbors.data(), dists.data());
-			kd_tree.index_->findNeighbors(result, dtm2.row(i).data());
+		std::vector<real_t> abs_devs(n_points);
+		// Get number of workers and pre-allocate vectors for each worker
+		const size_t              num_workers = executor.num_workers();
+		std::vector<Eigen::Index> neighbors_buffer(N_NEIGHBORS * num_workers);
+		std::vector<real_t>       dists_buffer(N_NEIGHBORS * num_workers);
+		std::vector<real_t>       heights_buffer(N_NEIGHBORS * num_workers);
 
-			for (size_t j = 0; j < n_neighbors; ++j)
-			{
-				heights[j] = dtm_(neighbors[j], 2);
-			}
-			std::nth_element(std::begin(heights), std::begin(heights) + half_n_neighbors, std::end(heights));
+		taskflow.for_each_index(
+		    size_t(0), n_points, size_t(1), [&](size_t i)
+		    {
+			    // Get current worker ID and calculate offset into pre-allocated vectors
+			    const int worker_id = executor.this_worker_id();
+			    const size_t offset = worker_id * N_NEIGHBORS;
 
-			const real_t median_z = heights[half_n_neighbors];
-			abs_devs[i]           = std::abs(dtm_(i, 2) - median_z);
-		}
+				// Thread local storage
+			    Eigen::Index* neighbors = neighbors_buffer.data() + offset;
+			    real_t* dists = dists_buffer.data() + offset;
+			    real_t* heights = heights_buffer.data() + offset;
+
+			    kd_tree.index_->knnSearch(dtm2.row(i).data(), N_NEIGHBORS, neighbors, dists);
+
+			    for (size_t j = 0; j < N_NEIGHBORS; ++j)
+			    {
+				    heights[j] = dtm_(neighbors[j], 2);
+			    }
+				// N_Neighbors is always odd
+			    std::nth_element(heights, heights + HALF_N_NEIGHBORS, heights + N_NEIGHBORS);
+
+			    const real_t median_z = heights[HALF_N_NEIGHBORS];
+			    abs_devs[i] = std::abs(dtm_(i, 2) - median_z); },
+		    tf::StaticPartitioner()); // StaticPartitioner is important to have consistent worker's ID
+
+		executor.run(taskflow).get();
 
 		// Compute MAD (median of absolute deviations)
 		std::vector<real_t> abs_devs_copy = abs_devs;
-		std::nth_element(std::begin(abs_devs_copy), std::begin(abs_devs_copy) + half_n_points, std::end(abs_devs_copy));
-		const real_t mad = abs_devs_copy[half_n_points];
+
+		real_t mad = 0.0;
+		if (n_points % 2 != 0)
+		{
+			std::nth_element(std::begin(abs_devs_copy), std::begin(abs_devs_copy) + half_n_points, std::end(abs_devs_copy));
+			mad = abs_devs_copy[half_n_points];
+		}
+		else
+		{
+			std::partial_sort(std::begin(abs_devs_copy), std::begin(abs_devs_copy) + half_n_points, std::end(abs_devs_copy));
+			mad = (abs_devs_copy[half_n_points - 1] + abs_devs_copy[half_n_points]) / 2.0;
+		}
 
 		// Filter points
 		// TODO parallelize, and does not allocate valid_indices?
@@ -236,7 +274,7 @@ namespace lib3dfin
 		valid_indices.reserve(n_points); // this should not be too far...
 		for (Eigen::Index i = 0; i < n_points; ++i)
 		{
-			if (abs_devs[i] < mad_factor * mad)
+			if (abs_devs[i] < MAD_FACTOR * mad)
 			{
 				valid_indices.push_back(i);
 			}
@@ -248,7 +286,7 @@ namespace lib3dfin
 			clean_points.row(i) = dtm_.row(valid_indices[i]);
 		}
 
-		dtm_ = clean_points;
+		dtm_ = std::move(clean_points);
 	}
 
 	// Required: Explicit instantiations if using in separate translation units

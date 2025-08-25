@@ -109,12 +109,11 @@ namespace lib3dfin
 					const Vec3<real_t>& stem_point = point_cloud_.row(point_id);
 					coord_accumulator += stem_point.template cast<double>();
 					z0_accumulator += static_cast<double>(z0_(point_id));
-					stem_cloud.row(stem_point_id) = stem_point;
-					stem_point_id++;
+					stem_cloud.row(stem_point_id++) = stem_point;
+
 				}
 			}
 			const auto stem_height_range = stem_cloud.col(2).maxCoeff() - stem_cloud.col(2).minCoeff();
-			std::cout << " ptp value: " << stem_height_range << std::endl;
 			if (stem_height_range > h_range_value)
 			{
 				TreeDescriptor<real_t> tree_descriptor(stem_id);

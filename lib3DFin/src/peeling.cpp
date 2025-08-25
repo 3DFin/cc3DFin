@@ -51,7 +51,6 @@ namespace lib3dfin
 			stripe.cluster_indicator = verticalityClustering(stripe.cluster_indicator);
 		}
 
-
 		std::cout << "[TreePeeler] total time: " << total_time_ << std::endl;
 
 		// filter stripe by cluster indicator
@@ -80,7 +79,7 @@ namespace lib3dfin
 
 		// eigenvalues are sorted by increasing order so
 		// first eigen vector is the normal vector. its third component is the z component
-		real_t normal_z_component = es.eigenvectors().col(0)(2);
+		const real_t normal_z_component = es.eigenvectors()(2, 0);
 		return real_t(1.0) - std::abs(normal_z_component);
 	}
 
@@ -124,6 +123,7 @@ namespace lib3dfin
             for (size_t id = 0; id < num_nn; ++id) { cloud.row(id) = stripe.row(result_set[id].first); }
             verticality(point_id) = adhoc_verticality(cloud); });
 		executor.run(taskflow).get();
+
 		return verticality;
 	}
 
@@ -157,7 +157,7 @@ namespace lib3dfin
 
 		// Voxelate stripe cloud
 		const auto [voxelated_stripe, stripe_cloud_to_vox] = voxelize(RefPointCloud<real_t>(stripe_cloud), params_.resolution_xy, params_.resolution_z, true);
-		const auto num_voxels                       = voxelated_stripe.rows();
+		const auto num_voxels                              = voxelated_stripe.rows();
 
 		// Compute verticality feature
 		Eigen::VectorX<real_t> vert_values      = compute_verticality_feature(voxelated_stripe, params_.verticality_nn_scale);
@@ -184,7 +184,7 @@ namespace lib3dfin
 			}
 		}
 
-		std::cout << "number of filtered voxels: " << num_valid_voxels << std::endl;
+		std::cout << "number of valid voxels (pass vericality test): " << num_valid_voxels << std::endl;
 
 		auto t_mid = std::chrono::high_resolution_clock::now();
 		std::cout << "   " << std::chrono::duration<double>(t_mid - t_start).count() << " s" << std::endl;
@@ -198,7 +198,7 @@ namespace lib3dfin
 
 		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
-		for (size_t filtered_voxel_id = 0; filtered_voxel_id < num_valid_voxels; ++filtered_voxel_id)
+		for (Eigen::Index filtered_voxel_id = 0; filtered_voxel_id < num_valid_voxels; ++filtered_voxel_id)
 		{
 			++label_counts[cluster_labels(filtered_voxel_id)];
 		}
