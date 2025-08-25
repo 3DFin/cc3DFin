@@ -105,18 +105,30 @@ void cc3DFin::do3DFinAction()
 	}
 
 	pc->placeIteratorAtBeginning();
-	const auto stripe = lib3dfin::process(&(pc->getNextPoint()->u[0]), static_cast<size_t>(pc->size()));
+	const auto [stripe, cloud] = lib3dfin::process(&(pc->getNextPoint()->u[0]), static_cast<size_t>(pc->size()));
 
-	ccPointCloud * stripe_pc = new ccPointCloud;
-	//stripe_pc->reserve(stripe.size() / 3);
+	ccPointCloud* stripe_pc = new ccPointCloud;
+	stripe_pc->reserve(cloud.size() / 3);
 
-	for (size_t point_id = 0; point_id < stripe.size() / 3; ++point_id)
+	for (size_t point_id = 0; point_id < cloud.size() / 3; ++point_id)
 	{
 		auto id = point_id * 3;
-		stripe_pc->addPoint(CCVector3(stripe[id], stripe[id + 1], stripe[id + 2]));
+		stripe_pc->addPoint(CCVector3(cloud[id], cloud[id + 1], cloud[id + 2]));
 	}
 
 	m_app->addToDB(stripe_pc);
+
+	auto        id      = pc->addScalarField("dist_id");
+	auto*       dist_id = pc->getScalarField(id);
+	std::size_t count   = 0;
+	for (auto elem : stripe)
+	{
+		dist_id->setValue(count, elem);
+		count++;
+	}
+	dist_id->computeMinAndMax();
+	pc->setCurrentDisplayedScalarField(id);
+
 	ccLog::Print("3DFin done !");
 	// cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
