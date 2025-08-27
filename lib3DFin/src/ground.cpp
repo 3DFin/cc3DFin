@@ -69,7 +69,7 @@ namespace lib3dfin
 
 		const size_t num_workers = executor.num_workers();
 
-		// Pre-allocate worker local storage to avoid allocations inloop
+		// Pre-allocate worker local storage to avoid allocations in loop
 		std::vector<Eigen::Index> neighbors_buffer(N_NEIGHBORS * num_workers);
 		std::vector<real_t>       dists_buffer(N_NEIGHBORS * num_workers);
 		std::vector<real_t>       heights_buffer(N_NEIGHBORS * num_workers);

@@ -22,7 +22,7 @@ namespace lib3dfin
 	{
 		const auto [voxelated_cloud, cloud_to_vox]        = voxelize(point_cloud_, params_.resolution_xy, params_.resolution_z, true);
 		auto                          t0                  = std::chrono::high_resolution_clock::now();
-		auto                          voxelated_axes_data = compute_axes_approximate(voxelated_cloud);
+		auto                          voxelated_axes_data = computeAxesApproximate(voxelated_cloud);
 		auto                          t1                  = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> elapsed             = t1 - t0;
 
@@ -48,7 +48,7 @@ namespace lib3dfin
 	}
 
 	template <typename real_t>
-	AxesData<real_t> TreeIndividualizer<real_t>::compute_axes_approximate(
+	AxesData<real_t> TreeIndividualizer<real_t>::computeAxesApproximate(
 	    const PointCloud3<real_t>& voxelated_cloud)
 	{
 		// TODO chrono and progress bar...

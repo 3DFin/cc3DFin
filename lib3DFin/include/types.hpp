@@ -35,6 +35,7 @@ namespace lib3dfin
 		    : lower_limit(lower_limit_)
 		    , upper_limit(upper_limit_)
 		{
+			// todo check upper_limit > lower_limit
 		}
 		ArrayClusterIndicator cluster_indicator;
 		real_t                lower_limit{0.0};

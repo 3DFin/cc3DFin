@@ -4,16 +4,15 @@
 #include "peeling.hpp"
 
 #include "connected_components.hpp"
-#include "voxel.hpp"
 #include "verticality.hpp"
+#include "voxel.hpp"
 
 // nanoflann
 #include <nanoflann.hpp>
 
 // taskflow
-#include <taskflow/taskflow.hpp>
 #include <taskflow/algorithm/for_each.hpp>
-
+#include <taskflow/taskflow.hpp>
 
 // stdlib
 #include <cstdint>
@@ -24,62 +23,69 @@ namespace lib3dfin
 
 	template <typename real_t>
 	TreePeeler<real_t>::TreePeeler(
-	    const RefPointCloud<real_t>&  point_cloud,
-	    const Eigen::VectorX<real_t>& z0_in,
-	    TreePeeler::Parameters        params_in)
+	    const RefPointCloud<real_t>& point_cloud,
+	    TreePeeler::Parameters       params)
 	    : point_cloud_(point_cloud)
 	    , num_points_(point_cloud.rows())
-	    , z0(z0_in)
-	    , params_(std::move(params_in))
+	    , params_(std::move(params))
 	{
 	}
 
 	template <typename real_t>
-	Stripe<real_t> TreePeeler<real_t>::peel()
+	void TreePeeler<real_t>::peel(ArrayClusterIndicator& stripe_indicator)
 	{
 		std::cout << "[TreePeeler] Starting peeling process..." << std::endl;
 		// reset total time
 		total_time_ = 0.0;
 
-		Stripe<real_t> stripe(params_.stripe_lower_limit, params_.stripe_upper_limit);
-
-		// Get the Initial stripe
-		stripe.cluster_indicator = filterStripe();
-
 		// Perform verticality clustering
 		for (uint32_t iter = 0; iter < params_.num_iterations; ++iter)
 		{
-			stripe.cluster_indicator = verticalityClustering(stripe.cluster_indicator);
+			stripe_indicator = verticalityClustering(stripe_indicator);
 		}
 
 		std::cout << "[TreePeeler] total time: " << total_time_ << std::endl;
-
-		// filter stripe by cluster indicator
-
-		return stripe;
 	}
 
 	template <typename real_t>
-	ArrayClusterIndicator TreePeeler<real_t>::filterStripe()
+	ArrayClusterIndicator TreePeeler<real_t>::filterInitialStripe(const Eigen::VectorX<real_t>& z0, real_t stripe_lower_limit, real_t stripe_upper_limit)
 	{
-		ArrayClusterIndicator stripe_cluster_indicator(num_points_);
+		ArrayClusterIndicator stripe_cluster_indicator(z0.size());
 		stripe_cluster_indicator.setConstant(NO_CLUSTER_ID);
-		stripe_cluster_indicator = (z0.array() > params_.stripe_lower_limit && z0.array() < params_.stripe_upper_limit).select(0, stripe_cluster_indicator);
+		stripe_cluster_indicator = (z0.array() > stripe_lower_limit && z0.array() < stripe_upper_limit).select(0, stripe_cluster_indicator);
 		return stripe_cluster_indicator;
 	}
 
 	template <typename real_t>
-	PointCloud3<real_t> TreePeeler<real_t>::extractStripe(const ArrayClusterIndicator& stripe_indicator)
+	ArrayClusterIndicator TreePeeler<real_t>::filterInitialStripe(const Eigen::VectorX<real_t>& z0, const Eigen::VectorX<real_t>& axis_distance, real_t max_distance, real_t stripe_lower_limit, real_t stripe_upper_limit)
+	{
+		assert(z0.size() == axis_distance.size());
+		ArrayClusterIndicator stripe_cluster_indicator(z0.size());
+		for (Eigen::Index point_id = 0; point_id < z0.size(); ++point_id)
+		{
+			if (z0(point_id) > stripe_lower_limit && z0(point_id) < stripe_upper_limit && axis_distance(point_id) < max_distance)
+			{
+				stripe_cluster_indicator(point_id) = 0;
+			}
+			else {
+				stripe_cluster_indicator(point_id) = NO_CLUSTER_ID;
+			}
+		}
+		return stripe_cluster_indicator;
+	}
+
+	template <typename real_t>
+	PointCloud3<real_t> TreePeeler<real_t>::extractStripe(const RefPointCloud<real_t>& point_cloud, const ArrayClusterIndicator& stripe_indicator)
 	{
 		const auto          num_points_stripe = (stripe_indicator != NO_CLUSTER_ID).count();
 		PointCloud3<real_t> stripe_cloud(num_points_stripe, 3);
 
 		Eigen::Index stripe_id = 0;
-		for (Eigen::Index point_id = 0; point_id < num_points_; ++point_id)
+		for (Eigen::Index point_id = 0; point_id < point_cloud.rows(); ++point_id)
 		{
 			if (stripe_indicator(point_id) != NO_CLUSTER_ID)
 			{
-				stripe_cloud.row(stripe_id) = point_cloud_.row(point_id);
+				stripe_cloud.row(stripe_id) = point_cloud.row(point_id);
 				stripe_id++;
 			}
 		}
@@ -93,7 +99,7 @@ namespace lib3dfin
 		std::cout << " -Computing verticality..." << std::endl;
 
 		// filter stripe by cluster indicator
-		const auto stripe_cloud     = extractStripe(stripe_indicator);
+		const auto stripe_cloud     = extractStripe(point_cloud_, stripe_indicator);
 		const auto num_point_stripe = stripe_cloud.rows();
 
 		// Voxelate stripe cloud

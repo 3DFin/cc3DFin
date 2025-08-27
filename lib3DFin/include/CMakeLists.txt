@@ -9,6 +9,7 @@ target_sources(${PROJECT_NAME}
      peeling.hpp
      individualize.hpp
      interface.hpp
+     section.hpp
 )
 
 install(
@@ -22,6 +23,7 @@ install(
   peeling.hpp
   individualize.hpp
   interface.hpp
+  section.hpp
  DESTINATION
   ${INSTALL_CMAKE_DIR}
 )

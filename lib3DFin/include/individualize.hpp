@@ -21,7 +21,7 @@ namespace lib3dfin
 			real_t   resolution_z{0.035};
 			real_t   height_range{0.7};
 			real_t   maximum_dist_axis{15.0};               // maximum_
-			uint32_t minimum_points_stem{20};              // minimum_points this is the minimum number of voxels required to consider stripe cluster to be a valid as a stem
+			uint32_t minimum_points_stem{20};               // minimum_points this is the minimum number of voxels required to consider stripe cluster to be a valid as a stem
 			real_t   axis_maximum_vertical_deviation{25.0}; // maximum_dev
 			real_t   height_distance_from_axis{1.5};
 			real_t   resolution_height{0.3};
@@ -36,14 +36,14 @@ namespace lib3dfin
 		    : point_cloud_(point_cloud)
 		    , stripe_(stripe)
 		    , z0_(z0)
-		    , params_(params)
+		    , params_(std::move(params))
 		{
 		}
 
 		AxesData<real_t> individualize();
 
 	  private: // methods
-		AxesData<real_t> compute_axes_approximate(
+		AxesData<real_t> computeAxesApproximate(
 		    const PointCloud3<real_t>& voxelated_cloud);
 
 		void compute_heights(
