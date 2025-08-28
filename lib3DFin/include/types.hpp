@@ -127,7 +127,12 @@ namespace lib3dfin
 	{
 		std::vector<TreeDescriptor<real_t>> tree_descriptors;
 		Eigen::VectorX<real_t>              axis_distance;
-		ArrayClusterIndicator               axis_cluster_indicator;
+		ArrayClusterIndicator               axis_cluster_indicator; //TODO: refactor tree cluster indicator
+
+		void updateIndicator(const ArrayClusterIndicator& mask_indicator)
+		{
+			axis_cluster_indicator = (mask_indicator > -1).select(axis_cluster_indicator, -1);
+		}
 	};
 
 } // namespace lib3dfin
