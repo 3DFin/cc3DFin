@@ -7,6 +7,9 @@
 #include "circle_fit.hpp"
 #include "types.hpp"
 
+// std::lib
+#include <iostream>
+
 namespace lib3dfin
 {
 	template <typename real_t>
@@ -17,7 +20,7 @@ namespace lib3dfin
 		{
 			real_t   stem_minimum_height{0.3};
 			real_t   stem_maximum_height{25.0};
-			real_t   section_lenght{0.2};
+			real_t   section_length{0.2};
 			real_t   section_width{0.05};
 			uint32_t inner_circle_point_threshold{5};
 			real_t   stem_diameter_proportion{0.5};
@@ -41,11 +44,11 @@ namespace lib3dfin
 		};
 
 	  public:
-		explicit SectionExtractor(const PointCloud3<real_t>& cloud, const Eigen::VectorX<real_t>& z0, const AxesData<real_t>& trees, const Params& params)
-		    : cloud_(cloud)
-		    , num_points_(cloud.rows())
-		    , trees_(trees)
+		explicit SectionExtractor(const RefPointCloud<real_t>& point_cloud, const Eigen::VectorX<real_t>& z0, const AxesData<real_t>& trees, const Params params = Params())
+		    : point_cloud_(point_cloud)
+		    , num_points_(point_cloud.rows())
 		    , z0_(z0)
+		    , trees_(trees)
 		    , params_(std::move(params))
 		{
 		}
@@ -57,6 +60,7 @@ namespace lib3dfin
 			// iterate over the trees
 			for (const auto& tree : trees_.tree_descriptors)
 			{
+				std::cout << "Processing tree " << tree.tree_id << std::endl;
 				const auto  tree_id           = tree.tree_id;
 				const auto& cluster_indicator = trees_.axis_cluster_indicator;
 
@@ -69,11 +73,13 @@ namespace lib3dfin
 				{
 					if (tree_mask(point_id))
 					{
-						tree_cloud.row(output_id, 0)   = cloud_.row(point_id, 0);
-						tree_cloud.row(output_id, 1)   = cloud_.row(point_id, 1);
-						tree_cloud.row(output_id++, 2) = z0_(point_id);
+						tree_cloud(output_id, 0)   = point_cloud_(point_id, 0);
+						tree_cloud(output_id, 1)   = point_cloud_(point_id, 1);
+						tree_cloud(output_id, 2) = z0_(point_id);
+						output_id++;
 					}
 				}
+
 
 				for (Eigen::Index section_id = 0; section_id < num_sections; ++section_id)
 				{
@@ -96,6 +102,7 @@ namespace lib3dfin
 							section_cloud.row(num_section_points++) = tree_cloud.row(point_id).template head<2>();
 						}
 					}
+
 					// fit_circle
 					const auto circle_params = LMCircleFit(section_cloud);
 
@@ -104,11 +111,11 @@ namespace lib3dfin
 		}
 
 	  private: // members
-		const PointCloud3<real_t>&    cloud_;
+		const RefPointCloud<real_t>&  point_cloud_;
 		const Eigen::VectorX<real_t>& z0_;
 		const AxesData<real_t>&       trees_;
 		const Eigen::Index            num_points_;
-		const Params&                 params_;
+		const Params                  params_;
 	};
 
 } // namespace lib3dfin
