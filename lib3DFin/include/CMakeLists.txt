@@ -4,6 +4,7 @@ target_sources(${PROJECT_NAME}
      config.hpp
      voxel.hpp
      connected_components.hpp
+     slink.hpp
      circle_fit.hpp
      ground.hpp
      verticality.hpp
@@ -19,6 +20,7 @@ install(
   config.hpp
   voxel.hpp
   connected_components.hpp
+  slink.hpp
   circle_fit.hpp
   ground.hpp
   verticality.hpp
