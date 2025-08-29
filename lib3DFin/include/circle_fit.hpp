@@ -37,7 +37,7 @@ namespace lib3dfin
 		}
 
 		// Compute jacobian
-		int df(const Eigen::VectorX<real_t> x, Eigen::MatrixX<real_t>& fjac) const
+		int df(const Eigen::VectorX<real_t>& x, Eigen::MatrixX<real_t>& fjac) const
 		{
 			const real_t a = x(0);
 			const real_t b = x(1);

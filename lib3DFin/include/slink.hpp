@@ -34,7 +34,7 @@ namespace lib3dfin
 
 		// extract only points in the largest cluster
 		PointCloud2<real_t> cl_points(max_cl_count, 2);
-		uint32_t            new_id = 0;
+		Eigen::Index        new_id = 0;
 		for (size_t i = 0; i < labels.size(); ++i)
 		{
 			if (labels[i] == best_cl_id)
@@ -154,7 +154,7 @@ namespace lib3dfin
 		{
 			for (size_t j = i + 1; j < num_points; ++j)
 			{
-				if (std::hypot(xy(i, 0) - xy(j, 0), xy(i, 1) - xy(j, 1)) <= threshold) //TODO: sq_threshold
+				if (std::hypot(xy(i, 0) - xy(j, 0), xy(i, 1) - xy(j, 1)) <= threshold) // TODO: sq_threshold
 				{
 					const uint32_t ci = labels[i];
 					const uint32_t cj = labels[j];

@@ -5,6 +5,7 @@
 
 // local
 #include "circle_fit.hpp"
+#include "slink.hpp"
 #include "types.hpp"
 
 // std::lib
@@ -57,8 +58,9 @@ namespace lib3dfin
 		{
 			const auto circle_params = LMCircleFit(section_cloud);
 
-			if (circle_params(2) < params_.stem_minimum_diameter / 2 && circle_params(2) > params_.stem_maximum_diameter / 2)
+			if (circle_params(2) < params_.stem_minimum_diameter / 2 || circle_params(2) > params_.stem_maximum_diameter / 2)
 			{
+				std::cout << "failed at diameter check" << std::endl;
 				return std::nullopt;
 			}
 
@@ -66,6 +68,7 @@ namespace lib3dfin
 
 			if (num_points_in < params_.inner_circle_point_threshold)
 			{
+				std::cout << "failed at point count check" << std::endl;
 				return std::nullopt;
 			}
 
@@ -73,6 +76,7 @@ namespace lib3dfin
 
 			if (sector_percentage * params_.total_number_sectors < params_.minimum_number_sectors)
 			{
+				std::cout << "failed at sector check" << std::endl;
 				return std::nullopt;
 			}
 
@@ -146,12 +150,12 @@ namespace lib3dfin
 			// iterate over the trees
 			for (const auto& tree : trees_.tree_descriptors)
 			{
-				std::cout << "Processing tree " << tree.tree_id << std::endl;
 				const auto  tree_id           = tree.tree_id;
 				const auto& cluster_indicator = trees_.axis_cluster_indicator;
 
 				const auto   tree_mask          = (cluster_indicator.array() == tree_id);
 				Eigen::Index number_points_tree = tree_mask.count();
+				std::cout << "Processing tree " << tree.tree_id << " with " << number_points_tree << " points" << std::endl;
 
 				PointCloud3<real_t> tree_cloud(number_points_tree, 3);
 				Eigen::Index        output_id = 0;
@@ -166,37 +170,47 @@ namespace lib3dfin
 					}
 				}
 
+				uint32_t num_pass_sections_1 = 0;
+				uint32_t num_pass_sections_2 = 0;
 				for (Eigen::Index section_id = 0; section_id < num_sections; ++section_id)
 				{
 					const auto section_start = params_.stem_minimum_height + section_id * params_.section_length;
 					const auto section_end   = section_start + params_.section_width;
 
-					const auto   section_mask       = (tree_cloud.row(2).array() >= section_start) && (tree_cloud.row(2).array() < section_end);
+					const auto   section_mask       = (tree_cloud.col(2).array() >= section_start) && (tree_cloud.col(2).array() < section_end);
 					Eigen::Index num_section_points = section_mask.count();
 
 					if (num_section_points < params_.min_num_points_section)
 						continue;
 
-					PointCloud2<real_t> section_cloud(num_section_points, 3);
+					PointCloud2<real_t> section_cloud(num_section_points, 2);
 
 					Eigen::Index output_id = 0;
 					for (Eigen::Index point_id = 0; point_id < num_section_points; ++point_id)
 					{
 						if (section_mask(point_id))
 						{
-							section_cloud.row(num_section_points++) = tree_cloud.row(point_id).template head<2>();
+							section_cloud.row(output_id++) = tree_cloud.row(point_id).template head<2>();
 						}
 					}
 
 					// fit_circle
 					auto circle_params = fit_circle(section_cloud);
-
 					if (circle_params == std::nullopt)
 					{
 						// cluster the cloud with single linkage algorithm
 						// rerun the algorithm on the clustered cloud
-
-						// circle_params = fit_circle(clustered_cloud);
+						auto max_cc_section = fcluster_slink(section_cloud, params_.circle_width);
+						circle_params       = fit_circle(max_cc_section);
+						if (circle_params == std::nullopt)
+						{
+							continue;
+						}
+						num_pass_sections_2++;
+					}
+					else
+					{
+						num_pass_sections_1++;
 					}
 				}
 			}
