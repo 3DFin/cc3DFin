@@ -53,6 +53,92 @@ namespace lib3dfin
 		{
 		}
 
+		std::optional<Vec3<real_t>> fit_circle(const PointCloud2<real_t>& section_cloud)
+		{
+			const auto circle_params = LMCircleFit(section_cloud);
+
+			if (circle_params(2) < params_.stem_minimum_diameter / 2 && circle_params(2) > params_.stem_maximum_diameter / 2)
+			{
+				return std::nullopt;
+			}
+
+			const uint32_t num_points_in = innerCircle(section_cloud, circle_params);
+
+			if (num_points_in < params_.inner_circle_point_threshold)
+			{
+				return std::nullopt;
+			}
+
+			const real_t sector_percentage = sectorOccupancy(section_cloud, circle_params);
+
+			if (sector_percentage * params_.total_number_sectors < params_.minimum_number_sectors)
+			{
+				return std::nullopt;
+			}
+
+			return circle_params;
+		}
+
+		uint32_t innerCircle(const PointCloud2<real_t>& circle_cloud, const Vec3<real_t>& circle_params)
+		{
+			uint32_t     num_valid_points = 0;
+			const real_t sq_threshold     = (circle_params(2) * params_.stem_diameter_proportion) * (circle_params(2) * params_.stem_diameter_proportion);
+			for (Eigen::Index point_id = 0; point_id < circle_cloud.rows(); ++point_id)
+			{
+				const Vec2<real_t>& point    = circle_cloud.row(point_id);
+				const real_t        distance = (point - circle_params.template head<2>()).squaredNorm();
+				if (distance < sq_threshold)
+				{
+					num_valid_points++;
+				}
+			}
+			return num_valid_points;
+		}
+
+		real_t sectorOccupancy(const PointCloud2<real_t>& circle_cloud, const Vec3<real_t>& circle_params)
+		{
+			const real_t R_min_sq        = (circle_params(2) - params_.circle_width) * (circle_params(2) - params_.circle_width);
+			const real_t R_max_sq        = (circle_params(2) + params_.circle_width) * (circle_params(2) + params_.circle_width);
+			const real_t inv_sector_size = static_cast<real_t>(params_.total_number_sectors) / (2.0 * M_PI);
+
+			const Eigen::Index n_points = circle_cloud.rows();
+
+			std::vector<bool> sector_occupancy_indicator(params_.total_number_sectors, false);
+
+			for (Eigen::Index point_id = 0; point_id < n_points; ++point_id)
+			{
+				const Vec2<real_t>& point     = circle_cloud.row(point_id);
+				const Vec2<real_t>  red_point = point - circle_params.template head<2>();
+
+				// Check radial constraint using squared distances
+				const real_t r_sq = red_point.squaredNorm();
+				if (r_sq <= R_min_sq || r_sq >= R_max_sq)
+					continue;
+
+				// Fast calculation
+				real_t angle = std::atan2(red_point.x(), red_point.y());
+				if (angle < 0)
+					angle += 2.0 * M_PI; // Normalize to [0, 2π)
+
+				const uint32_t sector                      = static_cast<uint32_t>(angle * inv_sector_size);
+				const uint32_t clamped_sector              = std::min(sector, params_.total_number_sectors - 1); // be sure we don't exceed the maximum sector index //TODO clamp angle
+				sector_occupancy_indicator[clamped_sector] = true;
+			}
+
+			// count the number of occupied sectors
+			uint32_t num_occupied_sectors = 0;
+			for (size_t sector_id = 0; sector_id < static_cast<size_t>(params_.total_number_sectors); ++sector_id)
+			{
+				if (sector_occupancy_indicator[sector_id])
+					num_occupied_sectors++;
+			}
+
+			// percentage of occupied sectors
+			real_t percentage_occupied_sectors = static_cast<real_t>(num_occupied_sectors) / params_.total_number_sectors;
+
+			return percentage_occupied_sectors;
+		}
+
 		void extract()
 		{
 			// number of sections
@@ -73,13 +159,12 @@ namespace lib3dfin
 				{
 					if (tree_mask(point_id))
 					{
-						tree_cloud(output_id, 0)   = point_cloud_(point_id, 0);
-						tree_cloud(output_id, 1)   = point_cloud_(point_id, 1);
+						tree_cloud(output_id, 0) = point_cloud_(point_id, 0);
+						tree_cloud(output_id, 1) = point_cloud_(point_id, 1);
 						tree_cloud(output_id, 2) = z0_(point_id);
 						output_id++;
 					}
 				}
-
 
 				for (Eigen::Index section_id = 0; section_id < num_sections; ++section_id)
 				{
@@ -104,8 +189,15 @@ namespace lib3dfin
 					}
 
 					// fit_circle
-					const auto circle_params = LMCircleFit(section_cloud);
+					auto circle_params = fit_circle(section_cloud);
 
+					if (circle_params == std::nullopt)
+					{
+						// cluster the cloud with single linkage algorithm
+						// rerun the algorithm on the clustered cloud
+
+						// circle_params = fit_circle(clustered_cloud);
+					}
 				}
 			}
 		}
