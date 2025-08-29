@@ -34,7 +34,7 @@ namespace lib3dfin
 			real_t   circle_width{0.02};
 		};
 
-		struct Circle
+		struct CircleData
 		{
 			real_t       radius{0.0};
 			Vec3<real_t> center{0.0, 0.0, 0.0};
@@ -54,21 +54,21 @@ namespace lib3dfin
 		{
 		}
 
-		std::optional<Vec3<real_t>> fit_circle(const PointCloud2<real_t>& section_cloud)
+		std::optional<Circle<real_t>> fit_circle(const PointCloud2<real_t>& section_cloud)
 		{
 			const auto circle_params = LMCircleFit(section_cloud);
 
-			if (circle_params(2) < params_.stem_minimum_diameter / 2 || circle_params(2) > params_.stem_maximum_diameter / 2)
+			if (circle_params.radius < params_.stem_minimum_diameter / 2 || circle_params.radius > params_.stem_maximum_diameter / 2)
 			{
-				std::cout << "failed at diameter check" << std::endl;
+				//std::cout << "failed at diameter check " << circle_params.radius << std::endl;
 				return std::nullopt;
 			}
 
 			const uint32_t num_points_in = innerCircle(section_cloud, circle_params);
 
-			if (num_points_in < params_.inner_circle_point_threshold)
+			if (num_points_in > params_.inner_circle_point_threshold)
 			{
-				std::cout << "failed at point count check" << std::endl;
+				//std::cout << "failed at inner circle point count check" << std::endl;
 				return std::nullopt;
 			}
 
@@ -76,21 +76,21 @@ namespace lib3dfin
 
 			if (sector_percentage * params_.total_number_sectors < params_.minimum_number_sectors)
 			{
-				std::cout << "failed at sector check" << std::endl;
+				//std::cout << "failed at sector check" << sector_percentage << std::endl;
 				return std::nullopt;
 			}
 
 			return circle_params;
 		}
 
-		uint32_t innerCircle(const PointCloud2<real_t>& circle_cloud, const Vec3<real_t>& circle_params)
+		uint32_t innerCircle(const PointCloud2<real_t>& circle_cloud, const Circle<real_t>& circle_params)
 		{
 			uint32_t     num_valid_points = 0;
-			const real_t sq_threshold     = (circle_params(2) * params_.stem_diameter_proportion) * (circle_params(2) * params_.stem_diameter_proportion);
+			const real_t sq_threshold     = (circle_params.radius * params_.stem_diameter_proportion) * (circle_params.radius * params_.stem_diameter_proportion);
 			for (Eigen::Index point_id = 0; point_id < circle_cloud.rows(); ++point_id)
 			{
 				const Vec2<real_t>& point    = circle_cloud.row(point_id);
-				const real_t        distance = (point - circle_params.template head<2>()).squaredNorm();
+				const real_t        distance = (point - circle_params.center).squaredNorm();
 				if (distance < sq_threshold)
 				{
 					num_valid_points++;
@@ -99,10 +99,10 @@ namespace lib3dfin
 			return num_valid_points;
 		}
 
-		real_t sectorOccupancy(const PointCloud2<real_t>& circle_cloud, const Vec3<real_t>& circle_params)
+		real_t sectorOccupancy(const PointCloud2<real_t>& circle_cloud, const Circle<real_t>& circle_params)
 		{
-			const real_t R_min_sq        = (circle_params(2) - params_.circle_width) * (circle_params(2) - params_.circle_width);
-			const real_t R_max_sq        = (circle_params(2) + params_.circle_width) * (circle_params(2) + params_.circle_width);
+			const real_t R_min_sq        = (circle_params.radius - params_.circle_width) * (circle_params.radius - params_.circle_width);
+			const real_t R_max_sq        = (circle_params.radius + params_.circle_width) * (circle_params.radius + params_.circle_width);
 			const real_t inv_sector_size = static_cast<real_t>(params_.total_number_sectors) / (2.0 * M_PI);
 
 			const Eigen::Index n_points = circle_cloud.rows();
@@ -112,31 +112,27 @@ namespace lib3dfin
 			for (Eigen::Index point_id = 0; point_id < n_points; ++point_id)
 			{
 				const Vec2<real_t>& point     = circle_cloud.row(point_id);
-				const Vec2<real_t>  red_point = point - circle_params.template head<2>();
+				const Vec2<real_t>  red_point = point - circle_params.center;
 
 				// Check radial constraint using squared distances
 				const real_t r_sq = red_point.squaredNorm();
-				if (r_sq <= R_min_sq || r_sq >= R_max_sq)
+				if (r_sq < R_min_sq || r_sq > R_max_sq)
 					continue;
 
-				// Fast calculation
-				real_t angle = std::atan2(red_point.x(), red_point.y());
+				real_t angle = std::atan2(red_point.y(), red_point.x());
 				if (angle < 0)
 					angle += 2.0 * M_PI; // Normalize to [0, 2π)
 
-				const uint32_t sector                      = static_cast<uint32_t>(angle * inv_sector_size);
-				const uint32_t clamped_sector              = std::min(sector, params_.total_number_sectors - 1); // be sure we don't exceed the maximum sector index //TODO clamp angle
+				const uint32_t sector         = static_cast<uint32_t>(std::floor(angle * inv_sector_size));
+				const uint32_t clamped_sector = std::min(sector, params_.total_number_sectors - 1); // be sure we don't exceed the maximum sector index //TODO clamp angle
+
 				sector_occupancy_indicator[clamped_sector] = true;
 			}
 
 			// count the number of occupied sectors
-			uint32_t num_occupied_sectors = 0;
-			for (size_t sector_id = 0; sector_id < static_cast<size_t>(params_.total_number_sectors); ++sector_id)
-			{
-				if (sector_occupancy_indicator[sector_id])
-					num_occupied_sectors++;
-			}
-
+			const uint32_t num_occupied_sectors = std::count(std::begin(sector_occupancy_indicator),
+			                                                 std::end(sector_occupancy_indicator),
+			                                                 true);
 			// percentage of occupied sectors
 			real_t percentage_occupied_sectors = static_cast<real_t>(num_occupied_sectors) / params_.total_number_sectors;
 
@@ -146,7 +142,7 @@ namespace lib3dfin
 		void extract()
 		{
 			// number of sections
-			Eigen::Index num_sections = static_cast<Eigen::Index>(std::floor((params_.stem_maximum_height - params_.stem_minimum_height) / params_.section_length));
+			const Eigen::Index num_sections = static_cast<Eigen::Index>(std::floor((params_.stem_maximum_height - params_.stem_minimum_height) / params_.section_length));
 			// iterate over the trees
 			for (const auto& tree : trees_.tree_descriptors)
 			{
@@ -170,8 +166,6 @@ namespace lib3dfin
 					}
 				}
 
-				uint32_t num_pass_sections_1 = 0;
-				uint32_t num_pass_sections_2 = 0;
 				for (Eigen::Index section_id = 0; section_id < num_sections; ++section_id)
 				{
 					const auto section_start = params_.stem_minimum_height + section_id * params_.section_length;
@@ -185,12 +179,14 @@ namespace lib3dfin
 
 					PointCloud2<real_t> section_cloud(num_section_points, 2);
 
-					Eigen::Index output_id = 0;
-					for (Eigen::Index point_id = 0; point_id < num_section_points; ++point_id)
+					Eigen::Index section_output_id = 0;
+					for (Eigen::Index point_id = 0; point_id < tree_cloud.rows(); ++point_id)
 					{
 						if (section_mask(point_id))
 						{
-							section_cloud.row(output_id++) = tree_cloud.row(point_id).template head<2>();
+							section_cloud(section_output_id, 0) = tree_cloud(point_id, 0);
+							section_cloud(section_output_id, 1) = tree_cloud(point_id, 1);
+							section_output_id++;
 						}
 					}
 
@@ -206,11 +202,6 @@ namespace lib3dfin
 						{
 							continue;
 						}
-						num_pass_sections_2++;
-					}
-					else
-					{
-						num_pass_sections_1++;
 					}
 				}
 			}

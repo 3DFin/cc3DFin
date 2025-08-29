@@ -9,6 +9,9 @@
 #include <Eigen/QR>
 #include <unsupported/Eigen/NonLinearOptimization>
 
+// stdlib
+#include <iostream>
+
 namespace lib3dfin
 {
 
@@ -74,7 +77,7 @@ namespace lib3dfin
 	};
 
 	template <typename real_t>
-	Eigen::Vector3<real_t> algebraicTaubinCircleFit(const PointCloud2<real_t>& xy)
+	Circle<real_t> algebraicTaubinCircleFit(const PointCloud2<real_t>& xy)
 	{
 		const size_t num_points = xy.rows();
 
@@ -104,22 +107,23 @@ namespace lib3dfin
 		Eigen::Vector4<real_t> A_mat;
 		A_mat << A, -Z_mean * A(0);
 
-		// Compute parameters
-		const real_t a = -A_mat(1) / (real_t(2.0) * A_mat(0)) + centroid(0);
-		const real_t b = -A_mat(2) / (real_t(2.0) * A_mat(0)) + centroid(1);
-		const real_t r = sqrt(A_mat(1) * A_mat(1) + A_mat(2) * A_mat(2) - real_t(4.0) * A_mat(0) * A_mat(3)) / std::abs(A_mat(0)) / real_t(2.0);
+		// Compute parameter
+		Circle<real_t> result;
+		result.center(0) = -A_mat(1) / (real_t(2.0) * A_mat(0)) + centroid(0);
+		result.center(1) = -A_mat(2) / (real_t(2.0) * A_mat(0)) + centroid(1);
+		result.radius    = sqrt(A_mat(1) * A_mat(1) + A_mat(2) * A_mat(2) - real_t(4.0) * A_mat(0) * A_mat(3)) / std::abs(A_mat(0)) / real_t(2.0);
 
-		return Eigen::Vector3<real_t>(a, b, r);
+		return result;
 	}
 
 	template <typename real_t>
-	Eigen::Vector3<real_t> LMCircleFit(const PointCloud2<real_t>& xy)
+	Circle<real_t> LMCircleFit(const PointCloud2<real_t>& xy)
 	{
 		if (xy.rows() < 3)
 			throw std::invalid_argument("Circle fit need at least 3 points");
 
 		// Initialization by Taubin method
-		Eigen::VectorX<real_t> x0 = algebraicTaubinCircleFit(xy);
+		const auto init_circle = algebraicTaubinCircleFit(xy);
 
 		EigenCircleFitFunctor                                    functor(xy);
 		Eigen::LevenbergMarquardt<EigenCircleFitFunctor<real_t>> lm(functor);
@@ -129,8 +133,16 @@ namespace lib3dfin
 		lm.parameters.maxfev = 40;
 		lm.parameters.xtol   = 1.4e-8;
 
-		int status = lm.minimize(x0); // TODO: check status
-		return Eigen::Vector3<real_t>(x0(0), x0(1), x0(2));
+		Eigen::VectorX<real_t> x0(3);
+		x0 << init_circle.center.x(), init_circle.center.y(), init_circle.radius;
+
+		int status = lm.minimize(x0); // Status code is not a Eigen::Status
+
+		Circle<real_t> result;
+		result.center(0) = x0(0);
+		result.center(1) = x0(1);
+		result.radius    = x0(2);
+		return result;
 	}
 
 } // namespace lib3dfin

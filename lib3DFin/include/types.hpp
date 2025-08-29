@@ -32,6 +32,13 @@ namespace lib3dfin
 	inline constexpr int32_t NO_CLUSTER_ID = -1;
 
 	template <typename real_t>
+	struct Circle
+	{
+		Vec2<real_t> center{0.0, 0.0};
+		real_t       radius{0.0};
+	};
+
+	template <typename real_t>
 	struct Stripe
 	{
 		Stripe(real_t lower_limit_, real_t upper_limit_)
@@ -130,7 +137,7 @@ namespace lib3dfin
 	{
 		std::vector<TreeDescriptor<real_t>> tree_descriptors;
 		Eigen::VectorX<real_t>              axis_distance;
-		ArrayClusterIndicator               axis_cluster_indicator; //TODO: refactor tree cluster indicator
+		ArrayClusterIndicator               axis_cluster_indicator; // TODO: refactor tree cluster indicator
 
 		void updateIndicator(const ArrayClusterIndicator& mask_indicator)
 		{
