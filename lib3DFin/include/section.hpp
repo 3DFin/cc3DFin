@@ -36,12 +36,21 @@ namespace lib3dfin
 
 		struct CircleData
 		{
-			real_t       radius{0.0};
-			Vec3<real_t> center{0.0, 0.0, 0.0};
-			bool         is_valid{false};    // check
-			bool         second_time{false}; // second time //TODO not convinced, eliminate this indicator
-			real_t       sector_percentage{0.0};
-			uint32_t     number_points_inner{0};
+			enum class Status
+			{
+				NOT_COMPUTED = -1,
+				SUCCESS      = 0,
+				NOT_ENOUGH_POINTS,
+				DIAMETER_TOO_SMALL,
+				DIAMETER_TOO_LARGE,
+				TOO_MANY_POINTS_INNER,
+				NOT_ENOUGH_SECTOR_COVERAGE,
+			};
+
+			Circle<real_t> circle;
+			Status         status{Status::NOT_COMPUTED};
+			real_t         sector_percentage{0.0};
+			uint32_t       number_points_inner{0};
 		};
 
 	  public:
@@ -54,33 +63,35 @@ namespace lib3dfin
 		{
 		}
 
-		std::optional<Circle<real_t>> fit_circle(const PointCloud2<real_t>& section_cloud)
+		void fit_circle(const PointCloud2<real_t>& section_cloud, CircleData& circle_data)
 		{
-			const auto circle_params = LMCircleFit(section_cloud);
+			circle_data.circle                  = LMCircleFit(section_cloud);
+			const Circle<real_t>& circle_params = circle_data.circle;
 
-			if (circle_params.radius < params_.stem_minimum_diameter / 2 || circle_params.radius > params_.stem_maximum_diameter / 2)
+			if (circle_params.radius < params_.stem_minimum_diameter / 2)
 			{
-				//std::cout << "failed at diameter check " << circle_params.radius << std::endl;
-				return std::nullopt;
+				circle_data.status = CircleData::Status::DIAMETER_TOO_SMALL;
 			}
 
-			const uint32_t num_points_in = innerCircle(section_cloud, circle_params);
-
-			if (num_points_in > params_.inner_circle_point_threshold)
+			if (circle_params.radius > params_.stem_minimum_diameter / 2)
 			{
-				//std::cout << "failed at inner circle point count check" << std::endl;
-				return std::nullopt;
+				circle_data.status = CircleData::Status::DIAMETER_TOO_LARGE;
 			}
 
-			const real_t sector_percentage = sectorOccupancy(section_cloud, circle_params);
+			circle_data.number_points_inner = innerCircle(section_cloud, circle_params);
 
-			if (sector_percentage * params_.total_number_sectors < params_.minimum_number_sectors)
+			if (circle_data.number_points_inner > params_.inner_circle_point_threshold)
 			{
-				//std::cout << "failed at sector check" << sector_percentage << std::endl;
-				return std::nullopt;
+				circle_data.status = CircleData::Status::TOO_MANY_POINTS_INNER;
 			}
 
-			return circle_params;
+			circle_data.sector_percentage = sectorOccupancy(section_cloud, circle_params);
+
+			if (circle_data.sector_percentage * params_.total_number_sectors < params_.minimum_number_sectors)
+			{
+				circle_data.status = CircleData::Status::NOT_ENOUGH_SECTOR_COVERAGE;
+			}
+			circle_data.status = CircleData::Status::SUCCESS;
 		}
 
 		uint32_t innerCircle(const PointCloud2<real_t>& circle_cloud, const Circle<real_t>& circle_params)
@@ -143,6 +154,7 @@ namespace lib3dfin
 		{
 			// number of sections
 			const Eigen::Index num_sections = static_cast<Eigen::Index>(std::floor((params_.stem_maximum_height - params_.stem_minimum_height) / params_.section_length));
+
 			// iterate over the trees
 			for (const auto& tree : trees_.tree_descriptors)
 			{
@@ -166,8 +178,11 @@ namespace lib3dfin
 					}
 				}
 
+				std::vector<CircleData> circles(num_sections);
+
 				for (Eigen::Index section_id = 0; section_id < num_sections; ++section_id)
 				{
+					auto&      cur_circle    = circles[section_id];
 					const auto section_start = params_.stem_minimum_height + section_id * params_.section_length;
 					const auto section_end   = section_start + params_.section_width;
 
@@ -175,7 +190,9 @@ namespace lib3dfin
 					Eigen::Index num_section_points = section_mask.count();
 
 					if (num_section_points < params_.min_num_points_section)
+					{
 						continue;
+					}
 
 					PointCloud2<real_t> section_cloud(num_section_points, 2);
 
@@ -191,14 +208,14 @@ namespace lib3dfin
 					}
 
 					// fit_circle
-					auto circle_params = fit_circle(section_cloud);
-					if (circle_params == std::nullopt)
+					fit_circle(section_cloud, cur_circle);
+					if (cur_circle.status != CircleData::Status::SUCCESS)
 					{
 						// cluster the cloud with single linkage algorithm
 						// rerun the algorithm on the clustered cloud
 						auto max_cc_section = fcluster_slink(section_cloud, params_.circle_width);
-						circle_params       = fit_circle(max_cc_section);
-						if (circle_params == std::nullopt)
+						fit_circle(max_cc_section, cur_circle);
+						if (cur_circle.status != CircleData::Status::SUCCESS)
 						{
 							continue;
 						}
