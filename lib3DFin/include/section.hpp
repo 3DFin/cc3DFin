@@ -8,9 +8,6 @@
 #include "slink.hpp"
 #include "types.hpp"
 
-// stdlib
-#include <iostream>
-
 namespace lib3dfin
 {
 	template <typename real_t>
@@ -62,9 +59,9 @@ namespace lib3dfin
 		    , num_points_(point_cloud.rows())
 		    , z0_(z0)
 		    , trees_(trees)
+		    , num_sections_(static_cast<Eigen::Index>(std::floor((params_.stem_maximum_height - params_.stem_minimum_height) / params_.section_length)))
 		    , params_(std::move(params))
 		{
-			num_sections_ = static_cast<Eigen::Index>(std::floor((params_.stem_maximum_height - params_.stem_minimum_height) / params_.section_length));
 		}
 
 		void fit_circle(const PointCloud2<real_t>& section_cloud, CircleData& circle_data)
@@ -75,11 +72,13 @@ namespace lib3dfin
 			if (circle_params.radius < params_.stem_minimum_diameter / 2)
 			{
 				circle_data.status = CircleData::Status::DIAMETER_TOO_SMALL;
+				return;
 			}
 
-			if (circle_params.radius > params_.stem_minimum_diameter / 2)
+			if (circle_params.radius > params_.stem_maximum_diameter / 2)
 			{
 				circle_data.status = CircleData::Status::DIAMETER_TOO_LARGE;
+				return;
 			}
 
 			circle_data.number_points_inner = innerCircle(section_cloud, circle_params);
@@ -87,6 +86,7 @@ namespace lib3dfin
 			if (circle_data.number_points_inner > params_.inner_circle_point_threshold)
 			{
 				circle_data.status = CircleData::Status::TOO_MANY_POINTS_INNER;
+				return;
 			}
 
 			circle_data.sector_percentage = sectorOccupancy(section_cloud, circle_params);
@@ -94,6 +94,7 @@ namespace lib3dfin
 			if (circle_data.sector_percentage * params_.total_number_sectors < params_.minimum_number_sectors)
 			{
 				circle_data.status = CircleData::Status::NOT_ENOUGH_SECTOR_COVERAGE;
+				return;
 			}
 			circle_data.status = CircleData::Status::SUCCESS;
 		}
@@ -181,11 +182,12 @@ namespace lib3dfin
 					auto&      cur_circle    = circles[section_id];
 					cur_circle.height        = section_start;
 
-					const auto   section_mask       = (tree_cloud.col(2).array() >= section_start) && (tree_cloud.col(2).array() < section_end);
-					Eigen::Index num_section_points = section_mask.count();
+					const auto         section_mask       = (tree_cloud.col(2).array() >= section_start) && (tree_cloud.col(2).array() < section_end);
+					const Eigen::Index num_section_points = section_mask.count();
 
 					if (num_section_points < params_.min_num_points_section)
 					{
+						cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
 						continue;
 					}
 
@@ -208,7 +210,16 @@ namespace lib3dfin
 					{
 						// cluster the cloud with single linkage algorithm
 						// rerun the algorithm on the clustered cloud
-						auto max_cc_section = fcluster_slink(section_cloud, params_.circle_width);
+						const auto max_cc_section = fcluster_slink(section_cloud, params_.circle_width);
+
+						// This filter was not part of the original algorithm
+						// but it's logical too small clusters size won't lead to accurate results
+						if (max_cc_section.size() < params_.min_num_points_section)
+						{
+							cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
+							continue;
+						}
+
 						fit_circle(max_cc_section, cur_circle);
 						if (cur_circle.status != CircleData::Status::SUCCESS)
 						{
@@ -226,7 +237,7 @@ namespace lib3dfin
 			const size_t max_id = std::ceil(tilt_data.size() * upper_quantile);
 
 			Eigen::VectorX<real_t> partial_tilt_data(max_id + 1);
-			std::partial_sort_copy(std::begin(sorted_data), std::end(sorted_data) + max_id, std::begin(partial_tilt_data), std::end(partial_tilt_data));
+			std::partial_sort_copy(std::begin(tilt_data), std::begin(tilt_data) + max_id, std::begin(partial_tilt_data), std::end(partial_tilt_data));
 
 			// todo assert sorted_data.size() > 0 && lower_quantile >= 0 && lower_quantile <= 1 && upper_quantile >= 0 && upper_quantile <= 1 && lower_quantile <= upper_quantile
 
@@ -235,34 +246,34 @@ namespace lib3dfin
 			// compute with linear interpolation like the default in numpy
 			for (size_t i = 0; i < 2; ++i)
 			{
-				const real_t id_pos   = std::get(coeff, i) * (sorted_data.size() - 1);
-				const size_t id_left  = static_cast<size_t>(std::floor(pos));
-				const size_t id_right = static_cast<size_t>(std::ceil(pos));
+				const real_t id_pos   = std::get(coeff, i) * (tilt_data.size() - 1);
+				const size_t id_left  = static_cast<size_t>(std::floor(id_pos));
+				const size_t id_right = static_cast<size_t>(std::ceil(id_pos));
 
 				if (id_left == id_right)
 				{
-					std::get(result, i) = sorted_data(id_left);
+					std::get(result, i) = tilt_data(id_left);
 					continue;
 				}
 
 				const real_t weight = id_pos - id_left;
-				std::get(result, i) = sorted_data(id_left) * (1.0 - weight) + sorted_data(id_right) * weight;
+				std::get(result, i) = tilt_data(id_left) * (1.0 - weight) + tilt_data(id_right) * weight;
 			}
 			return result;
 		}
 
-		Eigen::VectorXi interquartile_range(const Eigen::VectorX<real_t>& tilt_data,
-		                                    double                        lower_q = 0.25,
-		                                    double                        upper_q = 0.75,
-		                                    double                        n_range = 1.5)
+		Eigen::VectorX<bool> interquartile_range(const Eigen::VectorX<real_t>& tilt_data,
+		                                         real_t                        lower_q = 0.25,
+		                                         real_t                        upper_q = 0.75,
+		                                         real_t                        n_range = 1.5)
 		{
 
-			const auto quantiles = quantiles(tilt_data, lower_q, upper_q);
+			const auto computed_quantiles = quantiles(tilt_data, lower_q, upper_q);
 
-			const real_t iqr = quantiles.second - quantiles.first;
+			const real_t iqr = computed_quantiles.second - computed_quantiles.first;
 
-			const real_t lower_bound = quantiles.first - iqr * n_range;
-			const real_t upper_bound = quantiles.second + iqr * n_range;
+			const real_t lower_bound = computed_quantiles.first - iqr * n_range;
+			const real_t upper_bound = computed_quantiles.second + iqr * n_range;
 
 			const auto mask = (tilt_data.array() < lower_bound || tilt_data.array() > upper_bound);
 			return mask;
@@ -271,8 +282,8 @@ namespace lib3dfin
 		// Main tilt detection
 		Eigen::VectorX<real_t>
 		tilt_detection(const CircleSections& circles,
-		               const double          w_1 = 3.0,
-		               const double          w_2 = 1.0)
+		               const real_t          w_1 = real_t(3.0),
+		               const real_t          w_2 = real_t(1.0))
 		{
 
 			Eigen::VectorX<real_t> outlier_prob = Eigen::VectorX<real_t>::Zero(circles.size());
@@ -290,17 +301,17 @@ namespace lib3dfin
 			const size_t num_valid_sections = valid_ids.size();
 
 			if (num_valid_sections == 0)
-				continue;
+				return;
 
 			// compute outlier weights
-			const double abs_outlier_w = w_1 / (num_valid_sections * w_2 + w_1);
-			const double rel_outlier_w = w_2 / (num_valid_sections * w_2 + w_1);
+			const real_t abs_outlier_w = w_1 / (num_valid_sections * w_2 + w_1);
+			const real_t rel_outlier_w = w_2 / (num_valid_sections * w_2 + w_1);
 
 			// tilt matrix = atan(xy / z)
 			Eigen::MatrixXd tilt_matrix(num_valid_sections, num_valid_sections);
-			for (size_t i = 0; r < num_valid_sections; ++r)
+			for (size_t i = 0; i < num_valid_sections; ++i)
 			{
-				for (size_t j = i + 1; c < num_valid_sections; ++c)
+				for (size_t j = i + 1; j < num_valid_sections; ++j)
 				{
 					const real_t z_dist      = std::abs(circles[valid_ids[i]].center.z - circles[valid_ids[j]].center.z);
 					const real_t planar_dist = (circles[valid_ids[i]].center - circles[valid_ids[j]].center).norm();
@@ -317,7 +328,7 @@ namespace lib3dfin
 
 			for (size_t k = 0; k < num_valid_sections; ++k)
 			{
-				if (abs_outliers(k))
+				if (abs_outliers_mask(k))
 					outlier_prob(valid_ids[k]) += abs_outlier_w;
 			}
 
@@ -325,7 +336,7 @@ namespace lib3dfin
 			// the original algorithm compute a median to assign weight to the current section
 			// we compute directy the IQR on the OTHER section and keep track of their indices
 			// this is clearer, more logical and efficient.
-			for (size_t valid_section_id = 0; valid_section_id < num_valid_sections; ++j)
+			for (size_t valid_section_id = 0; valid_section_id < num_valid_sections; ++valid_section_id)
 			{
 				// Create vector of all other sections' tilt values
 				Eigen::VectorXd           other_sections(num_valid_sections - 1);
@@ -333,13 +344,13 @@ namespace lib3dfin
 				tilt_indices.reserve(num_valid_sections - 1);
 
 				Eigen::Index consecutive_id = 0;
-				for (size_t other_section_id = 0; k < num_valid_sections; ++k)
+				for (size_t other_section_id = 0; other_section_id < num_valid_sections; ++other_section_id)
 				{
 					if (other_section_id != valid_section_id)
 					{
-						other_sections(consecutive_id) = tilt_matrix(valid_section_id, k);
-						other_indices.push_back(k);
-						id++;
+						other_sections(consecutive_id) = tilt_matrix(valid_section_id, other_section_id);
+						tilt_indices.push_back(other_section_id);
+						consecutive_id++;
 					}
 				}
 
@@ -347,25 +358,25 @@ namespace lib3dfin
 				const auto rel_outliers_mask = interquartile_range(other_sections);
 
 				// Apply weights only to the outlier sections
-				for (size_t other_sections_id = 0; idx < rel_outliers_mask.size(); ++idx)
+				for (size_t other_section_id = 0; other_section_id < rel_outliers_mask.size(); ++other_section_id)
 				{
-					if (rel_outliers_mask(idx))
+					if (rel_outliers_mask(other_section_id))
 					{
-						const size_t current_section = other_indices[idx];
+						const size_t current_section = tilt_indices[other_section_id];
 						outlier_prob(valid_ids[current_section]) += rel_outlier_w;
 					}
 				}
 			}
+			//TODO: flag circles with high outlier probability
 		}
-  }
 
-  private : // members
-	        const RefPointCloud<real_t>& point_cloud_;
-	const Eigen::VectorX<real_t>&        z0_;
-	const AxesData<real_t>&              trees_;
-	const Eigen::Index                   num_points_;
-	const Params                         params_;
-	const Eigen::Index                   num_sections_{0}
-};
+	  private: // members
+		const RefPointCloud<real_t>&  point_cloud_;
+		const Eigen::VectorX<real_t>& z0_;
+		const AxesData<real_t>&       trees_;
+		const Eigen::Index            num_points_;
+		const Params                  params_;
+		const Eigen::Index            num_sections_;
+	};
 
 } // namespace lib3dfin
