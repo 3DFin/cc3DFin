@@ -107,7 +107,7 @@ void cc3DFin::do3DFinAction()
 	}
 
 	pc->placeIteratorAtBeginning();
-	const auto [stripe, cloud, axes] = lib3dfin::process(&(pc->getNextPoint()->u[0]), static_cast<size_t>(pc->size()));
+	const auto [stripe, cloud, axes, circles] = lib3dfin::process(&(pc->getNextPoint()->u[0]), static_cast<size_t>(pc->size()));
 
 	ccPointCloud* stripe_pc = new ccPointCloud;
 	stripe_pc->reserve(cloud.size() / 3);
@@ -131,10 +131,105 @@ void cc3DFin::do3DFinAction()
 	dist_id->computeMinAndMax();
 	pc->setCurrentDisplayedScalarField(id);
 
+	m_app->redrawAll();
+	// draw circles
+	drawCircles(circles, axes.tree_descriptors);
 	ccLog::Print("3DFin done !");
 	// cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
 	// tdfDlg.exec();
 
 	QApplication::processEvents();
+}
+
+void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections<double>>& all_tree_circles, const std::vector<lib3dfin::TreeDescriptor<double>>& tree_descriptors)
+{
+	// TODO: global shift
+	size_t tree_id = 0;
+
+	// Create a point cloud for circle points
+	std::unique_ptr<ccPointCloud> circle_points_pc(new ccPointCloud(QString("circle points debug")));
+
+	// Add scalar fields for circle properties
+	int tree_id_sf_id    = circle_points_pc->addScalarField("Tree ID");
+	int radius_sf_id     = circle_points_pc->addScalarField("Radius");
+	int height_sf_id     = circle_points_pc->addScalarField("Height");
+	int status_sf_id     = circle_points_pc->addScalarField("Status");
+	int num_points_sf_id = circle_points_pc->addScalarField("Number of points inner circle");
+	int sector_sf_id     = circle_points_pc->addScalarField("Sector coverage");
+	int outlier_sf_id    = circle_points_pc->addScalarField("Outlier probability");
+
+	auto* tree_id_sf    = circle_points_pc->getScalarField(tree_id_sf_id);
+	auto* radius_sf     = circle_points_pc->getScalarField(radius_sf_id);
+	auto* height_sf     = circle_points_pc->getScalarField(height_sf_id);
+	auto* status_sf     = circle_points_pc->getScalarField(status_sf_id);
+	auto* num_points_sf = circle_points_pc->getScalarField(num_points_sf_id);
+	auto* sector_sf     = circle_points_pc->getScalarField(sector_sf_id);
+	auto* outlier_sf    = circle_points_pc->getScalarField(outlier_sf_id);
+
+	for (const auto& tree_circles : all_tree_circles)
+	{
+		for (const auto& circle_data : tree_circles)
+		{
+			// Only draw successful circles
+			if (circle_data.status >= lib3dfin::CircleData<double>::Status::SUCCESS)
+			{
+				const auto& circle = circle_data.circle;
+				// We need to shift the circle center to go from z0 coordinates to the actual coordinates
+				const double height   = circle_data.z0 + tree_descriptors[tree_id].height_difference;
+				const float  f_height = static_cast<float>(height);
+
+				// Add circle center
+				circle_points_pc->addPoint({static_cast<float>(circle.center.x()),
+				                            static_cast<float>(circle.center.y()),
+				                            f_height});
+
+				// Set scalar field values
+				tree_id_sf->addElement(tree_id);
+				radius_sf->addElement(circle.radius);
+				height_sf->addElement(height);
+				status_sf->addElement(static_cast<double>(circle_data.status));
+				num_points_sf->addElement(circle_data.number_points_inner);
+				sector_sf->addElement(circle_data.sector_percentage);
+				outlier_sf->addElement(circle_data.outlier_probability);
+
+				// Generate circle points for visualization
+				const uint32_t num_circle_points = 200; // sampling
+				for (uint32_t i = 0; i < num_circle_points; ++i)
+				{
+					const double angle = 2.0 * M_PI * i / num_circle_points;
+					const double x     = circle.center.x() + circle.radius * cos(angle);
+					const double y     = circle.center.y() + circle.radius * sin(angle);
+
+					circle_points_pc->addPoint({static_cast<float>(x),
+					                            static_cast<float>(y),
+					                            f_height});
+
+					tree_id_sf->addElement(tree_id);
+					radius_sf->addElement(circle.radius);
+					height_sf->addElement(height);
+					status_sf->addElement(static_cast<double>(circle_data.status));
+					num_points_sf->addElement(circle_data.number_points_inner);
+					sector_sf->addElement(circle_data.sector_percentage);
+					outlier_sf->addElement(circle_data.outlier_probability);
+				}
+			}
+		}
+		++tree_id;
+	}
+	if (circle_points_pc->size() > 0)
+	{
+		tree_id_sf->computeMinAndMax();
+		radius_sf->computeMinAndMax();
+		height_sf->computeMinAndMax();
+		status_sf->computeMinAndMax();
+		num_points_sf->computeMinAndMax();
+		sector_sf->computeMinAndMax();
+		outlier_sf->computeMinAndMax();
+
+		// Set default displayed scalar field to radius
+		circle_points_pc->setCurrentDisplayedScalarField(status_sf_id);
+
+		m_app->addToDB(circle_points_pc.release());
+	}
 }
