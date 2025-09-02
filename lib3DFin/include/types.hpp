@@ -153,11 +153,11 @@ namespace lib3dfin
 			NOT_COMPUTED = -2,
 			NOT_ENOUGH_POINTS = -1,
 			SUCCESS      = 0,
+			TILT_OUTLIER,
 			DIAMETER_TOO_SMALL,
 			DIAMETER_TOO_LARGE,
 			TOO_MANY_POINTS_INNER,
 			NOT_ENOUGH_SECTOR_COVERAGE,
-			TILT_OUTLIER,
 		};
 
 		Circle<real_t> circle{};
