@@ -150,9 +150,9 @@ namespace lib3dfin
 	{
 		enum class Status
 		{
-			NOT_COMPUTED = -1,
+			NOT_COMPUTED = -2,
+			NOT_ENOUGH_POINTS = -1,
 			SUCCESS      = 0,
-			NOT_ENOUGH_POINTS,
 			DIAMETER_TOO_SMALL,
 			DIAMETER_TOO_LARGE,
 			TOO_MANY_POINTS_INNER,

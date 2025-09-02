@@ -161,7 +161,7 @@ namespace lib3dfin
 					const auto section_start = params_.stem_minimum_height + section_id * params_.section_length;
 					const auto section_end   = section_start + params_.section_width;
 					auto&      cur_circle    = circles[section_id];
-					cur_circle.height        = section_start;
+					cur_circle.z0            = section_start;
 
 					const auto         section_mask       = (tree_cloud.col(2).array() >= section_start) && (tree_cloud.col(2).array() < section_end);
 					const Eigen::Index num_section_points = section_mask.count();
@@ -297,7 +297,7 @@ namespace lib3dfin
 			{
 				for (size_t j = i + 1; j < num_valid_sections; ++j)
 				{
-					const real_t height_difference = std::abs(circles[valid_ids[i]].height - circles[valid_ids[j]].height);
+					const real_t height_difference = std::abs(circles[valid_ids[i]].z0 - circles[valid_ids[j]].z0);
 					// Since we prune i == j,
 					// there is no way z_dist could be zero, so the following division is safe.
 					const real_t planar_distance = (circles[valid_ids[i]].circle.center - circles[valid_ids[j]].circle.center).norm();
