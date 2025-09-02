@@ -193,8 +193,6 @@ namespace lib3dfin
 						// rerun the algorithm on the clustered cloud
 						const auto max_cc_section = fcluster_slink(section_cloud, params_.circle_width);
 
-						// This filter was not part of the original algorithm
-						// but it's logical too small clusters size won't lead to accurate results
 						if (max_cc_section.size() < params_.min_num_points_section)
 						{
 							cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
@@ -202,10 +200,6 @@ namespace lib3dfin
 						}
 
 						fit_circle(max_cc_section, cur_circle);
-						if (cur_circle.status != CircleData::Status::SUCCESS)
-						{
-							continue;
-						}
 					}
 				}
 				tilt_detection(circles);
@@ -217,50 +211,52 @@ namespace lib3dfin
 		std::array<real_t, 2> quantiles(const Eigen::VectorX<real_t>& tilt_data, const std::array<real_t, 2>& bounds = {0.25, 0.75})
 		{
 
-			// todo assert sorted_data.size() > 0 && lower_quantile >= 0 && lower_quantile <= 1 && upper_quantile >= 0 && upper_quantile <= 1 && lower_quantile <= upper_quantile
-
-			const size_t max_id = std::ceil(tilt_data.size() * bounds[1]);
+			if (tilt_data.size() == 0)
+			{
+				return {0, 0};
+			}
+			const size_t max_id       = std::ceil(tilt_data.size() * bounds[1]);
+			const size_t num_elements = max_id + 1;
 
 			// Create a deep copy to sort the data
-			Eigen::VectorX<real_t> partial_tilt_data(max_id + 1);
-
-			std::partial_sort_copy(std::begin(tilt_data), std::begin(tilt_data) + max_id, std::begin(partial_tilt_data), std::end(partial_tilt_data));
+			Eigen::VectorX<real_t> partial_tilt_data(num_elements);
+			std::partial_sort_copy(std::begin(tilt_data), std::begin(tilt_data) + num_elements, std::begin(partial_tilt_data), std::end(partial_tilt_data));
 
 			std::array<real_t, 2> result;
 
 			// compute with linear interpolation like the default in numpy
-			for (size_t i = 0; i < 2; ++i)
+			for (size_t id_bound = 0; id_bound < 2; ++id_bound)
 			{
-				const real_t id_pos   = bounds[i] * (tilt_data.size() - 1);
+				const real_t id_pos   = bounds[id_bound] * (tilt_data.size() - 1);
 				const size_t id_left  = static_cast<size_t>(std::floor(id_pos));
 				const size_t id_right = static_cast<size_t>(std::ceil(id_pos));
 
 				if (id_left == id_right)
 				{
-					result[i] = partial_tilt_data(id_left);
+					result[id_bound] = partial_tilt_data(id_left);
 					continue;
 				}
 
 				const real_t weight = id_pos - id_left;
-				result[i]           = partial_tilt_data(id_left) * (1.0 - weight) + partial_tilt_data(id_right) * weight;
+				result[id_bound]    = partial_tilt_data(id_left) * (1.0 - weight) + partial_tilt_data(id_right) * weight;
 			}
 			return result;
 		}
 
-		Eigen::VectorX<bool> interquartile_range(const Eigen::VectorX<real_t>& tilt_data,
+		Eigen::VectorX<bool> interquartile_range(const Eigen::VectorX<real_t>& data_vector,
 		                                         real_t                        lower_q = 0.25,
 		                                         real_t                        upper_q = 0.75,
 		                                         real_t                        n_range = 1.5)
 		{
 
-			const auto quartiles = quantiles(tilt_data, {lower_q, upper_q});
+			const auto quartiles = quantiles(data_vector, {lower_q, upper_q});
 
 			const real_t iqr = quartiles[1] - quartiles[0];
 
 			const real_t lower_bound = quartiles[0] - iqr * n_range;
 			const real_t upper_bound = quartiles[1] + iqr * n_range;
 
-			return (tilt_data.array() < lower_bound || tilt_data.array() > upper_bound);
+			return (data_vector.array() < lower_bound || data_vector.array() > upper_bound);
 		}
 
 		// tilt dection for all sections of a given stem
@@ -293,6 +289,8 @@ namespace lib3dfin
 
 			// tilt matrix = atan(xy / z)
 			Eigen::MatrixX<real_t> tilt_matrix(num_valid_sections, num_valid_sections);
+			tilt_matrix.diagonal().setZero(); // Initialize diagonal to zero
+
 			for (size_t i = 0; i < num_valid_sections; ++i)
 			{
 				for (size_t j = i + 1; j < num_valid_sections; ++j)
@@ -301,8 +299,9 @@ namespace lib3dfin
 					// Since we prune i == j,
 					// there is no way z_dist could be zero, so the following division is safe.
 					const real_t planar_distance = (circles[valid_ids[i]].circle.center - circles[valid_ids[j]].circle.center).norm();
-					tilt_matrix(i, j)            = std::atan(planar_distance / height_difference) * 180.0 / M_PI;
-					tilt_matrix(j, i)            = tilt_matrix(i, j);
+
+					tilt_matrix(i, j) = std::atan(planar_distance / height_difference) * 180.0 / M_PI;
+					tilt_matrix(j, i) = tilt_matrix(i, j);
 				}
 			}
 
@@ -321,7 +320,10 @@ namespace lib3dfin
 			// relative outliers
 			// the original algorithm compute a median to assign weight to the current section
 			// we compute directy the IQR on the OTHER section and keep track of their indices
-			// this is clearer, more logical and efficient.
+			// this is clearer, more logical and efficient. So we need at least 2 sections to compute the IQR.
+			if (num_valid_sections < 2)
+				return;
+
 			for (size_t valid_section_id = 0; valid_section_id < num_valid_sections; ++valid_section_id)
 			{
 				// Create vector of all other sections' tilt values
