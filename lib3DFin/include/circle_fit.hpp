@@ -9,9 +9,6 @@
 #include <Eigen/QR>
 #include <unsupported/Eigen/NonLinearOptimization>
 
-// stdlib
-#include <iostream>
-
 namespace lib3dfin
 {
 
