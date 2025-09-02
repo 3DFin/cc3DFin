@@ -48,6 +48,7 @@ namespace lib3dfin
 			real_t         height{0};
 			Status         status{Status::NOT_COMPUTED};
 			real_t         sector_percentage{0.0};
+			real_t         outlier_probability{0.0};
 			uint32_t       number_points_inner{0};
 		};
 
@@ -166,14 +167,12 @@ namespace lib3dfin
 				{
 					if (tree_mask(point_id))
 					{
-						tree_cloud(output_id, 0) = point_cloud_(point_id, 0);
-						tree_cloud(output_id, 1) = point_cloud_(point_id, 1);
-						tree_cloud(output_id, 2) = z0_(point_id);
+						tree_cloud.row(output_id) << point_cloud_.row(point_id).template head<2>(), z0_(point_id);
 						output_id++;
 					}
 				}
 
-				std::vector<CircleData> circles(num_sections_);
+				CircleSections circles(num_sections_);
 
 				for (Eigen::Index section_id = 0; section_id < num_sections_; ++section_id)
 				{
@@ -227,37 +226,39 @@ namespace lib3dfin
 						}
 					}
 				}
+				tilt_detection(circles);
 			}
 		}
 
-		std::pair<real_t, real_t> quantiles(const Eigen::VectorX<real_t>& tilt_data, real_t lower_quantile = 0.25, real_t upper_quantile = 0.75)
+		std::array<real_t, 2> quantiles(const Eigen::VectorX<real_t>& tilt_data, const std::array<real_t, 2>& bounds = {0.25, 0.75})
 		{
-
-			// Create a deep copy to sort the data
-			const size_t max_id = std::ceil(tilt_data.size() * upper_quantile);
-
-			Eigen::VectorX<real_t> partial_tilt_data(max_id + 1);
-			std::partial_sort_copy(std::begin(tilt_data), std::begin(tilt_data) + max_id, std::begin(partial_tilt_data), std::end(partial_tilt_data));
 
 			// todo assert sorted_data.size() > 0 && lower_quantile >= 0 && lower_quantile <= 1 && upper_quantile >= 0 && upper_quantile <= 1 && lower_quantile <= upper_quantile
 
-			auto coeff  = std::make_pair(lower_quantile, upper_quantile);
-			auto result = std::make_pair(real_t(0.0), real_t(0.0));
+			const size_t max_id = std::ceil(tilt_data.size() * bounds[1]);
+
+			// Create a deep copy to sort the data
+			Eigen::VectorX<real_t> partial_tilt_data(max_id + 1);
+
+			std::partial_sort_copy(std::begin(tilt_data), std::begin(tilt_data) + max_id, std::begin(partial_tilt_data), std::end(partial_tilt_data));
+
+			std::array<real_t, 2> result;
+
 			// compute with linear interpolation like the default in numpy
 			for (size_t i = 0; i < 2; ++i)
 			{
-				const real_t id_pos   = std::get(coeff, i) * (tilt_data.size() - 1);
+				const real_t id_pos   = bounds[i] * (tilt_data.size() - 1);
 				const size_t id_left  = static_cast<size_t>(std::floor(id_pos));
 				const size_t id_right = static_cast<size_t>(std::ceil(id_pos));
 
 				if (id_left == id_right)
 				{
-					std::get(result, i) = tilt_data(id_left);
+					result[i] = partial_tilt_data(id_left);
 					continue;
 				}
 
 				const real_t weight = id_pos - id_left;
-				std::get(result, i) = tilt_data(id_left) * (1.0 - weight) + tilt_data(id_right) * weight;
+				result[i]           = partial_tilt_data(id_left) * (1.0 - weight) + partial_tilt_data(id_right) * weight;
 			}
 			return result;
 		}
@@ -268,26 +269,22 @@ namespace lib3dfin
 		                                         real_t                        n_range = 1.5)
 		{
 
-			const auto computed_quantiles = quantiles(tilt_data, lower_q, upper_q);
+			const auto quartiles = quantiles(tilt_data, {lower_q, upper_q});
 
-			const real_t iqr = computed_quantiles.second - computed_quantiles.first;
+			const real_t iqr = quartiles[1] - quartiles[0];
 
-			const real_t lower_bound = computed_quantiles.first - iqr * n_range;
-			const real_t upper_bound = computed_quantiles.second + iqr * n_range;
+			const real_t lower_bound = quartiles[0] - iqr * n_range;
+			const real_t upper_bound = quartiles[1] + iqr * n_range;
 
-			const auto mask = (tilt_data.array() < lower_bound || tilt_data.array() > upper_bound);
-			return mask;
+			return (tilt_data.array() < lower_bound || tilt_data.array() > upper_bound);
 		}
 
-		// Main tilt detection
-		Eigen::VectorX<real_t>
-		tilt_detection(const CircleSections& circles,
-		               const real_t          w_1 = real_t(3.0),
-		               const real_t          w_2 = real_t(1.0))
+		// tilt dection for all sections of a given stem
+		void tilt_detection(CircleSections& circles,
+		                    const real_t    w_1 = real_t(3.0),
+		                    const real_t    w_2 = real_t(1.0))
 		{
-
-			Eigen::VectorX<real_t> outlier_prob = Eigen::VectorX<real_t>::Zero(circles.size());
-			std::vector<size_t>    valid_ids;
+			std::vector<size_t> valid_ids;
 			valid_ids.reserve(circles.size());
 
 			for (size_t section_id = 0; section_id < circles.size(); ++section_id)
@@ -308,13 +305,15 @@ namespace lib3dfin
 			const real_t rel_outlier_w = w_2 / (num_valid_sections * w_2 + w_1);
 
 			// tilt matrix = atan(xy / z)
-			Eigen::MatrixXd tilt_matrix(num_valid_sections, num_valid_sections);
+			Eigen::MatrixX<real_t> tilt_matrix(num_valid_sections, num_valid_sections);
 			for (size_t i = 0; i < num_valid_sections; ++i)
 			{
 				for (size_t j = i + 1; j < num_valid_sections; ++j)
 				{
-					const real_t z_dist      = std::abs(circles[valid_ids[i]].center.z - circles[valid_ids[j]].center.z);
-					const real_t planar_dist = (circles[valid_ids[i]].center - circles[valid_ids[j]].center).norm();
+					const real_t z_dist = std::abs(circles[valid_ids[i]].height - circles[valid_ids[j]].height);
+					// Since we prune i == j,
+					// there is no way z_dist could be zero, so the following division is safe.
+					const real_t planar_dist = (circles[valid_ids[i]].circle.center - circles[valid_ids[j]].circle.center).norm();
 					tilt_matrix(i, j)        = std::atan(planar_dist / z_dist) * 180.0 / M_PI;
 					tilt_matrix(j, i)        = tilt_matrix(i, j);
 				}
@@ -329,7 +328,7 @@ namespace lib3dfin
 			for (size_t k = 0; k < num_valid_sections; ++k)
 			{
 				if (abs_outliers_mask(k))
-					outlier_prob(valid_ids[k]) += abs_outlier_w;
+					circles[valid_ids[k]].outlier_probability += abs_outlier_w;
 			}
 
 			// relative outliers
@@ -363,11 +362,10 @@ namespace lib3dfin
 					if (rel_outliers_mask(other_section_id))
 					{
 						const size_t current_section = tilt_indices[other_section_id];
-						outlier_prob(valid_ids[current_section]) += rel_outlier_w;
+						circles[valid_ids[current_section]].outlier_probability += rel_outlier_w;
 					}
 				}
 			}
-			//TODO: flag circles with high outlier probability
 		}
 
 	  private: // members
