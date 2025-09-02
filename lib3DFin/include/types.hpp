@@ -145,4 +145,30 @@ namespace lib3dfin
 		}
 	};
 
+	template <typename real_t>
+	struct CircleData
+	{
+		enum class Status
+		{
+			NOT_COMPUTED = -1,
+			SUCCESS      = 0,
+			NOT_ENOUGH_POINTS,
+			DIAMETER_TOO_SMALL,
+			DIAMETER_TOO_LARGE,
+			TOO_MANY_POINTS_INNER,
+			NOT_ENOUGH_SECTOR_COVERAGE,
+			TILT_OUTLIER,
+		};
+
+		Circle<real_t> circle{};
+		real_t         height{0};
+		Status         status{Status::NOT_COMPUTED};
+		real_t         sector_percentage{0.0};
+		real_t         outlier_probability{0.0};
+		uint32_t       number_points_inner{0};
+	};
+
+	template <typename real_t>
+	using CircleSections = std::vector<CircleData<real_t>>;
+
 } // namespace lib3dfin

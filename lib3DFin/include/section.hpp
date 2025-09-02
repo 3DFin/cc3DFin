@@ -13,6 +13,10 @@ namespace lib3dfin
 	template <typename real_t>
 	class SectionExtractor
 	{
+
+		using CircleData     = CircleData<real_t>;
+		using CircleSections = CircleSections<real_t>;
+
 	  public: // struct
 		struct Params
 		{
@@ -29,30 +33,8 @@ namespace lib3dfin
 			uint32_t total_number_sectors{16};
 			uint32_t minimum_number_sectors{9};
 			real_t   circle_width{0.02};
+			real_t   outlier_probability_threshold{0.3}; // this is added vs. the original implementation
 		};
-
-		struct CircleData
-		{
-			enum class Status
-			{
-				NOT_COMPUTED = -1,
-				SUCCESS      = 0,
-				NOT_ENOUGH_POINTS,
-				DIAMETER_TOO_SMALL,
-				DIAMETER_TOO_LARGE,
-				TOO_MANY_POINTS_INNER,
-				NOT_ENOUGH_SECTOR_COVERAGE,
-			};
-
-			Circle<real_t> circle{};
-			real_t         height{0};
-			Status         status{Status::NOT_COMPUTED};
-			real_t         sector_percentage{0.0};
-			real_t         outlier_probability{0.0};
-			uint32_t       number_points_inner{0};
-		};
-
-		using CircleSections = std::vector<CircleData>;
 
 	  public:
 		explicit SectionExtractor(const RefPointCloud<real_t>& point_cloud, const Eigen::VectorX<real_t>& z0, const AxesData<real_t>& trees, const Params params = Params())
@@ -149,9 +131,9 @@ namespace lib3dfin
 			return percentage_occupied_sectors;
 		}
 
-		void extract()
+		std::vector<CircleSections> extract()
 		{
-
+			std::vector<CircleSections> tree_circle_sections;
 			// iterate over the trees
 			for (const auto& tree : trees_.tree_descriptors)
 			{
@@ -227,7 +209,9 @@ namespace lib3dfin
 					}
 				}
 				tilt_detection(circles);
+				tree_circle_sections.emplace_back(std::move(circles));
 			}
+			return tree_circle_sections;
 		}
 
 		std::array<real_t, 2> quantiles(const Eigen::VectorX<real_t>& tilt_data, const std::array<real_t, 2>& bounds = {0.25, 0.75})
@@ -281,8 +265,8 @@ namespace lib3dfin
 
 		// tilt dection for all sections of a given stem
 		void tilt_detection(CircleSections& circles,
-		                    const real_t    w_1 = real_t(3.0),
-		                    const real_t    w_2 = real_t(1.0))
+		                    const real_t    abs_weight_factor = real_t(3.0),
+		                    const real_t    rel_weight_factor = real_t(1.0))
 		{
 			std::vector<size_t> valid_ids;
 			valid_ids.reserve(circles.size());
@@ -301,8 +285,11 @@ namespace lib3dfin
 				return;
 
 			// compute outlier weights
-			const real_t abs_outlier_w = w_1 / (num_valid_sections * w_2 + w_1);
-			const real_t rel_outlier_w = w_2 / (num_valid_sections * w_2 + w_1);
+			// vs. the original implementation, num_valid_sections - 1  is the correct way to compute outlier weights
+			// because the current section (i==j) can't be an outlier to itselt
+			const real_t total_weight  = (num_valid_sections - 1) * rel_weight_factor + abs_weight_factor;
+			const real_t abs_outlier_w = abs_weight_factor / total_weight;
+			const real_t rel_outlier_w = rel_weight_factor / total_weight;
 
 			// tilt matrix = atan(xy / z)
 			Eigen::MatrixX<real_t> tilt_matrix(num_valid_sections, num_valid_sections);
@@ -310,12 +297,12 @@ namespace lib3dfin
 			{
 				for (size_t j = i + 1; j < num_valid_sections; ++j)
 				{
-					const real_t z_dist = std::abs(circles[valid_ids[i]].height - circles[valid_ids[j]].height);
+					const real_t height_difference = std::abs(circles[valid_ids[i]].height - circles[valid_ids[j]].height);
 					// Since we prune i == j,
 					// there is no way z_dist could be zero, so the following division is safe.
-					const real_t planar_dist = (circles[valid_ids[i]].circle.center - circles[valid_ids[j]].circle.center).norm();
-					tilt_matrix(i, j)        = std::atan(planar_dist / z_dist) * 180.0 / M_PI;
-					tilt_matrix(j, i)        = tilt_matrix(i, j);
+					const real_t planar_distance = (circles[valid_ids[i]].circle.center - circles[valid_ids[j]].circle.center).norm();
+					tilt_matrix(i, j)            = std::atan(planar_distance / height_difference) * 180.0 / M_PI;
+					tilt_matrix(j, i)            = tilt_matrix(i, j);
 				}
 			}
 
@@ -364,6 +351,14 @@ namespace lib3dfin
 						const size_t current_section = tilt_indices[other_section_id];
 						circles[valid_ids[current_section]].outlier_probability += rel_outlier_w;
 					}
+				}
+			}
+			// filter outliers based on probability threshold
+			for (size_t valid_section_id = 0; valid_section_id < num_valid_sections; ++valid_section_id)
+			{
+				if (circles[valid_ids[valid_section_id]].outlier_probability > params_.outlier_probability_threshold)
+				{
+					circles[valid_ids[valid_section_id]].status = CircleData::Status::TILT_OUTLIER;
 				}
 			}
 		}
