@@ -131,7 +131,7 @@ namespace lib3dfin
 			}
 		}
 
-		std::cout << "number of valid voxels (pass vericality test): " << num_valid_voxels << std::endl;
+		std::cout << "number of valid voxels (pass verticality test): " << num_valid_voxels << std::endl;
 
 		auto t_mid = std::chrono::high_resolution_clock::now();
 		std::cout << "   " << std::chrono::duration<double>(t_mid - t_start).count() << " s" << std::endl;
