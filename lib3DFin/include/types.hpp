@@ -101,8 +101,8 @@ namespace lib3dfin
 
 		void setHeighestPoint(const Vec3<real_t>& heighest_point_)
 		{
-			heighest_point = heighest_point_;
-			heighest_z0    = heighest_point(2) - height_difference;
+			highest_point = heighest_point_;
+			highest_z0    = highest_point(2) - height_difference;
 		}
 
 		PointCloud3<real_t> computeAxisSampling(const Vec3<real_t>& bb_min, const Vec3<real_t> bb_max, real_t sample_step) const
@@ -128,8 +128,8 @@ namespace lib3dfin
 		Vec3<real_t> axis{0., 0., 0.}; // most significant eigen vector?
 		real_t       axis_vertical_deviation{0.};
 		bool         valid{false}; // under max deviation threshold
-		Vec3<real_t> heighest_point{0.0, 0.0, 0.0};
-		real_t       heighest_z0{0};
+		Vec3<real_t> highest_point{0.0, 0.0, 0.0};
+		real_t       highest_z0{0};
 	};
 
 	template <typename real_t>
@@ -161,7 +161,7 @@ namespace lib3dfin
 		};
 
 		Circle<real_t> circle{};
-		real_t         height{0};
+		real_t         z0{0};
 		Status         status{Status::NOT_COMPUTED};
 		real_t         sector_percentage{0.0};
 		real_t         outlier_probability{0.0};
