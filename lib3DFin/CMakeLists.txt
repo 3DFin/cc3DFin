@@ -44,14 +44,14 @@ if (NOT Eigen3_FOUND)
     find_package(Eigen3 REQUIRED)
 endif()
 
-# nanoflann
-# TODO issue with already defined target (CCCore nanoflann)
-#find_package(nanoflann)
-#if (NOT nanoflann)
-#    add_subdirectory(third_party/nanoflann)
-#    set(3DFin_USE_INTERNAL_NANOFLANN ON)
-#    find_package(nanoflann REQUIRED)
-#endif()
+# test if nanoflann is already an imported target
+if(NOT TARGET nanoflann::nanoflann)
+    find_package(nanoflann QUIET)
+    if(NOT nanoflann_FOUND)
+        message(STATUS "Using internal nanoflann")
+        add_subdirectory(third_party/nanoflann)
+    endif()
+endif()
 
 # Taskflow handling
 # TODO maybe thread lib linking should be propagated...
@@ -63,13 +63,13 @@ add_subdirectory(third_party/taskflow)
 add_subdirectory(third_party/CSF-3DFin)
 
 # All libs are private since we do not want to expose them in the public API
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen nanoflann::nanoflann Taskflow::Taskflow CSF::CSF)
+target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen PRIVATE nanoflann::nanoflann Taskflow::Taskflow CSF::CSF)
 
 
 # Install directories
 include(GNUInstallDirs)
-set(INSTALL_INCLUDE_DIR include/${PROJECT_NAME})
-set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME})
+set(INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 
 # Add source/include directories
 # Export headers are handled in include/CMakeLists.txt

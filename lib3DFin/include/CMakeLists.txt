@@ -1,39 +1,51 @@
-target_sources(${PROJECT_NAME}
- PRIVATE
-     types.hpp
-     config.hpp
-     voxel.hpp
-     connected_components.hpp
-     slink.hpp
-     circle_fit.hpp
-     ground.hpp
-     verticality.hpp
-     peeling.hpp
-     individualize.hpp
-     interface.hpp
-     section.hpp
+# Copy all headers to build include directory with lib3DFin/ prefix
+set(HEADERS
+    types.hpp
+    config.hpp
+    voxel.hpp
+    connected_components.hpp
+    slink.hpp
+    circle_fit.hpp
+    ground.hpp
+    verticality.hpp
+    peeling.hpp
+    individualize.hpp
+    interface.hpp
+    section.hpp
 )
 
+target_sources(${PROJECT_NAME}
+ PRIVATE
+${HEADERS}
+)
+
+# Create FHS for lib3DFin
+set(BUILD_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
+file(MAKE_DIRECTORY ${BUILD_INCLUDE_DIR}/lib3DFin)
+
+
+foreach(header ${HEADERS})
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/${header}
+        ${BUILD_INCLUDE_DIR}/lib3DFin/${header}
+        COPYONLY
+    )
+endforeach()
+
+# install all headers under lib3DFin
 install(
  FILES
-  types.hpp
-  config.hpp
-  voxel.hpp
-  connected_components.hpp
-  slink.hpp
-  circle_fit.hpp
-  ground.hpp
-  verticality.hpp
-  peeling.hpp
-  individualize.hpp
-  interface.hpp
-  section.hpp
+  ${HEADERS}
  DESTINATION
-  ${INSTALL_CMAKE_DIR}
+  ${INSTALL_INCLUDE_DIR}/lib3DFin
 )
 
 target_include_directories(${PROJECT_NAME}
  PUBLIC
-  $<INSTALL_INTERFACE:${INSTALL_CMAKE_DIR}>
+  # For external use (<lib3DFin/header.hpp>)
+  $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>
+  $<BUILD_INTERFACE:${BUILD_INCLUDE_DIR}>
+ PRIVATE
+  # For internal source files (using direct include i.e "header.hpp")
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )

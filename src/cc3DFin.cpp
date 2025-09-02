@@ -23,14 +23,16 @@
 #include "ccHObjectCaster.h"
 #include "ccLog.h"
 #include "ccPointCloud.h"
-#include "config.hpp"
-#include "interface.hpp"
+
+// lib3DFin
+#include <lib3DFin/config.hpp>
+#include <lib3DFin/interface.hpp>
+#include <lib3DFin/types.hpp>
 
 // ccCoreLib
 #include <QMainWindow>
 #include <QtGui>
 #include <ScalarField.h>
-#include <vector>
 
 cc3DFin::cc3DFin(QObject* parent)
     : QObject(parent)
@@ -105,7 +107,7 @@ void cc3DFin::do3DFinAction()
 	}
 
 	pc->placeIteratorAtBeginning();
-	const auto [stripe, cloud] = lib3dfin::process(&(pc->getNextPoint()->u[0]), static_cast<size_t>(pc->size()));
+	const auto [stripe, cloud, axes] = lib3dfin::process(&(pc->getNextPoint()->u[0]), static_cast<size_t>(pc->size()));
 
 	ccPointCloud* stripe_pc = new ccPointCloud;
 	stripe_pc->reserve(cloud.size() / 3);
