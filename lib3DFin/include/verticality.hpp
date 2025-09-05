@@ -10,8 +10,8 @@
 #include <nanoflann.hpp>
 
 // taskflow
-#include <taskflow/taskflow.hpp>
 #include <taskflow/algorithm/for_each.hpp>
+#include <taskflow/taskflow.hpp>
 
 namespace lib3dfin
 {

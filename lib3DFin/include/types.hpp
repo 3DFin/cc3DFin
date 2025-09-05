@@ -7,6 +7,14 @@
 
 namespace lib3dfin
 {
+
+    // template variables, hopefully not violating the ODR
+   	template <typename real_t>
+	constexpr real_t RAD_TO_DEG = real_t(180.0) / real_t(M_PI);
+
+	template<typename real_t>
+	constexpr real_t DEG_TO_RAD = real_t(M_PI) / real_t(180.0);
+
 	template <typename real_t>
 	using PointCloud3 = Eigen::Matrix<real_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
@@ -94,8 +102,9 @@ namespace lib3dfin
 
 		void setAxis(const Vec3<real_t>& axis_, const real_t max_deviation)
 		{
-			axis                    = axis_;
-			axis_vertical_deviation = std::abs(std::atan(std::hypot(axis(0), axis(1)) / axis(2)) * (180.0 / M_PI));
+			// axis always points upwards
+			axis                    = (axis_(2) < 0) ? -axis_ : axis_;
+			axis_vertical_deviation = std::atan2(std::hypot(axis(0), axis(1)), axis(2)) * RAD_TO_DEG<real_t>;
 			valid                   = axis_vertical_deviation < max_deviation;
 		}
 
@@ -150,9 +159,9 @@ namespace lib3dfin
 	{
 		enum class Status
 		{
-			NOT_COMPUTED = -2,
+			NOT_COMPUTED      = -2,
 			NOT_ENOUGH_POINTS = -1,
-			SUCCESS      = 0,
+			SUCCESS           = 0,
 			TILT_OUTLIER,
 			DIAMETER_TOO_SMALL,
 			DIAMETER_TOO_LARGE,
