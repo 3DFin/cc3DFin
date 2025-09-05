@@ -20,20 +20,21 @@ namespace lib3dfin
 	  public: // struct
 		struct Params
 		{
-			real_t   stem_minimum_height{0.3};
-			real_t   stem_maximum_height{25.0};
-			real_t   section_length{0.2};
-			real_t   section_width{0.05};
-			uint32_t inner_circle_point_threshold{5};
-			real_t   stem_diameter_proportion{0.5};
-			real_t   stem_minimum_diameter{0.09};
-			real_t   stem_maximum_diameter{1.0};
-			real_t   circle_point_distance{0.02};
-			uint32_t min_num_points_section{80};
-			uint32_t total_number_sectors{16};
-			uint32_t minimum_number_sectors{9};
-			real_t   circle_width{0.02};
-			real_t   outlier_probability_threshold{0.3}; // this is added vs. the original implementation
+			real_t       stem_minimum_height{0.3};
+			real_t       stem_maximum_height{25.0};
+			real_t       section_length{0.2};
+			real_t       section_width{0.05};
+			uint32_t     inner_circle_point_threshold{5};
+			real_t       stem_diameter_proportion{0.5};
+			real_t       stem_minimum_diameter{0.09};
+			real_t       stem_maximum_diameter{1.0};
+			real_t       circle_point_distance{0.02};
+			uint32_t     min_num_points_section{80};
+			uint32_t     total_number_sectors{16};
+			uint32_t     minimum_number_sectors{9};
+			real_t       circle_width{0.02};
+			real_t       outlier_probability_threshold{0.3}; // this is added vs. the original implementation
+			const real_t DBH{1.3};
 		};
 
 	  public:
@@ -45,8 +46,90 @@ namespace lib3dfin
 		    , num_sections_(static_cast<Eigen::Index>(std::floor((params_.stem_maximum_height - params_.stem_minimum_height) / params_.section_length)))
 		    , params_(std::move(params))
 		{
+			// Iinitialize DBH
+			computeDBHSectionID();
 		}
 
+		std::vector<CircleSections> extract()
+		{
+			std::vector<CircleSections> tree_circle_sections;
+			// iterate over the trees
+			for (const auto& tree : trees_.tree_descriptors)
+			{
+				const auto  tree_id           = tree.tree_id;
+				const auto& cluster_indicator = trees_.axis_cluster_indicator;
+
+				const auto   tree_mask          = (cluster_indicator.array() == tree_id);
+				Eigen::Index number_points_tree = tree_mask.count();
+
+				PointCloud3<real_t> tree_cloud(number_points_tree, 3);
+				Eigen::Index        output_id = 0;
+				for (Eigen::Index point_id = 0; point_id < num_points_; ++point_id)
+				{
+					if (tree_mask(point_id))
+					{
+						tree_cloud.row(output_id) << point_cloud_.row(point_id).template head<2>(), z0_(point_id);
+						output_id++;
+					}
+				}
+
+				CircleSections circles(num_sections_);
+
+				for (Eigen::Index section_id = 0; section_id < num_sections_; ++section_id)
+				{
+					const auto section_start = params_.stem_minimum_height + section_id * params_.section_length;
+					const auto section_end   = section_start + params_.section_width;
+					auto&      cur_circle    = circles[section_id];
+					cur_circle.z0            = section_start;
+
+					const auto         section_mask       = (tree_cloud.col(2).array() >= section_start) && (tree_cloud.col(2).array() < section_end);
+					const Eigen::Index num_section_points = section_mask.count();
+
+					if (num_section_points < params_.min_num_points_section)
+					{
+						cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
+						continue;
+					}
+
+					PointCloud2<real_t> section_cloud(num_section_points, 2);
+
+					Eigen::Index section_output_id = 0;
+					for (Eigen::Index point_id = 0; point_id < tree_cloud.rows(); ++point_id)
+					{
+						if (section_mask(point_id))
+						{
+							section_cloud(section_output_id, 0) = tree_cloud(point_id, 0);
+							section_cloud(section_output_id, 1) = tree_cloud(point_id, 1);
+							section_output_id++;
+						}
+					}
+
+					// fit_circle
+					fit_circle(section_cloud, cur_circle);
+					if (cur_circle.status != CircleData::Status::SUCCESS)
+					{
+						// cluster the cloud with single linkage algorithm
+						// rerun the algorithm on the clustered cloud
+						const auto max_cc_section = fcluster_slink(section_cloud, params_.circle_width);
+
+						if (max_cc_section.size() < params_.min_num_points_section)
+						{
+							cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
+							continue;
+						}
+
+						fit_circle(max_cc_section, cur_circle);
+					}
+				}
+				tilt_detection(circles);
+				const auto tree_localization = tree_locator(circles, tree);
+				std::cout << "Tree diameter: " << tree_localization.dbh << std::endl;
+				tree_circle_sections.emplace_back(std::move(circles));
+			}
+			return tree_circle_sections;
+		}
+
+	  private: // methods
 		void fit_circle(const PointCloud2<real_t>& section_cloud, CircleData& circle_data)
 		{
 			circle_data.circle                  = LMCircleFit(section_cloud);
@@ -129,83 +212,6 @@ namespace lib3dfin
 			real_t percentage_occupied_sectors = static_cast<real_t>(num_occupied_sectors) / params_.total_number_sectors;
 
 			return percentage_occupied_sectors;
-		}
-
-		std::vector<CircleSections> extract()
-		{
-			std::vector<CircleSections> tree_circle_sections;
-			// iterate over the trees
-			for (const auto& tree : trees_.tree_descriptors)
-			{
-				const auto  tree_id           = tree.tree_id;
-				const auto& cluster_indicator = trees_.axis_cluster_indicator;
-
-				const auto   tree_mask          = (cluster_indicator.array() == tree_id);
-				Eigen::Index number_points_tree = tree_mask.count();
-
-				PointCloud3<real_t> tree_cloud(number_points_tree, 3);
-				Eigen::Index        output_id = 0;
-				for (Eigen::Index point_id = 0; point_id < num_points_; ++point_id)
-				{
-					if (tree_mask(point_id))
-					{
-						tree_cloud.row(output_id) << point_cloud_.row(point_id).template head<2>(), z0_(point_id);
-						output_id++;
-					}
-				}
-
-				CircleSections circles(num_sections_);
-
-				for (Eigen::Index section_id = 0; section_id < num_sections_; ++section_id)
-				{
-					const auto section_start = params_.stem_minimum_height + section_id * params_.section_length;
-					const auto section_end   = section_start + params_.section_width;
-					auto&      cur_circle    = circles[section_id];
-					cur_circle.z0            = section_start;
-
-					const auto         section_mask       = (tree_cloud.col(2).array() >= section_start) && (tree_cloud.col(2).array() < section_end);
-					const Eigen::Index num_section_points = section_mask.count();
-
-					if (num_section_points < params_.min_num_points_section)
-					{
-						cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
-						continue;
-					}
-
-					PointCloud2<real_t> section_cloud(num_section_points, 2);
-
-					Eigen::Index section_output_id = 0;
-					for (Eigen::Index point_id = 0; point_id < tree_cloud.rows(); ++point_id)
-					{
-						if (section_mask(point_id))
-						{
-							section_cloud(section_output_id, 0) = tree_cloud(point_id, 0);
-							section_cloud(section_output_id, 1) = tree_cloud(point_id, 1);
-							section_output_id++;
-						}
-					}
-
-					// fit_circle
-					fit_circle(section_cloud, cur_circle);
-					if (cur_circle.status != CircleData::Status::SUCCESS)
-					{
-						// cluster the cloud with single linkage algorithm
-						// rerun the algorithm on the clustered cloud
-						const auto max_cc_section = fcluster_slink(section_cloud, params_.circle_width);
-
-						if (max_cc_section.size() < params_.min_num_points_section)
-						{
-							cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
-							continue;
-						}
-
-						fit_circle(max_cc_section, cur_circle);
-					}
-				}
-				tilt_detection(circles);
-				tree_circle_sections.emplace_back(std::move(circles));
-			}
-			return tree_circle_sections;
 		}
 
 		std::array<real_t, 2> quantiles(const Eigen::VectorX<real_t>& tilt_data, const std::array<real_t, 2>& bounds = {0.25, 0.75})
@@ -296,12 +302,12 @@ namespace lib3dfin
 				for (size_t j = i + 1; j < num_valid_sections; ++j)
 				{
 					const real_t height_difference = std::abs(circles[valid_ids[i]].z0 - circles[valid_ids[j]].z0);
-					// Since we prune i == j,
-					// there is no way z_dist could be zero, so the following division is safe.
 					const real_t planar_distance = (circles[valid_ids[i]].circle.center - circles[valid_ids[j]].circle.center).norm();
-
-					tilt_matrix(i, j) = std::atan(planar_distance / height_difference) * 180.0 / M_PI;
-					tilt_matrix(j, i) = tilt_matrix(i, j);
+					// Since we prune i == j,
+					// there is no way z_dist could be zero, so the following atan is safe.
+					const real_t tilt_angle = std::atan2(planar_distance, height_difference) * RAD_TO_DEG<real_t>;
+					tilt_matrix(i, j) = tilt_angle;
+					tilt_matrix(j, i) = tilt_angle;
 				}
 			}
 
@@ -365,6 +371,164 @@ namespace lib3dfin
 			}
 		}
 
+	  private:
+		void computeDBHSectionID()
+		{
+			real_t min_diff = std::abs(params_.stem_minimum_height - params_.DBH);
+
+			for (size_t section_id = 1; section_id < static_cast<size_t>(num_sections_); ++section_id)
+			{
+				const real_t section_height = params_.stem_minimum_height + section_id * params_.section_length;
+				const real_t diff           = std::abs(section_height - params_.DBH);
+				if (diff < min_diff)
+				{
+					min_diff        = diff;
+					dbh_section_id_ = static_cast<size_t>(section_id);
+				}
+			}
+		}
+
+		std::tuple<size_t, size_t, size_t> getDBHRange() const
+		{
+			const size_t lower_d_section = std::max(dbh_section_id_ - size_t(1), size_t(0));
+			const size_t upper_d_section = std::min(static_cast<size_t>(num_sections_), dbh_section_id_ + 2);
+			const size_t total_sections  = upper_d_section - lower_d_section;
+			return {lower_d_section, upper_d_section, total_sections};
+		}
+
+		std::pair<size_t, size_t> count_valid_sections(const CircleSections& circles, size_t lower, size_t upper) const
+		{
+			size_t valid_circles          = 0;
+			size_t enough_sector_coverage = 0;
+
+			for (size_t j = lower; j < upper; ++j)
+			{
+				if (circles[j].status == CircleData::Status::SUCCESS)
+					valid_circles++;
+				if (circles[j].sector_percentage > 0.3)
+					enough_sector_coverage++;
+			}
+			return {valid_circles, enough_sector_coverage};
+		}
+
+		bool check_radius_coherence(const CircleSections& circles, size_t lower, size_t upper) const
+		{
+			assert(upper - lower == 3);
+			std::array<real_t, 3> valid_radius;
+			size_t                i = 0;
+			for (size_t j = lower; j < upper; ++j, ++i)
+			{
+				valid_radius[i] = circles[j].circle.radius;
+			}
+
+			// Compute median
+			std::array<real_t, 3> sorted_radius = valid_radius;
+			std::sort(std::begin(sorted_radius), std::end(sorted_radius));
+			const real_t median_radius = sorted_radius[1];
+
+			// Compute median absolute deviation
+			std::array<real_t, 2> abs_deviations = {
+			    std::abs(sorted_radius[0] - median_radius),
+			    std::abs(sorted_radius[2] - median_radius)};
+
+			return std::max(abs_deviations[0], abs_deviations[1]) < 3 * std::min(abs_deviations[0], abs_deviations[1]);
+		}
+
+		bool check_two_radius_coherence(const CircleSections& circles, size_t idx1, size_t idx2, real_t factor) const
+		{
+			const real_t radius1    = circles[idx1].circle.radius;
+			const real_t radius2    = circles[idx2].circle.radius;
+			const real_t max_radius = std::max(radius1, radius2);
+			return std::abs(radius1 - radius2) < max_radius * factor;
+		}
+
+		TreeLocatorResult<real_t> axis_location(const TreeDescriptor<real_t>& tree_descriptor) const
+		{
+			TreeLocatorResult<real_t> result;
+			result.dbh = 0.0; // No evaluation of the DBH
+
+			const real_t cos_deviation     = std::cos(tree_descriptor.axis_vertical_deviation * DEG_TO_RAD<real_t>);
+			// axis_verical_deviation is filtered a priori, so there is no chance of division by zero.
+			assert(abs(cos_deviation) > 1e-8);
+
+			const real_t diff_height       = params_.DBH - tree_descriptor.height_difference;
+			const real_t dist_centroid_dbh = diff_height / cos_deviation;
+			result.location                = tree_descriptor.axis * dist_centroid_dbh + tree_descriptor.centroid_coordinates;
+
+			return result;
+		}
+
+		TreeLocatorResult<real_t> dbh_location(const TreeDescriptor<real_t>& tree_descriptor, size_t section_index, const CircleSections& circles) const
+		{
+
+			TreeLocatorResult<real_t> result;
+			result.dbh         = circles[section_index].circle.radius * 2.0;
+			result.location(0) = circles[section_index].circle.center(0);
+			result.location(1) = circles[section_index].circle.center(1);
+			result.location(2) = tree_descriptor.height_difference + params_.DBH;
+			return result;
+		}
+
+		TreeLocatorResult<real_t> tree_locator(const CircleSections& circles, const TreeDescriptor<real_t>& tree_descriptor) const
+		{
+			// Early exit if minimum section height is above DBH
+			if (params_.stem_minimum_height > params_.DBH)
+				return axis_location(tree_descriptor);
+
+			// Find section closest to breast height and its neighborhood
+			const auto [lower_d_section, upper_d_section, total_sections] = getDBHRange();
+
+			// Check section validity in DBH neighborhood
+			const auto [num_valid_circles, num_enough_sector_coverage] = count_valid_sections(circles, lower_d_section, upper_d_section);
+
+			if (num_valid_circles < total_sections || num_valid_circles < 2)
+				return axis_location(tree_descriptor);
+
+			const bool all_sections_valids = (num_valid_circles == total_sections) && (num_enough_sector_coverage == total_sections);
+
+			// Handle edge cases first
+			// all sections are valid but there is only two valid circles dbh_section_id == 0 or dbh_section_id == total_sections - 1
+			if (num_valid_circles == 2 && all_sections_valids)
+			{
+				// case that arise if dbh_section_id == 0
+				if (lower_d_section == 0)
+				{
+					// First section case - check coherence between two sections
+					if (check_two_radius_coherence(circles, lower_d_section, lower_d_section + 1, 0.1))
+						return dbh_location(tree_descriptor, dbh_section_id_, circles);
+					else
+						return axis_location(tree_descriptor);
+				}
+
+				// case that arise if dbh_section_id == total_sections - 1
+				if (upper_d_section == static_cast<size_t>(num_sections_))
+				{
+					// Last section case
+					if (check_two_radius_coherence(circles, upper_d_section - 2, upper_d_section - 1, 0.15))
+						return dbh_location(tree_descriptor, dbh_section_id_, circles);
+					else
+						return axis_location(tree_descriptor);
+				}
+			}
+
+			// General case with 3 sections
+			// if there are at least 3 valid cicles but some of them have a low coverage
+			assert(num_valid_circles == 3);
+			if (num_enough_sector_coverage < 3)
+			{
+				return axis_location(tree_descriptor);
+			}
+
+			// else we can take the average of the sections estimations and check coherence
+			// if the coherence test fails, we fall back to axis estimation
+			if (check_radius_coherence(circles, lower_d_section, upper_d_section))
+				return dbh_location(tree_descriptor, dbh_section_id_, circles);
+			else
+			{
+				return axis_location(tree_descriptor);
+			}
+		}
+
 	  private: // members
 		const RefPointCloud<real_t>&  point_cloud_;
 		const Eigen::VectorX<real_t>& z0_;
@@ -372,6 +536,7 @@ namespace lib3dfin
 		const Eigen::Index            num_points_;
 		const Params                  params_;
 		const Eigen::Index            num_sections_;
+		size_t                        dbh_section_id_{0};
 	};
 
 } // namespace lib3dfin

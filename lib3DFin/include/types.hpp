@@ -155,6 +155,13 @@ namespace lib3dfin
 	};
 
 	template <typename real_t>
+	struct TreeLocatorResult
+	{
+		real_t       dbh{0.0};
+		Vec3<real_t> location{0.0, 0.0, 0.0};
+	};
+
+	template <typename real_t>
 	struct CircleData
 	{
 		enum class Status
