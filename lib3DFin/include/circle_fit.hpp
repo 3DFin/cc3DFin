@@ -12,6 +12,118 @@
 namespace lib3dfin
 {
 
+	/**
+	 * @brief Huber loss function utilities
+	 */
+	template <typename real_t>
+	struct HuberLoss
+	{
+		static real_t weight(real_t residual, real_t threshold)
+		{
+			const real_t abs_r = std::abs(residual);
+			return (abs_r <= threshold) ? real_t(1.0) : threshold / abs_r;
+		}
+	};
+
+	template <typename real_t>
+	struct HuberEigenCircleFitFunctor
+	{
+		const PointCloud2<real_t>& data;
+		real_t                     huber_threshold;
+
+		HuberEigenCircleFitFunctor(const PointCloud2<real_t>& xy, real_t threshold = 0.1)
+		    : n_values(xy.rows())
+		    , data(xy)
+		    , huber_threshold(threshold)
+		{
+		}
+
+		// Evaluate weighted residual
+		int operator()(const Eigen::VectorX<real_t>& x, Eigen::VectorX<real_t>& fvec) const
+		{
+			const real_t a = x(0);
+			const real_t b = x(1);
+			const real_t r = x(2);
+
+			for (Eigen::Index i = 0; i < data.rows(); ++i)
+			{
+				const real_t residual = std::hypot(data(i, 0) - a, data(i, 1) - b) - r;
+				const real_t weight   = HuberLoss<real_t>::weight(residual, huber_threshold);
+				fvec(i)               = std::sqrt(weight) * residual;
+			}
+			return 0;
+		}
+
+		// Compute weighted jacobian
+		int df(const Eigen::VectorX<real_t>& x, Eigen::MatrixX<real_t>& fjac) const
+		{
+			const real_t a = x(0);
+			const real_t b = x(1);
+			const real_t r = x(2);
+
+			for (Eigen::Index i = 0; i < data.rows(); ++i)
+			{
+				const real_t dx       = data(i, 0) - a;
+				const real_t dy       = data(i, 1) - b;
+				const real_t d        = std::hypot(dx, dy);
+				const real_t residual = d - r;
+
+				const real_t weight      = HuberLoss<real_t>::weight(residual, huber_threshold);
+				const real_t sqrt_weight = std::sqrt(weight);
+
+				if (d < real_t(1e-10)) // avoid division by zero
+				{
+					fjac(i, 0) = fjac(i, 1) = real_t(0.0);
+				}
+				else
+				{
+					fjac(i, 0) = -sqrt_weight * dx / d;
+					fjac(i, 1) = -sqrt_weight * dy / d;
+				}
+				fjac(i, 2) = -sqrt_weight;
+			}
+			return 0;
+		}
+
+		int n_values = 0;
+		int inputs() const
+		{
+			return 3;
+		}
+		int values() const
+		{
+			return n_values;
+		}
+	};
+
+	template <typename real_t>
+	Circle<real_t> huberLMCircleFit(const PointCloud2<real_t>& xy, real_t huber_threshold = real_t(1.345))
+	{
+		if (xy.rows() < 3)
+			throw std::invalid_argument("Circle fit needs at least 3 points");
+
+		// Initialize with Taubin method
+		const auto init_circle = algebraicTaubinCircleFit(xy);
+
+		HuberEigenCircleFitFunctor<real_t>                            functor(xy, huber_threshold);
+		Eigen::LevenbergMarquardt<HuberEigenCircleFitFunctor<real_t>> lm(functor);
+
+		// 40 iters should be enough
+		lm.parameters.maxfev = 40;
+		lm.parameters.xtol   = real_t(1.4e-8);
+
+		Eigen::VectorX<real_t> x0(3);
+		x0 << init_circle.center.x(), init_circle.center.y(), init_circle.radius;
+
+		int status = lm.minimize(x0);
+
+		Circle<real_t> result;
+		result.center(0) = x0(0);
+		result.center(1) = x0(1);
+		result.radius    = std::abs(x0(2)); // Ensure positive radius
+		return result;
+	}
+
 	template <typename real_t>
 	struct EigenCircleFitFunctor
 	{
@@ -114,7 +226,31 @@ namespace lib3dfin
 	}
 
 	template <typename real_t>
-	Circle<real_t> LMCircleFit(const PointCloud2<real_t>& xy)
+	Circle<real_t> initializeByCentroid(const PointCloud2<real_t>& xy)
+	{
+		Circle<real_t> result;
+
+		// Use centroid as initial center
+		result.center = xy.colwise().mean();
+
+		// Calculate initial radius as mean distance from centroid to all points
+		real_t             sum_distances = 0.0;
+		const Eigen::Index num_points    = xy.rows();
+
+		for (Eigen::Index i = 0; i < num_points; ++i)
+		{
+			const Vec2<real_t> point    = xy.row(i);
+			const real_t       distance = (point - result.center).norm();
+			sum_distances += distance;
+		}
+
+		result.radius = sum_distances / static_cast<real_t>(num_points);
+
+		return result;
+	}
+
+	template <typename real_t>
+	Circle<real_t> LMCircleFit(const PointCloud2<real_t>& xy, real_t huber_threshold = 0.1)
 	{
 		if (xy.rows() < 3)
 			throw std::invalid_argument("Circle fit need at least 3 points");
@@ -122,12 +258,12 @@ namespace lib3dfin
 		// Initialization by Taubin method
 		const auto init_circle = algebraicTaubinCircleFit(xy);
 
-		EigenCircleFitFunctor                                    functor(xy);
-		Eigen::LevenbergMarquardt<EigenCircleFitFunctor<real_t>> lm(functor);
+		HuberEigenCircleFitFunctor<real_t>                            functor(xy, huber_threshold);
+		Eigen::LevenbergMarquardt<HuberEigenCircleFitFunctor<real_t>> lm(functor);
 
-		// 40 iters should be enough.
+		// 30 iters should be enough.
 		// See H. Abdul-Rahman and N. Chernov, 2013. : "The GN and LM normally converge in 5–10 iterations."
-		lm.parameters.maxfev = 40;
+		lm.parameters.maxfev = 30;
 		lm.parameters.xtol   = 1.4e-8;
 
 		Eigen::VectorX<real_t> x0(3);
