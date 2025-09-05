@@ -56,11 +56,10 @@ namespace lib3dfin
 			// iterate over the trees
 			for (const auto& tree : trees_.tree_descriptors)
 			{
-				const auto  tree_id           = tree.tree_id;
 				const auto& cluster_indicator = trees_.axis_cluster_indicator;
 
-				const auto   tree_mask          = (cluster_indicator.array() == tree_id);
-				Eigen::Index number_points_tree = tree_mask.count();
+				const auto         tree_mask          = (cluster_indicator.array() == tree.tree_id);
+				const Eigen::Index number_points_tree = tree_mask.count();
 
 				PointCloud3<real_t> tree_cloud(number_points_tree, 3);
 				Eigen::Index        output_id = 0;
@@ -123,7 +122,6 @@ namespace lib3dfin
 				}
 				tilt_detection(circles);
 				const auto tree_localization = tree_locator(circles, tree);
-				std::cout << "Tree diameter: " << tree_localization.dbh << std::endl;
 				tree_circle_sections.emplace_back(std::move(circles));
 			}
 			return tree_circle_sections;
@@ -155,9 +153,10 @@ namespace lib3dfin
 				return;
 			}
 
-			circle_data.sector_percentage = sectorOccupancy(section_cloud, circle_params);
+			const auto num_occupied_sectors = sectorOccupancy(section_cloud, circle_params);
+			circle_data.sector_percentage   = static_cast<real_t>(num_occupied_sectors) / params_.total_number_sectors;
 
-			if (circle_data.sector_percentage * params_.total_number_sectors < params_.minimum_number_sectors)
+			if (num_occupied_sectors < params_.minimum_number_sectors)
 			{
 				circle_data.status = CircleData::Status::NOT_ENOUGH_SECTOR_COVERAGE;
 				return;
@@ -173,7 +172,7 @@ namespace lib3dfin
 			return num_valid_points;
 		}
 
-		real_t sectorOccupancy(const PointCloud2<real_t>& circle_cloud, const Circle<real_t>& circle_params)
+		uint32_t sectorOccupancy(const PointCloud2<real_t>& circle_cloud, const Circle<real_t>& circle_params)
 		{
 			const real_t R_min_sq        = (circle_params.radius - params_.circle_width) * (circle_params.radius - params_.circle_width);
 			const real_t R_max_sq        = (circle_params.radius + params_.circle_width) * (circle_params.radius + params_.circle_width);
@@ -196,10 +195,10 @@ namespace lib3dfin
 				// Check angular constraint
 				real_t angle = std::atan2(red_point.y(), red_point.x());
 				if (angle < 0)
-					angle += 2.0 * M_PI; // Normalize to [0, 2π)
+					angle += 2.0 * M_PI;
 
 				const uint32_t sector         = static_cast<uint32_t>(std::floor(angle * inv_sector_size));
-				const uint32_t clamped_sector = std::min(sector, params_.total_number_sectors - 1); // be sure we don't exceed the maximum sector index //TODO clamp angle
+				const uint32_t clamped_sector = std::min(sector, params_.total_number_sectors - 1); // be sure we don't exceed the maximum sector index //TODO clamp angle instead
 
 				sector_occupancy_indicator[clamped_sector] = true;
 			}
@@ -209,9 +208,7 @@ namespace lib3dfin
 			                                                 std::end(sector_occupancy_indicator),
 			                                                 true);
 			// percentage of occupied sectors
-			real_t percentage_occupied_sectors = static_cast<real_t>(num_occupied_sectors) / params_.total_number_sectors;
-
-			return percentage_occupied_sectors;
+			return num_occupied_sectors;
 		}
 
 		std::array<real_t, 2> quantiles(const Eigen::VectorX<real_t>& tilt_data, const std::array<real_t, 2>& bounds = {0.25, 0.75})
@@ -288,7 +285,7 @@ namespace lib3dfin
 
 			// compute outlier weights
 			// vs. the original implementation, num_valid_sections - 1  is the correct way to compute outlier weights
-			// because the current section (i==j) can't be an outlier to itselt
+			// because the current section (i==j) can't be an outlier to itself.
 			const real_t total_weight  = (num_valid_sections - 1) * rel_weight_factor + abs_weight_factor;
 			const real_t abs_outlier_w = abs_weight_factor / total_weight;
 			const real_t rel_outlier_w = rel_weight_factor / total_weight;
@@ -302,12 +299,13 @@ namespace lib3dfin
 				for (size_t j = i + 1; j < num_valid_sections; ++j)
 				{
 					const real_t height_difference = std::abs(circles[valid_ids[i]].z0 - circles[valid_ids[j]].z0);
-					const real_t planar_distance = (circles[valid_ids[i]].circle.center - circles[valid_ids[j]].circle.center).norm();
+					const real_t planar_distance   = (circles[valid_ids[i]].circle.center - circles[valid_ids[j]].circle.center).norm();
 					// Since we prune i == j,
-					// there is no way z_dist could be zero, so the following atan is safe.
-					const real_t tilt_angle = std::atan2(planar_distance, height_difference) * RAD_TO_DEG<real_t>;
-					tilt_matrix(i, j) = tilt_angle;
-					tilt_matrix(j, i) = tilt_angle;
+					// Rhere is no way z_dist could be zero, so the following atan is safe.
+					// Original implementation convert tilt in degrees but there is no need IQR computation
+					const real_t tilt_angle = std::atan2(height_difference, planar_distance);
+					tilt_matrix(i, j)       = tilt_angle;
+					tilt_matrix(j, i)       = tilt_angle;
 				}
 			}
 
@@ -447,7 +445,7 @@ namespace lib3dfin
 			TreeLocatorResult<real_t> result;
 			result.dbh = 0.0; // No evaluation of the DBH
 
-			const real_t cos_deviation     = std::cos(tree_descriptor.axis_vertical_deviation * DEG_TO_RAD<real_t>);
+			const real_t cos_deviation = std::cos(tree_descriptor.axis_vertical_deviation * DEG_TO_RAD<real_t>);
 			// axis_verical_deviation is filtered a priori, so there is no chance of division by zero.
 			assert(abs(cos_deviation) > 1e-8);
 
