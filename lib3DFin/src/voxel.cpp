@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
-
 #include "voxel.hpp"
 
 #include <taskflow/algorithm/for_each.hpp>
@@ -13,12 +12,11 @@
 namespace lib3dfin
 {
 
-	template <typename real_t>
-	std::tuple<PointCloud3<real_t>, VecIndex<uint32_t>> voxelize(
-	    const RefPointCloud<real_t>& xyz,
-	    const real_t                 res_xy,
-	    const real_t                 res_z,
-	    const bool                   verbose)
+	std::tuple<PointCloud3, VecIndex<uint32_t>> voxelize(
+	    const PointCloud3& xyz,
+	    const double       res_xy,
+	    const double       res_z,
+	    const bool         verbose)
 	{
 		// number of bit used to encode one dimension
 		constexpr uint64_t voxel_bits     = 21;
@@ -37,7 +35,7 @@ namespace lib3dfin
 		const Eigen::Index num_points = xyz.rows();
 
 		// Lambda to compute min in one dimension
-		const auto min_one_dim = [&xyz, num_points](const Eigen::Index id_dim, real_t& min_dim)
+		const auto min_one_dim = [&xyz, num_points](const Eigen::Index id_dim, double& min_dim)
 		{
 			min_dim = xyz(0, id_dim);
 			for (Eigen::Index point_id = 1; point_id < num_points; ++point_id)
@@ -48,7 +46,7 @@ namespace lib3dfin
 		};
 
 		// Parallel min coeff
-		real_t min_x, min_y, min_z;
+		double min_x, min_y, min_z;
 		tf.emplace([&]()
 		           { min_one_dim(0, min_x); });
 		tf.emplace([&]()
@@ -57,17 +55,17 @@ namespace lib3dfin
 		           { min_one_dim(2, min_z); });
 		executor.run(tf).wait();
 
-		const Vec3<real_t> min_vec(min_x, min_y, min_z);
+		const Vec3 min_vec(min_x, min_y, min_z);
 
 		// Lambda to compute voxel hashing
-		const auto create_hash = [&](const Vec3<real_t>& point) -> uint64_t
+		const auto create_hash = [&](const Vec3& point) -> uint64_t
 		{
 			return ((static_cast<uint64_t>((point(2) - min_vec(2)) / res_z) << two_voxel_bits) | (static_cast<uint64_t>((point(1) - min_vec(1)) / res_xy) << voxel_bits)) | static_cast<uint64_t>((point(0) - min_vec(0)) / res_xy);
 		};
 
 		std::vector<uint64_t> hashes(num_points);
 		VecIndex<uint32_t>    cloud_to_vox_ind(num_points);
-		PointCloud3<real_t>   vox_pc;
+		PointCloud3           vox_pc;
 		VecIndex<uint32_t>    vox_to_cloud_ind;
 
 		std::vector<uint32_t> first_point_in_vox(num_points, 0);
@@ -142,13 +140,13 @@ namespace lib3dfin
 		auto allocate = tf.emplace(
 		    [&]()
 		    {
-			    vox_pc = PointCloud3<real_t>(first_point_in_vox.back(), 3);
+			    vox_pc = PointCloud3(first_point_in_vox.back(), 3);
 		    });
 
 		// Precomputed shifts for each dimensional composant of a full hashed code
-		const real_t centroid_shift_x = min_vec(0) + res_xy / real_t(2.0);
-		const real_t centroid_shift_y = min_vec(1) + res_xy / real_t(2.0);
-		const real_t centroid_shift_z = min_vec(2) + res_z / real_t(2.0);
+		const double centroid_shift_x = min_vec(0) + res_xy / 2.0;
+		const double centroid_shift_y = min_vec(1) + res_xy / 2.0;
+		const double centroid_shift_z = min_vec(2) + res_z / 2.0;
 
 		auto fill_vox_pc = tf.for_each_index(
 		                         Eigen::Index(0), Eigen::Index(num_points), Eigen::Index(1), [&](const Eigen::Index point_id)
@@ -218,17 +216,5 @@ namespace lib3dfin
 
 		return {vox_pc, cloud_to_vox_ind};
 	}
-
-	template std::tuple<PointCloud3<float>, VecIndex<uint32_t>> voxelize<float>(
-	    const RefPointCloud<float>& xyz,
-	    const float                 res_xy,
-	    const float                 res_z,
-	    const bool                  verbose);
-
-	template std::tuple<PointCloud3<double>, VecIndex<uint32_t>> voxelize<double>(
-	    const RefPointCloud<double>& xyz,
-	    const double                 res_xy,
-	    const double                 res_z,
-	    const bool                   verbose);
 
 } // namespace lib3dfin

@@ -21,18 +21,16 @@
 namespace lib3dfin
 {
 
-	template <typename real_t>
-	TreePeeler<real_t>::TreePeeler(
-	    const RefPointCloud<real_t>& point_cloud,
-	    TreePeeler::Parameters       params)
+	TreePeeler::TreePeeler(
+	    const PointCloud3&     point_cloud,
+	    TreePeeler::Parameters params)
 	    : point_cloud_(point_cloud)
 	    , num_points_(point_cloud.rows())
 	    , params_(std::move(params))
 	{
 	}
 
-	template <typename real_t>
-	void TreePeeler<real_t>::peel(ArrayClusterIndicator& stripe_indicator)
+	void TreePeeler::peel(ArrayClusterIndicator& stripe_indicator)
 	{
 		std::cout << "[TreePeeler] Starting peeling process..." << std::endl;
 		// reset total time
@@ -47,8 +45,7 @@ namespace lib3dfin
 		std::cout << "[TreePeeler] total time: " << total_time_ << std::endl;
 	}
 
-	template <typename real_t>
-	ArrayClusterIndicator TreePeeler<real_t>::filterInitialStripe(const Eigen::VectorX<real_t>& z0, real_t stripe_lower_limit, real_t stripe_upper_limit)
+	ArrayClusterIndicator TreePeeler::filterInitialStripe(const Eigen::VectorXd& z0, double stripe_lower_limit, double stripe_upper_limit)
 	{
 		ArrayClusterIndicator stripe_cluster_indicator(z0.size());
 		stripe_cluster_indicator.setConstant(NO_CLUSTER_ID);
@@ -56,8 +53,7 @@ namespace lib3dfin
 		return stripe_cluster_indicator;
 	}
 
-	template <typename real_t>
-	ArrayClusterIndicator TreePeeler<real_t>::filterInitialStripe(const Eigen::VectorX<real_t>& z0, const Eigen::VectorX<real_t>& axis_distance, real_t max_distance, real_t stripe_lower_limit, real_t stripe_upper_limit)
+	ArrayClusterIndicator TreePeeler::filterInitialStripe(const Eigen::VectorXd& z0, const Eigen::VectorXd& axis_distance, double max_distance, double stripe_lower_limit, double stripe_upper_limit)
 	{
 		assert(z0.size() == axis_distance.size());
 		ArrayClusterIndicator stripe_cluster_indicator(z0.size());
@@ -67,18 +63,18 @@ namespace lib3dfin
 			{
 				stripe_cluster_indicator(point_id) = 0;
 			}
-			else {
+			else
+			{
 				stripe_cluster_indicator(point_id) = NO_CLUSTER_ID;
 			}
 		}
 		return stripe_cluster_indicator;
 	}
 
-	template <typename real_t>
-	PointCloud3<real_t> TreePeeler<real_t>::extractStripe(const RefPointCloud<real_t>& point_cloud, const ArrayClusterIndicator& stripe_indicator)
+	PointCloud3 TreePeeler::extractStripe(const PointCloud3& point_cloud, const ArrayClusterIndicator& stripe_indicator)
 	{
-		const auto          num_points_stripe = (stripe_indicator != NO_CLUSTER_ID).count();
-		PointCloud3<real_t> stripe_cloud(num_points_stripe, 3);
+		const auto  num_points_stripe = (stripe_indicator != NO_CLUSTER_ID).count();
+		PointCloud3 stripe_cloud(num_points_stripe, 3);
 
 		Eigen::Index stripe_id = 0;
 		for (Eigen::Index point_id = 0; point_id < point_cloud.rows(); ++point_id)
@@ -92,8 +88,7 @@ namespace lib3dfin
 		return stripe_cloud;
 	}
 
-	template <typename real_t>
-	ArrayClusterIndicator TreePeeler<real_t>::verticalityClustering(const ArrayClusterIndicator& stripe_indicator)
+	ArrayClusterIndicator TreePeeler::verticalityClustering(const ArrayClusterIndicator& stripe_indicator)
 	{
 		auto t_start = std::chrono::high_resolution_clock::now();
 		std::cout << " -Computing verticality..." << std::endl;
@@ -103,13 +98,13 @@ namespace lib3dfin
 		const auto num_point_stripe = stripe_cloud.rows();
 
 		// Voxelate stripe cloud
-		const auto [voxelated_stripe, stripe_cloud_to_vox] = voxelize(RefPointCloud<real_t>(stripe_cloud), params_.resolution_xy, params_.resolution_z, true);
+		const auto [voxelated_stripe, stripe_cloud_to_vox] = voxelize(PointCloud3(stripe_cloud), params_.resolution_xy, params_.resolution_z, true);
 		const auto num_voxels                              = voxelated_stripe.rows();
 
 		// Compute verticality feature
-		Eigen::VectorX<real_t> vert_values      = compute_verticality_feature(voxelated_stripe, params_.verticality_nn_scale);
-		ArrayMask              valid_vox_mask   = vert_values.array() > params_.verticality_threshold;
-		auto                   num_valid_voxels = valid_vox_mask.count();
+		Eigen::VectorXd vert_values      = compute_verticality_feature(voxelated_stripe, params_.verticality_nn_scale);
+		ArrayMask       valid_vox_mask   = vert_values.array() > params_.verticality_threshold;
+		auto            num_valid_voxels = valid_vox_mask.count();
 
 		if (!num_valid_voxels)
 		{
@@ -117,8 +112,8 @@ namespace lib3dfin
 			// TODO catch this in the GUI
 		}
 
-		PointCloud3<real_t> vox_filtered_stripe(num_valid_voxels, 3);
-		VecIndex<uint32_t>  vox_to_filtered_vox(num_voxels);
+		PointCloud3        vox_filtered_stripe(num_valid_voxels, 3);
+		VecIndex<uint32_t> vox_to_filtered_vox(num_voxels);
 		vox_to_filtered_vox.setConstant(0); // beware invalid vox will remains 0, we have to check against valid_vox_mask to desanbiguate between id == 0 and 0 == INVALID
 
 		Eigen::Index filtered_voxel_id = 0;
@@ -140,8 +135,8 @@ namespace lib3dfin
 
 		// TODO : this does not handle anisotropy in the voxelization...
 		// this is already the case in the original implementation...
-		const real_t      eps            = params_.resolution_xy * std::sqrt(3.0) + 1e-6;
-		VecIndex<int32_t> cluster_labels = connected_components(RefPointCloud<real_t>(vox_filtered_stripe), eps, 2);
+		const double      eps            = params_.resolution_xy * std::sqrt(3.0) + 1e-6;
+		VecIndex<int32_t> cluster_labels = connected_components(vox_filtered_stripe, eps, 2);
 
 		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
@@ -203,8 +198,5 @@ namespace lib3dfin
 		total_time_ += iteration_time;
 		return new_stripe_indicator;
 	}
-
-	template class TreePeeler<float>;
-	template class TreePeeler<double>;
 
 } // namespace lib3dfin

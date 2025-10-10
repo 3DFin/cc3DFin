@@ -171,6 +171,6 @@ namespace lib3dfin
 		uint32_t number_points_inner{0};
 	};
 
-	using CircleSections = std::vector<CircleData<real_t>>;
+	using CircleSections = std::vector<CircleData>;
 
 } // namespace lib3dfin

@@ -7,6 +7,5 @@
 
 namespace lib3dfin
 {
-	template <typename real_t>
-	VecIndex<int32_t> connected_components(const RefPointCloud<real_t>& xyz, const real_t eps, const uint32_t min_samples);
+	VecIndex<int32_t> connected_components(const PointCloud3& xyz, const double eps, const uint32_t min_samples);
 } // namespace lib3dfin

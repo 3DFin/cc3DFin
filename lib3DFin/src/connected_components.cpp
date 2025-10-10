@@ -12,15 +12,14 @@
 namespace lib3dfin
 {
 
-	template <typename real_t>
-	VecIndex<int32_t> connected_components(const RefPointCloud<real_t>& xyz, const real_t eps, const uint32_t min_samples)
+	VecIndex<int32_t> connected_components(const PointCloud3& xyz, const double eps, const uint32_t min_samples)
 	{
-		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<RefPointCloud<real_t>, 3, nanoflann::metric_L2_Simple>;
+		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud3, 3, nanoflann::metric_L2_Simple>;
 
 		// Parallel construction of kdtree index is enabled by default, but maybe we have to adapt this
 		// for small point clouds
 		kd_tree_t    kd_tree(3, xyz, 10, 0);
-		const real_t sq_search_radius = eps * eps;
+		const double sq_search_radius = eps * eps;
 
 		const Eigen::Index n_points = xyz.rows();
 
@@ -34,9 +33,9 @@ namespace lib3dfin
 		taskflow.for_each_index(
 		    Eigen::Index(0), n_points, Eigen::Index(1), [&](Eigen::Index point_id)
 		    {
-            std::vector<nanoflann::ResultItem<Eigen::Index, real_t>> result_set;
+            std::vector<nanoflann::ResultItem<Eigen::Index, double>> result_set;
 
-            nanoflann::RadiusResultSet<real_t, Eigen::Index> radius_result_set(sq_search_radius, result_set);
+            nanoflann::RadiusResultSet<double, Eigen::Index> radius_result_set(sq_search_radius, result_set);
             const auto                                       num_found =
                 kd_tree.index_->radiusSearchCustomCallback(xyz.row(point_id).data(), radius_result_set);
 
@@ -92,12 +91,12 @@ namespace lib3dfin
 		    {
             if (!is_core[curr_id])
             {
-                real_t min_dist = std::numeric_limits<real_t>::max();
+                double min_dist = std::numeric_limits<double>::max();
                 for (const auto nn_id : nn_cells[curr_id])
                 {
                     if (is_core[nn_id])
                     {
-                        real_t dist = (xyz.row(nn_id) - xyz.row(curr_id)).squaredNorm();
+                        double dist = (xyz.row(nn_id) - xyz.row(curr_id)).squaredNorm();
                         if (dist < min_dist)
                         {
                             min_dist            = dist;
@@ -113,8 +112,5 @@ namespace lib3dfin
 
 		return cluster_id;
 	}
-
-	template VecIndex<int32_t> connected_components<float>(const RefPointCloud<float>& xyz, const float eps, const uint32_t min_samples);
-	template VecIndex<int32_t> connected_components<double>(const RefPointCloud<double>& xyz, const double eps, const uint32_t min_samples);
 
 } // namespace lib3dfin

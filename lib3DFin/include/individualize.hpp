@@ -11,27 +11,26 @@
 namespace lib3dfin
 {
 
-	template <typename real_t>
 	class TreeIndividualizer
 	{
 	  public: // struct
 		struct Parameters
 		{
-			real_t   resolution_xy{0.035};
-			real_t   resolution_z{0.035};
-			real_t   height_range{0.7};
-			real_t   maximum_dist_axis{15.0};               // maximum_
+			double   resolution_xy{0.035};
+			double   resolution_z{0.035};
+			double   height_range{0.7};
+			double   maximum_dist_axis{15.0};               // maximum_
 			uint32_t minimum_points_stem{20};               // minimum_points this is the minimum number of voxels required to consider stripe cluster to be a valid as a stem
-			real_t   axis_maximum_vertical_deviation{25.0}; // maximum_dev
-			real_t   height_distance_from_axis{1.5};
-			real_t   resolution_height{0.3};
+			double   axis_maximum_vertical_deviation{25.0}; // maximum_dev
+			double   height_distance_from_axis{1.5};
+			double   resolution_height{0.3};
 		};
 
 	  public: // methods
 		explicit TreeIndividualizer(
-		    const RefPointCloud<real_t>&  point_cloud,
-		    const Stripe<real_t>&         stripe,
-		    const Eigen::VectorX<real_t>& z0,
+		    const PointCloud3&            point_cloud,
+		    const Stripe&                 stripe,
+		    const Eigen::VectorX<double>& z0,
 		    const Parameters              params = Parameters())
 		    : point_cloud_(point_cloud)
 		    , stripe_(stripe)
@@ -40,20 +39,20 @@ namespace lib3dfin
 		{
 		}
 
-		AxesData<real_t> individualize();
+		AxesData individualize();
 
 	  private: // methods
-		AxesData<real_t> computeAxesApproximate(
-		    const PointCloud3<real_t>& voxelated_cloud);
+		AxesData computeAxesApproximate(
+		    const PointCloud3& voxelated_cloud);
 
 		void compute_heights(
-		    const PointCloud3<real_t>& voxelated_cloud,
-		    AxesData<real_t>&          axis_data);
+		    const PointCloud3& voxelated_cloud,
+		    AxesData&          axis_data);
 
 	  private: // variables
-		const RefPointCloud<real_t>&  point_cloud_;
-		const Stripe<real_t>&         stripe_;
-		const Eigen::VectorX<real_t>& z0_;
+		const PointCloud3&            point_cloud_;
+		const Stripe&                 stripe_;
+		const Eigen::VectorX<double>& z0_;
 		const Parameters              params_;
 	};
 

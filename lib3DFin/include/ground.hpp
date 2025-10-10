@@ -7,32 +7,31 @@
 
 namespace lib3dfin
 {
-	template <typename real_t>
 	class HeightNormalization
 	{
 	  public: // struct
 		struct Parameters
 		{
-			real_t   cloth_resolution{0.45}; // basic / res_cloth // changed from 0.7 to 0.45
+			double   cloth_resolution{0.45}; // basic / res_cloth // changed from 0.7 to 0.45
 			bool     denoise_point_cloud{false};
-			real_t   denoise_resolution{0.15};  // res_ground
+			double   denoise_resolution{0.15};  // res_ground
 			uint32_t denoise_minimum_points{2}; // minimum_points_ground
 			bool     clean_dtm{true};
 		};
 
 	  public:
-		explicit HeightNormalization(const RefPointCloud<real_t>& point_cloud, HeightNormalization::Parameters params = HeightNormalization::Parameters());
-		Eigen::VectorX<real_t> normalize();
+		explicit HeightNormalization(const PointCloud3& point_cloud, HeightNormalization::Parameters params = HeightNormalization::Parameters());
+		Eigen::VectorX<double> normalize();
 
 	  private: // methods
-		PointCloud3<real_t> denoiseCloud();
-		void                generateDTM(const RefPointCloud<real_t>& dtm_point_cloud);
-		void                cleanDTM();
+		PointCloud3 denoiseCloud();
+		void        generateDTM(const PointCloud3& dtm_point_cloud);
+		void        cleanDTM();
 
 	  private: // members
-		const RefPointCloud<real_t>& point_cloud_;
-		const Parameters             params_;
-		PointCloud3<real_t>          dtm_;
+		const PointCloud3& point_cloud_;
+		const Parameters   params_;
+		PointCloud3        dtm_;
 	};
 
 } // namespace lib3dfin

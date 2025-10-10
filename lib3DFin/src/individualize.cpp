@@ -17,8 +17,7 @@
 namespace lib3dfin
 {
 
-	template <typename real_t>
-	AxesData<real_t> TreeIndividualizer<real_t>::individualize()
+	AxesData TreeIndividualizer::individualize()
 	{
 		const auto [voxelated_cloud, cloud_to_vox]        = voxelize(point_cloud_, params_.resolution_xy, params_.resolution_z, true);
 		auto                          t0                  = std::chrono::high_resolution_clock::now();
@@ -35,7 +34,7 @@ namespace lib3dfin
 		std::cout << "[Individualize] compute_height: "
 		          << elapsed.count() << " seconds\n";
 
-		AxesData<real_t> axes_data;
+		AxesData axes_data;
 		axes_data.tree_descriptors = std::move(voxelated_axes_data.tree_descriptors);
 		axes_data.axis_cluster_indicator.resize(point_cloud_.rows());
 		axes_data.axis_distance.resize(point_cloud_.rows());
@@ -47,13 +46,12 @@ namespace lib3dfin
 		return axes_data;
 	}
 
-	template <typename real_t>
-	AxesData<real_t> TreeIndividualizer<real_t>::computeAxesApproximate(
-	    const PointCloud3<real_t>& voxelated_cloud)
+	AxesData TreeIndividualizer::computeAxesApproximate(
+	    const PointCloud3& voxelated_cloud)
 	{
 		// TODO chrono and progress bar...
 		// Space between samples along the axes
-		const real_t sample_step = params_.resolution_xy;
+		const double sample_step = params_.resolution_xy;
 		const auto   num_voxels  = voxelated_cloud.rows();
 		const auto   num_points  = point_cloud_.rows();
 
@@ -82,51 +80,50 @@ namespace lib3dfin
 		}
 
 		// initialize result set
-		AxesData<real_t> result;
+		AxesData result;
 		result.tree_descriptors.reserve(valid_cluster_ids.size());
 		result.axis_cluster_indicator = ArrayClusterIndicator(num_voxels);
-		result.axis_distance          = Eigen::VectorX<real_t>(num_voxels);
+		result.axis_distance          = Eigen::VectorXd(num_voxels);
 
 		// Height range (actual value, not the %) that points should extend throughout
-		const real_t h_range_value = (stripe_.upper_limit - stripe_.lower_limit) * params_.height_range;
+		const double h_range_value = (stripe_.upper_limit - stripe_.lower_limit) * params_.height_range;
 		// Compute bounding box of the voxelated point cloud
-		const Vec3<real_t> bb_min = voxelated_cloud.colwise().minCoeff().transpose();
-		const Vec3<real_t> bb_max = voxelated_cloud.colwise().maxCoeff().transpose();
+		const Vec3 bb_min = voxelated_cloud.colwise().minCoeff().transpose();
+		const Vec3 bb_max = voxelated_cloud.colwise().maxCoeff().transpose();
 
 		for (const auto stem_id : valid_cluster_ids)
 		{
-			const auto          stem_num_points = counts[stem_id];
-			PointCloud3<real_t> stem_cloud(stem_num_points, 3);
+			const auto  stem_num_points = counts[stem_id];
+			PointCloud3 stem_cloud(stem_num_points, 3);
 			// accumulate with max precision
-			double       z0_accumulator = 0.0;
-			Vec3<double> coord_accumulator(0.0, 0.0, 0.0);
+			double z0_accumulator = 0.0;
+			Vec3   coord_accumulator(0.0, 0.0, 0.0);
 
 			Eigen::Index stem_point_id = 0;
 			for (Eigen::Index point_id = 0; point_id < num_points; ++point_id)
 			{
 				if (stripe_.cluster_indicator(point_id) == stem_id)
 				{
-					const Vec3<real_t>& stem_point = point_cloud_.row(point_id);
-					coord_accumulator += stem_point.template cast<double>();
-					z0_accumulator += static_cast<double>(z0_(point_id));
+					const Vec3& stem_point = point_cloud_.row(point_id);
+					coord_accumulator += stem_point;
+					z0_accumulator += z0_(point_id);
 					stem_cloud.row(stem_point_id++) = stem_point;
-
 				}
 			}
 			const auto stem_height_range = stem_cloud.col(2).maxCoeff() - stem_cloud.col(2).minCoeff();
 			if (stem_height_range > h_range_value)
 			{
-				TreeDescriptor<real_t> tree_descriptor(stem_id);
+				TreeDescriptor tree_descriptor(stem_id);
 				// get min diff in scalar type unused in 3DFin
-				tree_descriptor.centroid_coordinates = (coord_accumulator / stem_num_points).cast<real_t>();
-				tree_descriptor.height_difference    = static_cast<real_t>(tree_descriptor.centroid_coordinates(2) - (z0_accumulator / stem_num_points));
+				tree_descriptor.centroid_coordinates = coord_accumulator / stem_num_points;
+				tree_descriptor.height_difference    = static_cast<double>(tree_descriptor.centroid_coordinates(2) - (z0_accumulator / stem_num_points));
 
 				// compute the (3, 3) covariance matrix
-				const PointCloud3<real_t>    centered_cloud = stem_cloud.rowwise() - tree_descriptor.centroid_coordinates.transpose();
-				const Eigen::Matrix3<real_t> covariance     = (centered_cloud.transpose() * centered_cloud) / real_t(stem_num_points);
+				const PointCloud3     centered_cloud = stem_cloud.rowwise() - tree_descriptor.centroid_coordinates.transpose();
+				const Eigen::Matrix3d covariance     = (centered_cloud.transpose() * centered_cloud) / double(stem_num_points);
 
 				// Eigen decomposition of the covariance
-				Eigen::SelfAdjointEigenSolver<Eigen::Matrix3<real_t>> es(covariance);
+				Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es(covariance);
 
 				// Eigen values are sorted in increasing order, we looks for the more significant component / axis
 				tree_descriptor.setAxis(es.eigenvectors().col(2), params_.axis_maximum_vertical_deviation);
@@ -143,8 +140,8 @@ namespace lib3dfin
 		}
 
 		// Generate axis clouds
-		Eigen::Index                     total_axis_point = 0;
-		std::vector<PointCloud3<real_t>> vec_axis_point_clouds;
+		Eigen::Index             total_axis_point = 0;
+		std::vector<PointCloud3> vec_axis_point_clouds;
 		for (const auto& tree_descriptor : result.tree_descriptors)
 		{
 			auto axis_point_cloud = tree_descriptor.computeAxisSampling(bb_min, bb_max, sample_step);
@@ -156,13 +153,13 @@ namespace lib3dfin
 
 		// Concat axis clouds
 		ArrayClusterIndicator axis_indicator(total_axis_point);
-		PointCloud3<real_t>   concat_axis_point_cloud(total_axis_point, 3);
+		PointCloud3           concat_axis_point_cloud(total_axis_point, 3);
 		Eigen::Index          padding = 0;
 		for (size_t valid_tree_number = 0; valid_tree_number < result.tree_descriptors.size(); ++valid_tree_number)
 		{
-			Eigen::Index               axis_id                            = result.tree_descriptors[valid_tree_number].tree_id;
-			const PointCloud3<real_t>& axis_pointcloud                    = vec_axis_point_clouds[valid_tree_number];
-			const auto                 axis_num_points                    = axis_pointcloud.rows();
+			Eigen::Index       axis_id                                    = result.tree_descriptors[valid_tree_number].tree_id;
+			const PointCloud3& axis_pointcloud                            = vec_axis_point_clouds[valid_tree_number];
+			const auto         axis_num_points                            = axis_pointcloud.rows();
 			concat_axis_point_cloud.block(padding, 0, axis_num_points, 3) = std::move(axis_pointcloud);
 			axis_indicator.segment(padding, axis_num_points).setConstant(axis_id);
 			padding += axis_num_points;
@@ -171,18 +168,18 @@ namespace lib3dfin
 		vec_axis_point_clouds.shrink_to_fit();
 
 		// KD-tree search
-		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<const PointCloud3<real_t>, 3, nanoflann::metric_L2_Simple>;
+		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<const PointCloud3, 3, nanoflann::metric_L2_Simple>;
 		kd_tree_t kd_tree(3, concat_axis_point_cloud, 10, 0);
 
 		tf::Executor executor;
 		tf::Taskflow taskflow;
 		// for point in voxelated-cloud, query
-		const real_t sq_dmax = params_.maximum_dist_axis * params_.maximum_dist_axis;
+		const double sq_dmax = params_.maximum_dist_axis * params_.maximum_dist_axis;
 		taskflow.for_each_index(
 		    Eigen::Index(0), num_voxels, Eigen::Index(1), [&](Eigen::Index voxel_id)
 		    {
 				    Eigen::Index                                         index;
-				    real_t sq_distance = 0.0;
+				    double sq_distance = 0.0;
 					kd_tree.index_->knnSearch(voxelated_cloud.row(voxel_id).data(), 1, &index, &sq_distance);
 
 					if(sq_distance > sq_dmax)
@@ -198,17 +195,16 @@ namespace lib3dfin
 		return result;
 	}
 
-	template <typename real_t>
-	void TreeIndividualizer<real_t>::compute_heights(
-	    const PointCloud3<real_t>& voxelated_cloud,
-	    AxesData<real_t>&          axis_data)
+	void TreeIndividualizer::compute_heights(
+	    const PointCloud3& voxelated_cloud,
+	    AxesData&          axis_data)
 	{
 		// large voxel to avoid underpopulated cells
-		PointCloud3<real_t> large_voxels_cloud;
-		VecIndex<uint32_t>  vox_to_large_vox;
-		std::tie(large_voxels_cloud, vox_to_large_vox) = voxelize(RefPointCloud<real_t>(voxelated_cloud), params_.resolution_height, params_.resolution_height, true);
-		const real_t      eps                          = params_.resolution_height * std::sqrt(3) + 1e-6;
-		VecIndex<int32_t> cluster_labels               = connected_components(RefPointCloud<real_t>(large_voxels_cloud), eps, 2);
+		PointCloud3        large_voxels_cloud;
+		VecIndex<uint32_t> vox_to_large_vox;
+		std::tie(large_voxels_cloud, vox_to_large_vox) = voxelize(voxelated_cloud, params_.resolution_height, params_.resolution_height, true);
+		const double      eps                          = params_.resolution_height * std::sqrt(3) + 1e-6;
+		VecIndex<int32_t> cluster_labels               = connected_components(large_voxels_cloud, eps, 2);
 
 		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
@@ -230,9 +226,9 @@ namespace lib3dfin
 		// Eliminating all points that belong to clusters with less than 4 points (large voxels), and which dist_axis < d and in not valid_tree_id set
 		tf::Executor executor;
 		tf::Taskflow taskflow;
-		taskflow.for_each(std::begin(axis_data.tree_descriptors), std::end(axis_data.tree_descriptors), [&](TreeDescriptor<real_t>& tree_descriptor)
+		taskflow.for_each(std::begin(axis_data.tree_descriptors), std::end(axis_data.tree_descriptors), [&](TreeDescriptor& tree_descriptor)
 		                  {
-			real_t       max_z    = std::numeric_limits<real_t>::min();
+			double       max_z    = std::numeric_limits<double>::lowest();
 			Eigen::Index max_z_id = 0;
 			const auto   tree_id  = tree_descriptor.tree_id;
 			for (size_t voxel_id = 0; voxel_id < voxelated_cloud.rows(); ++voxel_id)
@@ -257,6 +253,4 @@ namespace lib3dfin
 		executor.run(taskflow).get();
 	}
 
-	template class TreeIndividualizer<float>;
-	template class TreeIndividualizer<double>;
 } // namespace lib3dfin

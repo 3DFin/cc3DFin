@@ -15,32 +15,30 @@
 
 namespace lib3dfin
 {
-	template <typename real_t>
-	real_t adhoc_verticality(const PointCloud3<real_t>& cloud)
+	double adhoc_verticality(const PointCloud3& cloud)
 	{
 		// Compute the (3, 3) covariance matrix
-		const PointCloud3<real_t>    centered_cloud = cloud.rowwise() - cloud.colwise().mean();
-		const Eigen::Matrix3<real_t> cov            = (centered_cloud.transpose() * centered_cloud) / real_t(cloud.rows());
+		const PointCloud3     centered_cloud = cloud.rowwise() - cloud.colwise().mean();
+		const Eigen::Matrix3d cov            = (centered_cloud.transpose() * centered_cloud) / cloud.rows();
 
 		// Compute the eigenvalues and eigenvectors of the covariance
-		Eigen::SelfAdjointEigenSolver<Eigen::Matrix3<real_t>> es(cov);
+		Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es(cov);
 
 		// eigenvalues are sorted by increasing order so
 		// first eigen vector is the normal vector. its third component is the z component
-		const real_t normal_z_component = es.eigenvectors()(2, 0);
-		return real_t(1.0) - std::abs(normal_z_component);
+		const double normal_z_component = es.eigenvectors()(2, 0);
+		return 1.0 - std::abs(normal_z_component);
 	}
 
-	template <typename real_t>
-	Eigen::VectorX<real_t> compute_verticality_feature(const PointCloud3<real_t>& stripe, real_t scale)
+	Eigen::VectorXd compute_verticality_feature(const PointCloud3& stripe, double scale)
 	{
-		using kd_tree_t            = nanoflann::KDTreeEigenMatrixAdaptor<const PointCloud3<real_t>, 3, nanoflann::metric_L2_Simple>;
+		using kd_tree_t            = nanoflann::KDTreeEigenMatrixAdaptor<const PointCloud3, 3, nanoflann::metric_L2_Simple>;
 		const size_t       max_knn = 50000;
 		kd_tree_t          kd_tree(3, stripe, 10, 0);
 		const Eigen::Index n_points         = stripe.rows();
-		const real_t       sq_search_radius = scale * scale;
+		const double       sq_search_radius = scale * scale;
 
-		Eigen::VectorX<real_t> verticality(n_points);
+		Eigen::VectorXd verticality(n_points);
 		verticality.setZero();
 
 		tf::Executor executor;
@@ -49,9 +47,9 @@ namespace lib3dfin
 		taskflow.for_each_index(
 		    Eigen::Index(0), n_points, Eigen::Index(1), [&](Eigen::Index point_id)
 		    {
-           std::vector<nanoflann::ResultItem<Eigen::Index, real_t>> result_set;
+           std::vector<nanoflann::ResultItem<Eigen::Index, double>> result_set;
 
-           nanoflann::RadiusResultSet<real_t, Eigen::Index> radius_result_set(sq_search_radius, result_set);
+           nanoflann::RadiusResultSet<double, Eigen::Index> radius_result_set(sq_search_radius, result_set);
            const auto                                       num_found =
                kd_tree.index_->radiusSearchCustomCallback(stripe.row(point_id).data(), radius_result_set);
 
@@ -67,7 +65,7 @@ namespace lib3dfin
 
            const size_t num_nn = std::min(num_found, max_knn);
 
-           PointCloud3<real_t> cloud(num_nn, 3);
+           PointCloud3 cloud(num_nn, 3);
            for (size_t id = 0; id < num_nn; ++id) { cloud.row(id) = stripe.row(result_set[id].first); }
            verticality(point_id) = adhoc_verticality(cloud); });
 		executor.run(taskflow).get();

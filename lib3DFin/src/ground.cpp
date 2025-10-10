@@ -19,30 +19,25 @@
 #include <taskflow/taskflow.hpp>
 
 // System
-#include <cmath>
 #include <cstddef>
-#include <cstdint>
-#include <set>
 
 namespace lib3dfin
 {
 
-	template <typename real_t>
-	HeightNormalization<real_t>::HeightNormalization(const RefPointCloud<real_t>& point_cloud,
-	                                                 Parameters                   params)
+	HeightNormalization::HeightNormalization(const PointCloud3& point_cloud,
+	                                         Parameters         params)
 	    : point_cloud_(point_cloud)
 	    , params_(std::move(params))
 	{
 	}
 
 	// Main public function
-	template <typename real_t>
-	Eigen::VectorX<real_t> HeightNormalization<real_t>::normalize()
+	Eigen::VectorX<double> HeightNormalization::normalize()
 	{
 		if (params_.denoise_point_cloud)
 		{
-			PointCloud3<real_t> denoised_point_cloud_ = denoiseCloud();
-			generateDTM(RefPointCloud<real_t>(denoised_point_cloud_));
+			const PointCloud3 denoised_point_cloud_ = denoiseCloud();
+			generateDTM(denoised_point_cloud_);
 		}
 		else
 		{
@@ -60,19 +55,19 @@ namespace lib3dfin
 		if (n_points < N_NEIGHBORS)
 			throw std::runtime_error("Input DTM too small (less than 3 points).");
 
-		Eigen::VectorX<real_t> normalized_heights(n_points);
-		using kd_tree_t                 = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2<real_t>, 2, nanoflann::metric_L2_Simple>;
-		const PointCloud2<real_t>& dtm2 = dtm_.template leftCols<2>();
-		kd_tree_t                  kd_tree(2, dtm2, 10);
-		tf::Executor               executor;
-		tf::Taskflow               taskflow;
+		Eigen::VectorX<double> normalized_heights(n_points);
+		using kd_tree_t         = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2, 2, nanoflann::metric_L2_Simple>;
+		const PointCloud2& dtm2 = dtm_.template leftCols<2>();
+		kd_tree_t          kd_tree(2, dtm2, 10);
+		tf::Executor       executor;
+		tf::Taskflow       taskflow;
 
 		const size_t num_workers = executor.num_workers();
 
 		// Pre-allocate worker local storage to avoid allocations in loop
 		std::vector<Eigen::Index> neighbors_buffer(N_NEIGHBORS * num_workers);
-		std::vector<real_t>       dists_buffer(N_NEIGHBORS * num_workers);
-		std::vector<real_t>       heights_buffer(N_NEIGHBORS * num_workers);
+		std::vector<double>       dists_buffer(N_NEIGHBORS * num_workers);
+		std::vector<double>       heights_buffer(N_NEIGHBORS * num_workers);
 
 		taskflow.for_each_index(
 		    size_t(0), n_points, size_t(1), [&](size_t i)
@@ -82,13 +77,13 @@ namespace lib3dfin
 
 			    // Use this worker's dedicated storage
 			    Eigen::Index* indices = neighbors_buffer.data() + offset;
-			    real_t* dists = dists_buffer.data() + offset;
-			    real_t* weights = heights_buffer.data() + offset;
+			    double* dists = dists_buffer.data() + offset;
+			    double* weights = heights_buffer.data() + offset;
 
 			    kd_tree.index_->knnSearch(point_cloud_.row(i).data(), N_NEIGHBORS, indices, dists);
 
 			    // Convert squared distances to actual distances and compute weights
-			    real_t sum_weights = 0.0;
+			    double sum_weights = 0.0;
 			    for (size_t j = 0; j < N_NEIGHBORS; ++j)
 			    {
 				    weights[j] = std::sqrt(dists[j]); // nanoflann dist are squared
@@ -96,11 +91,11 @@ namespace lib3dfin
 			    }
 
 			    // Normalize weights and compute weighted average Z
-			    real_t weighted_z = 0.0;
-			    const real_t inv_sum_weights = real_t(1.0) / sum_weights;
+			    double weighted_z = 0.0;
+			    const double inv_sum_weights = 1.0 / sum_weights;
 			    for (size_t j = 0; j < N_NEIGHBORS; ++j)
 			    {
-				    const real_t normalized_weight = weights[j] * inv_sum_weights;
+				    const double normalized_weight = weights[j] * inv_sum_weights;
 				    weighted_z += normalized_weight * dtm_(indices[j], 2);
 			    }
 
@@ -110,12 +105,11 @@ namespace lib3dfin
 		return normalized_heights;
 	}
 
-	template <typename real_t>
-	PointCloud3<real_t> HeightNormalization<real_t>::denoiseCloud()
+	PointCloud3 HeightNormalization::denoiseCloud()
 	{
 		const auto [voxel_cloud, cloud_to_vox] = voxelize(point_cloud_, params_.denoise_resolution, params_.denoise_resolution, true);
 
-		const auto cluster_labels = connected_components(RefPointCloud<real_t>(voxel_cloud), real_t(params_.denoise_resolution * std::sqrt(real_t(3)) + 1e-6), params_.denoise_minimum_points);
+		const auto cluster_labels = connected_components(voxel_cloud, params_.denoise_resolution * std::sqrt(3.0) + 1e-6, params_.denoise_minimum_points);
 
 		// Count occurrences of each cluster label
 		std::unordered_map<int32_t, uint32_t> label_counts;
@@ -155,7 +149,7 @@ namespace lib3dfin
 		}
 
 		// Build filtered cloud
-		PointCloud3<real_t> clust_cloud(valid_indices.size(), 3);
+		PointCloud3 clust_cloud(valid_indices.size(), 3);
 		for (size_t i = 0; i < valid_indices.size(); ++i)
 		{
 			clust_cloud.row(i) = point_cloud_.row(valid_indices[i]);
@@ -164,8 +158,7 @@ namespace lib3dfin
 		return clust_cloud;
 	}
 
-	template <typename real_t>
-	void HeightNormalization<real_t>::generateDTM(const RefPointCloud<real_t>& dtm_point_cloud_)
+	void HeightNormalization::generateDTM(const PointCloud3& dtm_point_cloud_)
 	{
 		CSF csf;
 
@@ -184,22 +177,21 @@ namespace lib3dfin
 
 		const auto  cloth     = csf.runClothSimulation();
 		const auto& particles = cloth.getParticles();
-		dtm_                  = PointCloud3<real_t>(particles.size(), 3);
+		dtm_                  = PointCloud3(particles.size(), 3);
 		for (size_t particle_id = 0; particle_id < particles.size(); ++particle_id)
 		{
 			const auto& particle = particles[particle_id];
-			dtm_(particle_id, 0) = static_cast<real_t>(particle.initial_pos.f[0]);
-			dtm_(particle_id, 1) = static_cast<real_t>(particle.initial_pos.f[2]);
-			dtm_(particle_id, 2) = static_cast<real_t>(-particles[particle_id].height);
+			dtm_(particle_id, 0) = particle.initial_pos.f[0];
+			dtm_(particle_id, 1) = particle.initial_pos.f[2];
+			dtm_(particle_id, 2) = -particles[particle_id].height;
 		}
 	}
 
-	template <typename real_t>
-	void HeightNormalization<real_t>::cleanDTM()
+	void HeightNormalization::cleanDTM()
 	{
 		constexpr size_t N_NEIGHBORS      = 15;
 		constexpr size_t HALF_N_NEIGHBORS = N_NEIGHBORS / 2;
-		constexpr real_t MAD_FACTOR       = 2.0;
+		constexpr double MAD_FACTOR       = 2.0;
 
 		const size_t n_points = dtm_.rows();
 
@@ -212,19 +204,19 @@ namespace lib3dfin
 
 		const size_t half_n_points = n_points / 2;
 
-		using kd_tree_t                 = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2<real_t>, 2, nanoflann::metric_L2_Simple>;
-		const PointCloud2<real_t>& dtm2 = dtm_.template leftCols<2>();
-		kd_tree_t                  kd_tree(2, dtm2, 10);
+		using kd_tree_t         = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2, 2, nanoflann::metric_L2_Simple>;
+		const PointCloud2& dtm2 = dtm_.template leftCols<2>();
+		kd_tree_t          kd_tree(2, dtm2, 10);
 
 		tf::Executor executor;
 		tf::Taskflow taskflow;
 
-		std::vector<real_t> abs_devs(n_points);
+		std::vector<double> abs_devs(n_points);
 		// Get number of workers and pre-allocate vectors for each worker
 		const size_t              num_workers = executor.num_workers();
 		std::vector<Eigen::Index> neighbors_buffer(N_NEIGHBORS * num_workers);
-		std::vector<real_t>       dists_buffer(N_NEIGHBORS * num_workers);
-		std::vector<real_t>       heights_buffer(N_NEIGHBORS * num_workers);
+		std::vector<double>       dists_buffer(N_NEIGHBORS * num_workers);
+		std::vector<double>       heights_buffer(N_NEIGHBORS * num_workers);
 
 		taskflow.for_each_index(
 		    size_t(0), n_points, size_t(1), [&](size_t i)
@@ -235,8 +227,8 @@ namespace lib3dfin
 
 				// Thread local storage
 			    Eigen::Index* neighbors = neighbors_buffer.data() + offset;
-			    real_t* dists = dists_buffer.data() + offset;
-			    real_t* heights = heights_buffer.data() + offset;
+			    double* dists = dists_buffer.data() + offset;
+			    double* heights = heights_buffer.data() + offset;
 
 			    kd_tree.index_->knnSearch(dtm2.row(i).data(), N_NEIGHBORS, neighbors, dists);
 
@@ -247,16 +239,16 @@ namespace lib3dfin
 				// N_Neighbors is always odd
 			    std::nth_element(heights, heights + HALF_N_NEIGHBORS, heights + N_NEIGHBORS);
 
-			    const real_t median_z = heights[HALF_N_NEIGHBORS];
+			    const double median_z = heights[HALF_N_NEIGHBORS];
 			    abs_devs[i] = std::abs(dtm_(i, 2) - median_z); },
 		    tf::StaticPartitioner()); // StaticPartitioner is important to have consistent worker's ID
 
 		executor.run(taskflow).get();
 
 		// Compute MAD (median of absolute deviations)
-		std::vector<real_t> abs_devs_copy = abs_devs;
+		std::vector<double> abs_devs_copy = abs_devs;
 
-		real_t mad = 0.0;
+		double mad = 0.0;
 		if (n_points % 2 != 0)
 		{
 			std::nth_element(std::begin(abs_devs_copy), std::begin(abs_devs_copy) + half_n_points, std::end(abs_devs_copy));
@@ -280,7 +272,7 @@ namespace lib3dfin
 			}
 		}
 
-		PointCloud3<real_t> clean_points(valid_indices.size(), 3);
+		PointCloud3 clean_points(valid_indices.size(), 3);
 		for (size_t i = 0; i < valid_indices.size(); ++i)
 		{
 			clean_points.row(i) = dtm_.row(valid_indices[i]);
@@ -288,9 +280,5 @@ namespace lib3dfin
 
 		dtm_ = std::move(clean_points);
 	}
-
-	// Required: Explicit instantiations if using in separate translation units
-	template class HeightNormalization<float>;
-	template class HeightNormalization<double>;
 
 } // namespace lib3dfin
