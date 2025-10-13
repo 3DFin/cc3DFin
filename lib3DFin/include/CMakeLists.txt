@@ -1,17 +1,18 @@
 # Copy all headers to build include directory with lib3DFin/ prefix
 set(HEADERS
-    types.hpp
-    config.hpp
-    voxel.hpp
-    connected_components.hpp
-    slink.hpp
     circle_fit.hpp
+    config.hpp
+    connected_components.hpp
     ground.hpp
-    verticality.hpp
-    peeling.hpp
     individualize.hpp
     interface.hpp
+    peeling.hpp
     section.hpp
+    slink.hpp
+    statistics.hpp
+    types.hpp
+    verticality.hpp
+    voxel.hpp
 )
 
 target_sources(${PROJECT_NAME}

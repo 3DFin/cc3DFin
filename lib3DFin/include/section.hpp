@@ -6,15 +6,13 @@
 // local
 #include "circle_fit.hpp"
 #include "slink.hpp"
+#include "statistics.hpp"
 #include "types.hpp"
 
 namespace lib3dfin
 {
 	class SectionExtractor
 	{
-
-		using CircleData     = CircleData;
-		using CircleSections = CircleSections;
 
 	  public: // struct
 		struct Parameters
@@ -103,31 +101,37 @@ namespace lib3dfin
 					}
 
 					// fit_circle
-					fit_circle(section_cloud, cur_circle);
+					fitCircle(section_cloud, cur_circle);
+					// if the fitting failed, we cluster the cloud with single linkage algorithm and try fitting again
 					if (cur_circle.status != CircleData::Status::SUCCESS)
 					{
 						// cluster the cloud with single linkage algorithm
 						// rerun the algorithm on the clustered cloud
 						const auto max_cc_section = fcluster_slink(section_cloud, params_.circle_width);
 
+						// no luck with single linkage clustering, we pass this section
 						if (max_cc_section.size() < params_.min_num_points_section)
 						{
 							cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
 							continue;
 						}
 
-						fit_circle(max_cc_section, cur_circle);
+						fitCircle(max_cc_section, cur_circle);
 					}
 				}
-				tilt_detection(circles);
-				const auto tree_localization = tree_locator(circles, tree);
+
+				// detect tilt outliers on the fitted sections
+				tiltDetection(circles);
+
+				// run tree localization on the fitted sections
+				const auto tree_localization = treeLocator(circles, tree);
 				tree_circle_sections.emplace_back(std::move(circles));
 			}
 			return tree_circle_sections;
 		}
 
 	  private: // methods
-		void fit_circle(const PointCloud2& section_cloud, CircleData& circle_data)
+		void fitCircle(const PointCloud2& section_cloud, CircleData& circle_data)
 		{
 			circle_data.circle          = LMCircleFit(section_cloud);
 			const Circle& circle_params = circle_data.circle;
@@ -210,61 +214,10 @@ namespace lib3dfin
 			return num_occupied_sectors;
 		}
 
-		std::array<double, 2> quantiles(const Eigen::VectorXd& tilt_data, const std::array<double, 2>& bounds = {0.25, 0.75})
-		{
-
-			if (tilt_data.size() == 0)
-			{
-				return {0, 0};
-			}
-			const size_t max_id       = std::ceil(tilt_data.size() * bounds[1]);
-			const size_t num_elements = max_id + 1;
-
-			// Create a deep copy to sort the data
-			Eigen::VectorXd partial_tilt_data(num_elements);
-			std::partial_sort_copy(std::begin(tilt_data), std::begin(tilt_data) + num_elements, std::begin(partial_tilt_data), std::end(partial_tilt_data));
-
-			std::array<double, 2> result;
-
-			// compute with linear interpolation like the default in numpy
-			for (size_t id_bound = 0; id_bound < 2; ++id_bound)
-			{
-				const double id_pos   = bounds[id_bound] * (tilt_data.size() - 1);
-				const size_t id_left  = static_cast<size_t>(std::floor(id_pos));
-				const size_t id_right = static_cast<size_t>(std::ceil(id_pos));
-
-				if (id_left == id_right)
-				{
-					result[id_bound] = partial_tilt_data(id_left);
-					continue;
-				}
-
-				const double weight = id_pos - id_left;
-				result[id_bound]    = partial_tilt_data(id_left) * (1.0 - weight) + partial_tilt_data(id_right) * weight;
-			}
-			return result;
-		}
-
-		Eigen::VectorX<bool> interquartile_range(const Eigen::VectorXd& data_vector,
-		                                         double                 lower_q = 0.25,
-		                                         double                 upper_q = 0.75,
-		                                         double                 n_range = 1.5)
-		{
-
-			const auto quartiles = quantiles(data_vector, {lower_q, upper_q});
-
-			const double iqr = quartiles[1] - quartiles[0];
-
-			const double lower_bound = quartiles[0] - iqr * n_range;
-			const double upper_bound = quartiles[1] + iqr * n_range;
-
-			return (data_vector.array() < lower_bound || data_vector.array() > upper_bound);
-		}
-
 		// tilt dection for all sections of a given stem
-		void tilt_detection(CircleSections& circles,
-		                    const double    abs_weight_factor = 3.0,
-		                    const double    rel_weight_factor = 1.0)
+		void tiltDetection(CircleSections& circles,
+		                   const double    abs_weight_factor = 3.0,
+		                   const double    rel_weight_factor = 1.0)
 		{
 			std::vector<size_t> valid_ids;
 			valid_ids.reserve(circles.size());
@@ -300,7 +253,7 @@ namespace lib3dfin
 					const double height_difference = std::abs(circles[valid_ids[i]].z0 - circles[valid_ids[j]].z0);
 					const double planar_distance   = (circles[valid_ids[i]].circle.center - circles[valid_ids[j]].circle.center).norm();
 					// Since we prune i == j,
-					// Rhere is no way z_dist could be zero, so the following atan is safe.
+					// There is no way z_dist could be zero, so the following atan is safe.
 					// Original implementation convert tilt in degrees but there is no need IQR computation
 					const double tilt_angle = std::atan2(height_difference, planar_distance);
 					tilt_matrix(i, j)       = tilt_angle;
@@ -358,7 +311,7 @@ namespace lib3dfin
 					}
 				}
 			}
-			// filter outliers based on probability threshold
+			// Mark outliers based on probability threshold
 			for (size_t valid_section_id = 0; valid_section_id < num_valid_sections; ++valid_section_id)
 			{
 				if (circles[valid_ids[valid_section_id]].outlier_probability > params_.outlier_probability_threshold)
@@ -368,7 +321,7 @@ namespace lib3dfin
 			}
 		}
 
-	  private:
+	  private: 	// tree locations
 		void computeDBHSectionID()
 		{
 			double min_diff = std::abs(params_.stem_minimum_height - params_.DBH);
@@ -393,7 +346,7 @@ namespace lib3dfin
 			return {lower_d_section, upper_d_section, total_sections};
 		}
 
-		std::pair<size_t, size_t> count_valid_sections(const CircleSections& circles, size_t lower, size_t upper) const
+		std::pair<size_t, size_t> countValidSections(const CircleSections& circles, size_t lower, size_t upper) const
 		{
 			size_t valid_circles          = 0;
 			size_t enough_sector_coverage = 0;
@@ -408,7 +361,7 @@ namespace lib3dfin
 			return {valid_circles, enough_sector_coverage};
 		}
 
-		bool check_radius_coherence(const CircleSections& circles, size_t lower, size_t upper) const
+		bool checkRadiusCoherence(const CircleSections& circles, size_t lower, size_t upper) const
 		{
 			assert(upper - lower == 3);
 			std::array<double, 3> valid_radius;
@@ -423,15 +376,16 @@ namespace lib3dfin
 			std::sort(std::begin(sorted_radius), std::end(sorted_radius));
 			const double median_radius = sorted_radius[1];
 
-			// Compute median absolute deviation
+			// Compute median absolute deviation for the two extremas
 			std::array<double, 2> abs_deviations = {
 			    std::abs(sorted_radius[0] - median_radius),
 			    std::abs(sorted_radius[2] - median_radius)};
 
+			// 3 MADS
 			return std::max(abs_deviations[0], abs_deviations[1]) < 3 * std::min(abs_deviations[0], abs_deviations[1]);
 		}
 
-		bool check_two_radius_coherence(const CircleSections& circles, size_t idx1, size_t idx2, double factor) const
+		bool checkTwoRadiusCoherence(const CircleSections& circles, size_t idx1, size_t idx2, double factor) const
 		{
 			const double radius1    = circles[idx1].circle.radius;
 			const double radius2    = circles[idx2].circle.radius;
@@ -439,7 +393,7 @@ namespace lib3dfin
 			return std::abs(radius1 - radius2) < max_radius * factor;
 		}
 
-		TreeLocatorResult axis_location(const TreeDescriptor& tree_descriptor) const
+		TreeLocatorResult axisLocation(const TreeDescriptor& tree_descriptor) const
 		{
 			TreeLocatorResult result;
 			result.dbh = 0.0; // No evaluation of the DBH
@@ -455,7 +409,7 @@ namespace lib3dfin
 			return result;
 		}
 
-		TreeLocatorResult dbh_location(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles) const
+		TreeLocatorResult dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles) const
 		{
 
 			TreeLocatorResult result;
@@ -466,20 +420,20 @@ namespace lib3dfin
 			return result;
 		}
 
-		TreeLocatorResult tree_locator(const CircleSections& circles, const TreeDescriptor& tree_descriptor) const
+		TreeLocatorResult treeLocator(const CircleSections& circles, const TreeDescriptor& tree_descriptor) const
 		{
 			// Early exit if minimum section height is above DBH
 			if (params_.stem_minimum_height > params_.DBH)
-				return axis_location(tree_descriptor);
+				return axisLocation(tree_descriptor);
 
 			// Find section closest to breast height and its neighborhood
 			const auto [lower_d_section, upper_d_section, total_sections] = getDBHRange();
 
 			// Check section validity in DBH neighborhood
-			const auto [num_valid_circles, num_enough_sector_coverage] = count_valid_sections(circles, lower_d_section, upper_d_section);
+			const auto [num_valid_circles, num_enough_sector_coverage] = countValidSections(circles, lower_d_section, upper_d_section);
 
 			if (num_valid_circles < total_sections || num_valid_circles < 2)
-				return axis_location(tree_descriptor);
+				return axisLocation(tree_descriptor);
 
 			const bool all_sections_valids = (num_valid_circles == total_sections) && (num_enough_sector_coverage == total_sections);
 
@@ -491,20 +445,20 @@ namespace lib3dfin
 				if (lower_d_section == 0)
 				{
 					// First section case - check coherence between two sections
-					if (check_two_radius_coherence(circles, lower_d_section, lower_d_section + 1, 0.1))
-						return dbh_location(tree_descriptor, dbh_section_id_, circles);
+					if (checkTwoRadiusCoherence(circles, lower_d_section, lower_d_section + 1, 0.1))
+						return dbhLocation(tree_descriptor, dbh_section_id_, circles);
 					else
-						return axis_location(tree_descriptor);
+						return axisLocation(tree_descriptor);
 				}
 
 				// case that arise if dbh_section_id == total_sections - 1
 				if (upper_d_section == static_cast<size_t>(num_sections_))
 				{
 					// Last section case
-					if (check_two_radius_coherence(circles, upper_d_section - 2, upper_d_section - 1, 0.15))
-						return dbh_location(tree_descriptor, dbh_section_id_, circles);
+					if (checkTwoRadiusCoherence(circles, upper_d_section - 2, upper_d_section - 1, 0.15))
+						return dbhLocation(tree_descriptor, dbh_section_id_, circles);
 					else
-						return axis_location(tree_descriptor);
+						return axisLocation(tree_descriptor);
 				}
 			}
 
@@ -513,16 +467,16 @@ namespace lib3dfin
 			assert(num_valid_circles == 3);
 			if (num_enough_sector_coverage < 3)
 			{
-				return axis_location(tree_descriptor);
+				return axisLocation(tree_descriptor);
 			}
 
 			// else we can take the average of the sections estimations and check coherence
 			// if the coherence test fails, we fall back to axis estimation
-			if (check_radius_coherence(circles, lower_d_section, upper_d_section))
-				return dbh_location(tree_descriptor, dbh_section_id_, circles);
+			if (checkRadiusCoherence(circles, lower_d_section, upper_d_section))
+				return dbhLocation(tree_descriptor, dbh_section_id_, circles);
 			else
 			{
-				return axis_location(tree_descriptor);
+				return axisLocation(tree_descriptor);
 			}
 		}
 
