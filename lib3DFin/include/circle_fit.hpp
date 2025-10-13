@@ -34,7 +34,7 @@ namespace lib3dfin
 		}
 
 		// Evaluate weighted residual
-		int operator()(const Eigen::VectorX<double>& x, Eigen::VectorX<double>& fvec) const
+		int operator()(const Eigen::VectorXd& x, Eigen::VectorXd& fvec) const
 		{
 			const double a = x(0);
 			const double b = x(1);
@@ -50,7 +50,7 @@ namespace lib3dfin
 		}
 
 		// Compute weighted jacobian
-		int df(const Eigen::VectorX<double>& x, Eigen::MatrixX<double>& fjac) const
+		int df(const Eigen::VectorXd& x, Eigen::MatrixXd& fjac) const
 		{
 			const double a = x(0);
 			const double b = x(1);
@@ -96,7 +96,7 @@ namespace lib3dfin
 		const size_t num_points = xy.rows();
 
 		// Linear system
-		Eigen::MatrixX<double> ZXY(num_points, 3);
+		Eigen::MatrixXd ZXY(num_points, 3);
 
 		// Compute centroid
 		const Eigen::Vector2<double> centroid = xy.colwise().mean();
@@ -106,17 +106,17 @@ namespace lib3dfin
 		ZXY.col(2) = xy.col(1).array() - centroid(1);
 
 		// Compute Z = X^2 + Y^2
-		const Eigen::VectorX<double> Z      = ZXY.col(1).array().square() + ZXY.col(2).array().square();
+		const Eigen::VectorXd Z      = ZXY.col(1).array().square() + ZXY.col(2).array().square();
 		const double                 Z_mean = Z.mean();
 
 		// Normalize Z
 		ZXY.col(0) = (Z.array() - Z_mean) / (2.0 * sqrt(Z_mean));
 
 		// Solve by SVD
-		Eigen::JacobiSVD<Eigen::MatrixX<double>> svd(ZXY, Eigen::ComputeFullV);
-		const Eigen::MatrixX<double>             V = svd.matrixV();
+		Eigen::JacobiSVD<Eigen::MatrixXd> svd(ZXY, Eigen::ComputeFullV);
+		const Eigen::MatrixXd             V = svd.matrixV();
 
-		Eigen::Vector3<double> A = V.col(2);
+		Eigen::Vector3d A = V.col(2);
 		A(0) /= (2.0 * sqrt(Z_mean));
 		Eigen::Vector4<double> A_mat;
 		A_mat << A, -Z_mean * A(0);
@@ -170,7 +170,7 @@ namespace lib3dfin
 		lm.parameters.maxfev = 30;
 		lm.parameters.xtol   = 1.4e-8;
 
-		Eigen::VectorX<double> x0(3);
+		Eigen::VectorXd x0(3);
 		x0 << init_circle.center.x(), init_circle.center.y(), init_circle.radius;
 
 		int status = lm.minimize(x0); // Status code is not a Eigen::Status

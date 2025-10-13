@@ -28,10 +28,10 @@ namespace lib3dfin
 
 	  public: // methods
 		explicit TreeIndividualizer(
-		    const PointCloud3&            point_cloud,
-		    const Stripe&                 stripe,
-		    const Eigen::VectorX<double>& z0,
-		    const Parameters              params = Parameters())
+		    const PointCloud3&     point_cloud,
+		    const Stripe&          stripe,
+		    const Eigen::VectorXd& z0,
+		    const Parameters       params)
 		    : point_cloud_(point_cloud)
 		    , stripe_(stripe)
 		    , z0_(z0)
@@ -50,10 +50,10 @@ namespace lib3dfin
 		    AxesData&          axis_data);
 
 	  private: // variables
-		const PointCloud3&            point_cloud_;
-		const Stripe&                 stripe_;
-		const Eigen::VectorX<double>& z0_;
-		const Parameters              params_;
+		const PointCloud3&     point_cloud_;
+		const Stripe&          stripe_;
+		const Eigen::VectorXd& z0_;
+		const Parameters       params_;
 	};
 
 } // namespace lib3dfin

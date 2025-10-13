@@ -142,7 +142,7 @@ void cc3DFin::do3DFinAction()
 	QApplication::processEvents();
 }
 
-void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections<double>>& all_tree_circles, const std::vector<lib3dfin::TreeDescriptor<double>>& tree_descriptors)
+void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_circles, const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
 	// TODO: global shift
 	size_t tree_id = 0;
@@ -172,7 +172,7 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections<double>>& a
 		for (const auto& circle_data : tree_circles)
 		{
 			// Only draw successful circles
-			if (circle_data.status >= lib3dfin::CircleData<double>::Status::SUCCESS)
+			if (circle_data.status >= lib3dfin::CircleData::Status::SUCCESS)
 			{
 				const auto& circle = circle_data.circle;
 				// We need to shift the circle center to go from z0 coordinates to the actual coordinates

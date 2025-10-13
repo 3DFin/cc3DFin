@@ -17,7 +17,7 @@ namespace lib3dfin
 		using CircleSections = CircleSections;
 
 	  public: // struct
-		struct Params
+		struct Parameters
 		{
 			double       stem_minimum_height{0.3};
 			double       stem_maximum_height{25.0};
@@ -37,7 +37,7 @@ namespace lib3dfin
 		};
 
 	  public:
-		explicit SectionExtractor(const PointCloud3& point_cloud, const Eigen::VectorX<double>& z0, const AxesData& trees, const Params params = Params())
+		explicit SectionExtractor(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, const AxesData& trees, const Parameters params)
 		    : point_cloud_(point_cloud)
 		    , num_points_(point_cloud.rows())
 		    , z0_(z0)
@@ -210,7 +210,7 @@ namespace lib3dfin
 			return num_occupied_sectors;
 		}
 
-		std::array<double, 2> quantiles(const Eigen::VectorX<double>& tilt_data, const std::array<double, 2>& bounds = {0.25, 0.75})
+		std::array<double, 2> quantiles(const Eigen::VectorXd& tilt_data, const std::array<double, 2>& bounds = {0.25, 0.75})
 		{
 
 			if (tilt_data.size() == 0)
@@ -221,7 +221,7 @@ namespace lib3dfin
 			const size_t num_elements = max_id + 1;
 
 			// Create a deep copy to sort the data
-			Eigen::VectorX<double> partial_tilt_data(num_elements);
+			Eigen::VectorXd partial_tilt_data(num_elements);
 			std::partial_sort_copy(std::begin(tilt_data), std::begin(tilt_data) + num_elements, std::begin(partial_tilt_data), std::end(partial_tilt_data));
 
 			std::array<double, 2> result;
@@ -245,10 +245,10 @@ namespace lib3dfin
 			return result;
 		}
 
-		Eigen::VectorX<bool> interquartile_range(const Eigen::VectorX<double>& data_vector,
-		                                         double                        lower_q = 0.25,
-		                                         double                        upper_q = 0.75,
-		                                         double                        n_range = 1.5)
+		Eigen::VectorX<bool> interquartile_range(const Eigen::VectorXd& data_vector,
+		                                         double                 lower_q = 0.25,
+		                                         double                 upper_q = 0.75,
+		                                         double                 n_range = 1.5)
 		{
 
 			const auto quartiles = quantiles(data_vector, {lower_q, upper_q});
@@ -290,7 +290,7 @@ namespace lib3dfin
 			const double rel_outlier_w = rel_weight_factor / total_weight;
 
 			// tilt matrix = atan(xy / z)
-			Eigen::MatrixX<double> tilt_matrix(num_valid_sections, num_valid_sections);
+			Eigen::MatrixXd tilt_matrix(num_valid_sections, num_valid_sections);
 			tilt_matrix.diagonal().setZero(); // Initialize diagonal to zero
 
 			for (size_t i = 0; i < num_valid_sections; ++i)
@@ -531,7 +531,7 @@ namespace lib3dfin
 		const Eigen::VectorXd& z0_;
 		const AxesData&        trees_;
 		const Eigen::Index     num_points_;
-		const Params           params_;
+		const Parameters       params_;
 		const Eigen::Index     num_sections_;
 		size_t                 dbh_section_id_{0};
 	};

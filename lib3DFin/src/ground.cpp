@@ -32,7 +32,7 @@ namespace lib3dfin
 	}
 
 	// Main public function
-	Eigen::VectorX<double> HeightNormalization::normalize()
+	Eigen::VectorXd HeightNormalization::normalize()
 	{
 		if (params_.denoise_point_cloud)
 		{
@@ -55,7 +55,7 @@ namespace lib3dfin
 		if (n_points < N_NEIGHBORS)
 			throw std::runtime_error("Input DTM too small (less than 3 points).");
 
-		Eigen::VectorX<double> normalized_heights(n_points);
+		Eigen::VectorXd normalized_heights(n_points);
 		using kd_tree_t         = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2, 2, nanoflann::metric_L2_Simple>;
 		const PointCloud2& dtm2 = dtm_.template leftCols<2>();
 		kd_tree_t          kd_tree(2, dtm2, 10);

@@ -20,8 +20,8 @@ namespace lib3dfin
 		};
 
 	  public:
-		explicit HeightNormalization(const PointCloud3& point_cloud, HeightNormalization::Parameters params = HeightNormalization::Parameters());
-		Eigen::VectorX<double> normalize();
+		explicit HeightNormalization(const PointCloud3& point_cloud, HeightNormalization::Parameters params);
+		Eigen::VectorXd normalize();
 
 	  private: // methods
 		PointCloud3 denoiseCloud();

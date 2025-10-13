@@ -23,12 +23,12 @@ namespace lib3dfin
 		};
 
 	  public: // static
-		static ArrayClusterIndicator filterInitialStripe(const Eigen::VectorX<double>& z0, double stripe_lower_limit, double stripe_upper_limit);
-		static ArrayClusterIndicator filterInitialStripe(const Eigen::VectorX<double>& z0, const Eigen::VectorX<double>& axis_distance, double max_distance, double stripe_lower_limit, double stripe_upper_limit);
+		static ArrayClusterIndicator filterInitialStripe(const Eigen::VectorXd& z0, double stripe_lower_limit, double stripe_upper_limit);
+		static ArrayClusterIndicator filterInitialStripe(const Eigen::VectorXd& z0, const Eigen::VectorXd& axis_distance, double max_distance, double stripe_lower_limit, double stripe_upper_limit);
 		static PointCloud3           extractStripe(const PointCloud3& point_cloud, const ArrayClusterIndicator& stripe_indicator);
 
 	  public:
-		explicit TreePeeler(const PointCloud3& point_cloud, TreePeeler::Parameters params = TreePeeler::Parameters());
+		explicit TreePeeler(const PointCloud3& point_cloud, TreePeeler::Parameters params);
 		void peel(ArrayClusterIndicator& stripe_indicator);
 
 	  private: // methods

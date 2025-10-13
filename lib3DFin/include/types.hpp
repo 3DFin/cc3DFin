@@ -134,7 +134,7 @@ namespace lib3dfin
 	struct AxesData
 	{
 		std::vector<TreeDescriptor> tree_descriptors;
-		Eigen::VectorX<double>      axis_distance;
+		Eigen::VectorXd     axis_distance;
 		ArrayClusterIndicator       axis_cluster_indicator; // TODO: refactor tree cluster indicator
 
 		void updateIndicator(const ArrayClusterIndicator& mask_indicator)
