@@ -39,15 +39,15 @@ namespace lib3dfin
 		{
 		}
 
-		AxesData individualize();
+		TreeData individualize();
 
 	  private: // methods
-		AxesData computeAxesApproximate(
+		TreeData computeAxesApproximate(
 		    const PointCloud3& voxelated_cloud);
 
 		void compute_heights(
 		    const PointCloud3& voxelated_cloud,
-		    AxesData&          axis_data);
+		    TreeData&          axis_data);
 
 	  private: // variables
 		const PointCloud3&     point_cloud_;

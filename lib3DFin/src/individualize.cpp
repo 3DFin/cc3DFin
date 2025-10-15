@@ -17,7 +17,7 @@
 namespace lib3dfin
 {
 
-	AxesData TreeIndividualizer::individualize()
+	TreeData TreeIndividualizer::individualize()
 	{
 		const auto [voxelated_cloud, cloud_to_vox]        = voxelize(point_cloud_, params_.resolution_xy, params_.resolution_z, true);
 		auto                          t0                  = std::chrono::high_resolution_clock::now();
@@ -34,7 +34,7 @@ namespace lib3dfin
 		std::cout << "[Individualize] compute_height: "
 		          << elapsed.count() << " seconds\n";
 
-		AxesData axes_data;
+		TreeData axes_data;
 		axes_data.tree_descriptors = std::move(voxelated_axes_data.tree_descriptors);
 		axes_data.axis_cluster_indicator.resize(point_cloud_.rows());
 		axes_data.axis_distance.resize(point_cloud_.rows());
@@ -46,7 +46,7 @@ namespace lib3dfin
 		return axes_data;
 	}
 
-	AxesData TreeIndividualizer::computeAxesApproximate(
+	TreeData TreeIndividualizer::computeAxesApproximate(
 	    const PointCloud3& voxelated_cloud)
 	{
 		// TODO chrono and progress bar...
@@ -80,7 +80,7 @@ namespace lib3dfin
 		}
 
 		// initialize result set
-		AxesData result;
+		TreeData result;
 		result.tree_descriptors.reserve(valid_cluster_ids.size());
 		result.axis_cluster_indicator = ArrayClusterIndicator(num_voxels);
 		result.axis_distance          = Eigen::VectorXd(num_voxels);
@@ -142,7 +142,7 @@ namespace lib3dfin
 		// Generate axis clouds
 		Eigen::Index             total_axis_point = 0;
 		std::vector<PointCloud3> vec_axis_point_clouds;
-		for (const auto& tree_descriptor : result.tree_descriptors)
+		for (auto& tree_descriptor : result.tree_descriptors)
 		{
 			auto axis_point_cloud = tree_descriptor.computeAxisSampling(bb_min, bb_max, sample_step);
 			total_axis_point += axis_point_cloud.rows();
@@ -197,7 +197,7 @@ namespace lib3dfin
 
 	void TreeIndividualizer::compute_heights(
 	    const PointCloud3& voxelated_cloud,
-	    AxesData&          axis_data)
+	    TreeData&          axis_data)
 	{
 		// large voxel to avoid underpopulated cells
 		PointCloud3        large_voxels_cloud;

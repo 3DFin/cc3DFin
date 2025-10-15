@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 
+
 namespace lib3dfin
 {
 
@@ -78,6 +79,7 @@ namespace lib3dfin
 		    const Vec3& bottom_pos,
 		    const Vec3& top_pos)
 		{
+
 			Plane3     bottom_plane(Vec3(0, 0, 1), bottom_pos);
 			const auto bottom_inter = vector_plane_intersection(axis_pos, axis_dir, bottom_plane);
 			if (bottom_inter == std::nullopt)
@@ -104,11 +106,11 @@ namespace lib3dfin
 			highest_z0    = highest_point(2) - height_difference;
 		}
 
-		PointCloud3 computeAxisSampling(const Vec3& bb_min, const Vec3& bb_max, double sample_step) const
+		PointCloud3 computeAxisSampling(const Vec3& bb_min, const Vec3& bb_max, double sample_step)
 		{
 			const auto  maybe_range    = axis_bb_intersection(centroid_coordinates, axis, bb_min, bb_max);
-			const auto  bottom_point   = maybe_range.value().first;
-			const auto  top_point      = maybe_range.value().second;
+			bottom_point = maybe_range.value().first;
+			top_point = maybe_range.value().second;
 			const auto  range_distance = (top_point - bottom_point).norm();
 			const auto  num_sample     = static_cast<size_t>(std::ceil(range_distance / sample_step));
 			PointCloud3 axis_point_cloud(num_sample, 3);
@@ -124,14 +126,16 @@ namespace lib3dfin
 		Eigen::Index tree_id{0};
 		double       height_difference{0}; // z - z0
 		Vec3         centroid_coordinates{0., 0., 0.};
-		Vec3         axis{0., 0., 0.}; // most significant eigen vector?
+		Vec3         axis{0., 0., 0.}; // most significant eigen vector
+		Vec3         top_point{0., 0., 0.};
+		Vec3         bottom_point{0., 0., 0.};
 		double       axis_vertical_deviation{0.};
 		bool         valid{false}; // under max deviation threshold
 		Vec3         highest_point{0.0, 0.0, 0.0};
 		double       highest_z0{0};
 	};
 
-	struct AxesData
+	struct TreeData
 	{
 		std::vector<TreeDescriptor> tree_descriptors;
 		Eigen::VectorXd     axis_distance;

@@ -23,6 +23,7 @@
 #include "ccHObjectCaster.h"
 #include "ccLog.h"
 #include "ccPointCloud.h"
+#include "ccPolyline.h"
 
 // lib3DFin
 #include <lib3DFin/config.hpp>
@@ -95,9 +96,10 @@ void cc3DFin::do3DFinAction()
 		return;
 	}
 
-	// cast to PC
+	// Cast to PC
 	ccPointCloud* pc = static_cast<ccPointCloud*>(ent);
 
+	// Get scalar field names for plugin UI
 	QStringList scalarFieldNames;
 	for (int i = 0; i < pc->getNumberOfScalarFields(); ++i)
 	{
@@ -107,7 +109,11 @@ void cc3DFin::do3DFinAction()
 	}
 
 	pc->placeIteratorAtBeginning();
-	const auto [stripe, cloud, axes, circles] = lib3dfin::process(&(pc->getNextPoint()->u[0]), static_cast<size_t>(pc->size()));
+	const auto [stripe, cloud, tree_data, circles] = lib3dfin::process(&(pc->getNextPoint()->u[0]), static_cast<size_t>(pc->size()));
+
+	// reset the base group
+	pc->setEnabled(false);
+	m_base_group.reset(new ccHObject("3DFin group"));
 
 	ccPointCloud* stripe_pc = new ccPointCloud;
 	stripe_pc->reserve(cloud.size() / 3);
@@ -126,14 +132,16 @@ void cc3DFin::do3DFinAction()
 	for (auto elem : stripe)
 	{
 		dist_id->setValue(count, elem);
-		count++;
+		++count;
 	}
 	dist_id->computeMinAndMax();
 	pc->setCurrentDisplayedScalarField(id);
 
+	drawCircles(circles, tree_data.tree_descriptors);
+	drawAxes(tree_data.tree_descriptors);
+	m_app->addToDB(m_base_group.release());
 	m_app->redrawAll();
 	// draw circles
-	drawCircles(circles, axes.tree_descriptors);
 	ccLog::Print("3DFin done !");
 	// cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
@@ -148,10 +156,10 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_
 	size_t tree_id = 0;
 
 	// Create a point cloud for circle points
-	std::unique_ptr<ccPointCloud> circle_points_pc(new ccPointCloud(QString("circle points debug")));
+	ccPointCloud* circle_points_pc = new ccPointCloud(QString("Fitted sections"));
 
 	// Add scalar fields for circle properties
-	int tree_id_sf_id    = circle_points_pc->addScalarField("Tree ID");
+	int tree_id_sf_id    = circle_points_pc->addScalarField("Tree_ID");
 	int radius_sf_id     = circle_points_pc->addScalarField("Radius");
 	int height_sf_id     = circle_points_pc->addScalarField("Height");
 	int status_sf_id     = circle_points_pc->addScalarField("Status");
@@ -229,7 +237,43 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_
 
 		// Set default displayed scalar field to radius
 		circle_points_pc->setCurrentDisplayedScalarField(status_sf_id);
-
-		m_app->addToDB(circle_points_pc.release());
+		circle_points_pc->toggleSF();
+		m_base_group->addChild(circle_points_pc);
 	}
+}
+
+void cc3DFin::drawAxes(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
+{
+	// Create a group to hold all axes as polylines
+	ccHObject* axes_group = new ccHObject(QString("Tree Axes"));
+
+	size_t tree_id = 0;
+	for (const auto& desc : tree_descriptors)
+	{
+		Eigen::Vector3d bottom_point = desc.bottom_point;
+		Eigen::Vector3d top_point    = desc.top_point;
+		double          length       = desc.height_difference;
+
+		// Create a polyline for the axis
+		ccPointCloud* axis_points = new ccPointCloud();
+		axis_points->addPoint(CCVector3(bottom_point.x(), bottom_point.y(), bottom_point.z()));
+		axis_points->addPoint(CCVector3(top_point.x(), top_point.y(), top_point.z()));
+
+		ccPolyline* axis_line = new ccPolyline(axis_points);
+		axis_line->addPointIndex(0);
+		axis_line->addPointIndex(1);
+		axis_line->setName(QString("Axis %1").arg(tree_id));
+		axis_line->setColor(ccColor::Rgb(255, 0, 0));
+		axis_line->showColors(true);
+		axis_line->setWidth(3);
+
+		axis_points->setName(QString("AxisPoints %1").arg(tree_id));
+		axis_points->setEnabled(false);
+
+		axes_group->addChild(axis_line);
+
+		++tree_id;
+	}
+
+	m_base_group->addChild(axes_group);
 }

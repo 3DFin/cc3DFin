@@ -35,7 +35,7 @@ namespace lib3dfin
 		};
 
 	  public:
-		explicit SectionExtractor(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, const AxesData& trees, const Parameters params)
+		explicit SectionExtractor(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, const TreeData& trees, const Parameters params)
 		    : point_cloud_(point_cloud)
 		    , num_points_(point_cloud.rows())
 		    , z0_(z0)
@@ -483,7 +483,7 @@ namespace lib3dfin
 	  private: // members
 		const PointCloud3&     point_cloud_;
 		const Eigen::VectorXd& z0_;
-		const AxesData&        trees_;
+		const TreeData&        trees_;
 		const Eigen::Index     num_points_;
 		const Parameters       params_;
 		const Eigen::Index     num_sections_;

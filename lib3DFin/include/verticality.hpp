@@ -60,7 +60,7 @@ namespace lib3dfin
            if (num_found > max_knn)
            {
                std::partial_sort(
-                   result_set.begin(), result_set.begin() + max_knn, result_set.end(), nanoflann::IndexDist_Sorter());
+                   std::begin(result_set), std::begin(result_set) + max_knn, std::end(result_set), nanoflann::IndexDist_Sorter());
            }
 
            const size_t num_nn = std::min(num_found, max_knn);
