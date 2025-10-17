@@ -140,6 +140,7 @@ void cc3DFin::do3DFinAction()
 
 	drawCircles(circles, tree_data.tree_descriptors);
 	drawTreeLocators(tree_data.tree_descriptors);
+	drawTreeHeights(tree_data.tree_descriptors);
 	drawAxes(tree_data.tree_descriptors);
 	m_app->addToDB(m_base_group.release());
 	m_app->redrawAll();
@@ -285,36 +286,70 @@ void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree
 {
 
 	// TODO global shift
-	ccPointCloud* tree_location = new ccPointCloud("Tree Locations");
+	ccPointCloud* tree_locations = new ccPointCloud("Tree Locations");
 
-	tree_location->setPointSize(8);
-	tree_location->setColor(255, 0, 255, 255);
-	tree_location->toggleColors();
-	int    id_dbh  = tree_location->addScalarField("dbh");
-	auto   dbh_sf  = tree_location->getScalarField(id_dbh);
+	tree_locations->setPointSize(8);
+	tree_locations->setColor(255, 0, 255, 255);
+	tree_locations->toggleColors();
+	int    id_dbh  = tree_locations->addScalarField("dbh");
+	auto   dbh_sf  = tree_locations->getScalarField(id_dbh);
 	size_t tree_id = 0;
 
 	for (const auto& desc : tree_descriptors)
 	{
-		tree_location->addPoint(CCVector3(desc.location.x(), desc.location.y(), desc.location.z()));
+		tree_locations->addPoint(CCVector3(desc.location.x(), desc.location.y(), desc.location.z()));
 		dbh_sf->addElement(desc.dbh);
 		cc2DLabel* label = new cc2DLabel();
-		label->addPickedPoint(tree_location, tree_id);
-		const auto value = dbh_sf->getValue(tree_id);
-		if (value < std::numeric_limits<float>::epsilon())
+		label->addPickedPoint(tree_locations, tree_id);
+		if (desc.dbh < std::numeric_limits<float>::epsilon())
 		{
 			label->setName(QString("Tree %1 | Not Reliable").arg(tree_id + 1));
 		}
 		else
 		{
-			label->setName(QString("Tree %1 | %2").arg(tree_id + 1).arg(value));
+			label->setName(QString("Tree %1 | %2").arg(tree_id + 1).arg(desc.dbh));
 		}
 		label->displayPointLegend(true);
 		label->toggleVisibility();
-		label->setDisplayedIn2D(true);
-		tree_location->addChild(label);
+		label->setDisplayedIn2D(false);
+		tree_locations->addChild(label);
 		++tree_id;
 	}
-	tree_location->toggleColors();
-	m_base_group->addChild(tree_location);
+	tree_locations->toggleColors();
+	m_base_group->addChild(tree_locations);
+}
+
+void cc3DFin::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
+{
+	// TODO global shift
+	ccPointCloud* tree_heights = new ccPointCloud("Highest points");
+
+	tree_heights->setPointSize(8);
+	tree_heights->setColor(255, 0, 255, 255);
+	tree_heights->toggleColors();
+	int    id_z0       = tree_heights->addScalarField("z0");
+	auto   z0_sf       = tree_heights->getScalarField(id_z0);
+	int    id_deviated = tree_heights->addScalarField("deviated");
+	auto   deviated_sf = tree_heights->getScalarField(id_deviated);
+	size_t tree_id     = 0;
+	tree_heights->setPointSize(8);
+
+	// add labels with z0 values
+	for (const auto& desc : tree_descriptors)
+	{
+		tree_heights->addPoint(CCVector3(desc.highest_point.x(), desc.highest_point.y(), desc.highest_point.z()));
+		z0_sf->addElement(desc.highest_z0);
+		deviated_sf->addElement(desc.valid);
+		cc2DLabel* label = new cc2DLabel(QString("point %1").arg(tree_id + 1));
+		label->addPickedPoint(tree_heights, tree_id);
+		label->setName(QString::number(desc.highest_z0));
+		label->displayPointLegend(true);
+		label->toggleVisibility();
+		label->setDisplayedIn2D(false);
+		tree_heights->addChild(label);
+		++tree_id;
+	}
+
+	tree_heights->toggleColors();
+	m_base_group->addChild(tree_heights);
 }

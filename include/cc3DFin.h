@@ -48,6 +48,8 @@ class cc3DFin : public QObject
 	void drawAxes(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 
 	void drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
+
+	void drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
   private:
 	//! Default action
 	QAction* m_action;
