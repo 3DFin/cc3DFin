@@ -18,6 +18,7 @@
 #include "cc3DFin.h"
 
 #include "CCGeom.h"
+#include "cc2DLabel.h"
 #include "cc3DFinDlg.h"
 #include "ccHObject.h"
 #include "ccHObjectCaster.h"
@@ -138,6 +139,7 @@ void cc3DFin::do3DFinAction()
 	pc->setCurrentDisplayedScalarField(id);
 
 	drawCircles(circles, tree_data.tree_descriptors);
+	drawTreeLocators(tree_data.tree_descriptors);
 	drawAxes(tree_data.tree_descriptors);
 	m_app->addToDB(m_base_group.release());
 	m_app->redrawAll();
@@ -244,7 +246,9 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_
 
 void cc3DFin::drawAxes(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
-	// Create a group to hold all axes as polylines
+	// TODO: global shift
+	// TODO: go back to point cloud sampling since we need to visualize the tilt deviation scalar field
+	//  Create a group to hold all axes as polylines
 	ccHObject* axes_group = new ccHObject(QString("Tree Axes"));
 
 	size_t tree_id = 0;
@@ -267,7 +271,6 @@ void cc3DFin::drawAxes(const std::vector<lib3dfin::TreeDescriptor>& tree_descrip
 		axis_line->showColors(true);
 		axis_line->setWidth(3);
 
-		axis_points->setName(QString("AxisPoints %1").arg(tree_id));
 		axis_points->setEnabled(false);
 
 		axes_group->addChild(axis_line);
@@ -276,4 +279,42 @@ void cc3DFin::drawAxes(const std::vector<lib3dfin::TreeDescriptor>& tree_descrip
 	}
 
 	m_base_group->addChild(axes_group);
+}
+// https : // github.com/3DFin/3DFin/blob/main/src/three_d_fin/cloudcompare/plugin_processing.py
+void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
+{
+
+	// TODO global shift
+	ccPointCloud* tree_location = new ccPointCloud("Tree Locations");
+
+	tree_location->setPointSize(8);
+	tree_location->setColor(255, 0, 255, 255);
+	tree_location->toggleColors();
+	int    id_dbh  = tree_location->addScalarField("dbh");
+	auto   dbh_sf  = tree_location->getScalarField(id_dbh);
+	size_t tree_id = 0;
+
+	for (const auto& desc : tree_descriptors)
+	{
+		tree_location->addPoint(CCVector3(desc.location.x(), desc.location.y(), desc.location.z()));
+		dbh_sf->addElement(desc.dbh);
+		cc2DLabel* label = new cc2DLabel();
+		label->addPickedPoint(tree_location, tree_id);
+		const auto value = dbh_sf->getValue(tree_id);
+		if (value < std::numeric_limits<float>::epsilon())
+		{
+			label->setName(QString("Tree %1 | Not Reliable").arg(tree_id + 1));
+		}
+		else
+		{
+			label->setName(QString("Tree %1 | %2").arg(tree_id + 1).arg(value));
+		}
+		label->displayPointLegend(true);
+		label->toggleVisibility();
+		label->setDisplayedIn2D(true);
+		tree_location->addChild(label);
+		++tree_id;
+	}
+	tree_location->toggleColors();
+	m_base_group->addChild(tree_location);
 }

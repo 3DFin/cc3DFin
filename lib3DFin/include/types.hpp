@@ -39,6 +39,12 @@ namespace lib3dfin
 		double radius{0.0};
 	};
 
+	struct TreeLocatorResult
+	{
+		double dbh{0.0};
+		Vec3   location{0.0, 0.0, 0.0};
+	};
+
 	struct Stripe
 	{
 		Stripe(double lower_limit_, double upper_limit_)
@@ -106,6 +112,12 @@ namespace lib3dfin
 			highest_z0    = highest_point(2) - height_difference;
 		}
 
+		void setLocation(const TreeLocatorResult& location_)
+		{
+			location = location_.location;
+			dbh = location_.dbh;
+		}
+
 		PointCloud3 computeAxisSampling(const Vec3& bb_min, const Vec3& bb_max, double sample_step)
 		{
 			const auto  maybe_range    = axis_bb_intersection(centroid_coordinates, axis, bb_min, bb_max);
@@ -132,7 +144,9 @@ namespace lib3dfin
 		double       axis_vertical_deviation{0.};
 		bool         valid{false}; // under max deviation threshold
 		Vec3         highest_point{0.0, 0.0, 0.0};
-		double       highest_z0{0};
+		double       highest_z0{0.0};
+		double       dbh{0.0};
+		Vec3         location{0.0, 0.0, 0.0};
 	};
 
 	struct TreeData
@@ -145,12 +159,6 @@ namespace lib3dfin
 		{
 			axis_cluster_indicator = (mask_indicator > -1).select(axis_cluster_indicator, -1);
 		}
-	};
-
-	struct TreeLocatorResult
-	{
-		double dbh{0.0};
-		Vec3   location{0.0, 0.0, 0.0};
 	};
 
 	struct CircleData

@@ -35,7 +35,7 @@ namespace lib3dfin
 		};
 
 	  public:
-		explicit SectionExtractor(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, const TreeData& trees, const Parameters params)
+		explicit SectionExtractor(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, TreeData& trees, const Parameters params)
 		    : point_cloud_(point_cloud)
 		    , num_points_(point_cloud.rows())
 		    , z0_(z0)
@@ -51,7 +51,7 @@ namespace lib3dfin
 		{
 			std::vector<CircleSections> tree_circle_sections;
 			// iterate over the trees
-			for (const auto& tree : trees_.tree_descriptors)
+			for (auto& tree : trees_.tree_descriptors)
 			{
 				const auto& cluster_indicator = trees_.axis_cluster_indicator;
 
@@ -124,7 +124,8 @@ namespace lib3dfin
 				tiltDetection(circles);
 
 				// run tree localization on the fitted sections
-				const auto tree_localization = treeLocator(circles, tree);
+				auto tree_localization = treeLocator(circles, tree);
+				tree.setLocation(tree_localization);
 				tree_circle_sections.emplace_back(std::move(circles));
 			}
 			return tree_circle_sections;
@@ -321,7 +322,7 @@ namespace lib3dfin
 			}
 		}
 
-	  private: 	// tree locations
+	  private: // tree locations
 		void computeDBHSectionID()
 		{
 			double min_diff = std::abs(params_.stem_minimum_height - params_.DBH);
@@ -402,10 +403,9 @@ namespace lib3dfin
 			// axis_verical_deviation is filtered a priori, so there is no chance of division by zero.
 			assert(abs(cos_deviation) > 1e-8);
 
-			const double diff_height       = params_.DBH - tree_descriptor.height_difference;
+			const double diff_height       = params_.DBH - tree_descriptor.centroid_coordinates.z() + tree_descriptor.height_difference;
 			const double dist_centroid_dbh = diff_height / cos_deviation;
 			result.location                = tree_descriptor.axis * dist_centroid_dbh + tree_descriptor.centroid_coordinates;
-
 			return result;
 		}
 
@@ -483,7 +483,7 @@ namespace lib3dfin
 	  private: // members
 		const PointCloud3&     point_cloud_;
 		const Eigen::VectorXd& z0_;
-		const TreeData&        trees_;
+		TreeData&        trees_;
 		const Eigen::Index     num_points_;
 		const Parameters       params_;
 		const Eigen::Index     num_sections_;
