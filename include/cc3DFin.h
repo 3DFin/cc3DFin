@@ -50,9 +50,14 @@ class cc3DFin : public QObject
 	void drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 
 	void drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
+
+	void exportEnrichedCloud(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
   private:
 	//! Default action
 	QAction* m_action;
 
-	std::unique_ptr<ccHObject> m_base_group;
+	std::unique_ptr<ccHObject> m_base_group{nullptr};
+
+	ccPointCloud* m_current_cloud{nullptr};
+
 };
