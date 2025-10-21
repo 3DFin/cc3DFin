@@ -18,6 +18,7 @@
 // ##########################################################################
 
 #include "ccStdPluginInterface.h"
+
 #include <lib3DFin/types.hpp>
 
 //! 3DFin qCC plugin
@@ -41,6 +42,8 @@ class cc3DFin : public QObject
 	QList<QAction*> getActions() override;
 
   private:
+	void initCustomColorScale();
+
 	void do3DFinAction();
 
 	void drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_circles, const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
@@ -52,6 +55,7 @@ class cc3DFin : public QObject
 	void drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 
 	void exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std::vector<double>& z0);
+
   private:
 	//! Default action
 	QAction* m_action;

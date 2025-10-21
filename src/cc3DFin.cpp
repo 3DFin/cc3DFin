@@ -20,12 +20,12 @@
 #include "CCGeom.h"
 #include "cc2DLabel.h"
 #include "cc3DFinDlg.h"
+#include "ccColorScalesManager.h"
 #include "ccHObject.h"
 #include "ccHObjectCaster.h"
 #include "ccLog.h"
 #include "ccPointCloud.h"
 #include "ccPolyline.h"
-#include "ccColorScalesManager.h"
 #include "ccScalarField.h"
 
 // lib3DFin
@@ -43,17 +43,7 @@ cc3DFin::cc3DFin(QObject* parent)
     , ccStdPluginInterface(":/CC/plugin/3DFin/info.json")
     , m_action(nullptr)
 {
-    ccColorScale::Shared customColorScale = ccColorScale::Create("3DFin");
-    customColorScale->setUuid(s_color_scale_uuid);
-    customColorScale->setRelative();
-    ccColorScaleElement element;
-
-    customColorScale->insert(ccColorScaleElement(0., {91, 155, 213}));
-    customColorScale->insert(ccColorScaleElement(0.28571428571, {112, 173, 71}));
-    customColorScale->insert(ccColorScaleElement(0.642857142857, {255, 192, 0}));
-    customColorScale->insert(ccColorScaleElement(1, {237, 125, 49}));
-
-    ccColorScalesManager::GetUniqueInstance()->addScale(customColorScale);
+	initCustomColorScale();
 }
 
 // This method should enable or disable your plugin actions
@@ -122,6 +112,7 @@ void cc3DFin::do3DFinAction()
 			scalarFieldNames.push_back(QString(sf->getName().c_str()));
 	}
 
+	m_current_cloud->setEnabled(false);
 	m_current_cloud->placeIteratorAtBeginning();
 	const auto [cloud, z0, tree_data, circles] = lib3dfin::process(&(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()));
 
@@ -136,12 +127,34 @@ void cc3DFin::do3DFinAction()
 	m_app->redrawAll();
 	m_current_cloud = nullptr;
 	// draw circles
-	ccLog::Print("3DFin done !");
+	ccLog::Print("3DFin done!");
 	// cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
 	// tdfDlg.exec();
 
 	QApplication::processEvents();
+}
+
+void cc3DFin::initCustomColorScale()
+{
+	auto maybe_colorscale = ccColorScalesManager::GetUniqueInstance()->getScale(s_color_scale_uuid);
+
+	if (maybe_colorscale != nullptr)
+	{
+		ccLog::Print("Color Scale already exists");
+		return;
+	}
+
+	ccColorScale::Shared customColorScale = ccColorScale::Create("3DFin");
+	customColorScale->setUuid(s_color_scale_uuid);
+	customColorScale->setRelative();
+
+	customColorScale->insert(ccColorScaleElement(0., {91, 155, 213}));
+	customColorScale->insert(ccColorScaleElement(0.28571428571, {112, 173, 71}));
+	customColorScale->insert(ccColorScaleElement(0.642857142857, {255, 192, 0}));
+	customColorScale->insert(ccColorScaleElement(1, {237, 125, 49}));
+
+	ccColorScalesManager::GetUniqueInstance()->addScale(customColorScale);
 }
 
 void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_circles, const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
@@ -392,11 +405,12 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 	tree_id_sf->computeMinAndMax();
 	z0_sf->computeMinAndMax();
 
-	auto color_scale = m_app->getColorScalesManager()->getScale(s_color_scale_uuid);
+	auto color_scale = ccColorScalesManager::GetUniqueInstance()->getScale(s_color_scale_uuid);
 
 	enriched_cloud->setCurrentDisplayedScalarField(dist_axes_id);
 	enriched_cloud->getCurrentDisplayedScalarField()->setColorScale(color_scale);
 	enriched_cloud->toggleSF();
+	enriched_cloud->setEnabled(false);
 
 	m_base_group->addChild(enriched_cloud);
 }
