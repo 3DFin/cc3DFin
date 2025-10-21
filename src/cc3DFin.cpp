@@ -25,6 +25,8 @@
 #include "ccLog.h"
 #include "ccPointCloud.h"
 #include "ccPolyline.h"
+#include "ccColorScalesManager.h"
+#include "ccScalarField.h"
 
 // lib3DFin
 #include <lib3DFin/config.hpp>
@@ -41,6 +43,17 @@ cc3DFin::cc3DFin(QObject* parent)
     , ccStdPluginInterface(":/CC/plugin/3DFin/info.json")
     , m_action(nullptr)
 {
+    ccColorScale::Shared customColorScale = ccColorScale::Create("3DFin");
+    customColorScale->setUuid(s_color_scale_uuid);
+    customColorScale->setRelative();
+    ccColorScaleElement element;
+
+    customColorScale->insert(ccColorScaleElement(0., {91, 155, 213}));
+    customColorScale->insert(ccColorScaleElement(0.28571428571, {112, 173, 71}));
+    customColorScale->insert(ccColorScaleElement(0.642857142857, {255, 192, 0}));
+    customColorScale->insert(ccColorScaleElement(1, {237, 125, 49}));
+
+    ccColorScalesManager::GetUniqueInstance()->addScale(customColorScale);
 }
 
 // This method should enable or disable your plugin actions
@@ -110,37 +123,15 @@ void cc3DFin::do3DFinAction()
 	}
 
 	m_current_cloud->placeIteratorAtBeginning();
-	const auto [stripe, cloud, tree_data, circles] = lib3dfin::process(&(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()));
+	const auto [cloud, z0, tree_data, circles] = lib3dfin::process(&(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()));
 
 	// reset the base group
 	m_base_group.reset(new ccHObject("3DFin group"));
-
-	ccPointCloud* stripe_pc = new ccPointCloud;
-	stripe_pc->reserve(cloud.size() / 3);
-
-	for (size_t point_id = 0; point_id < cloud.size() / 3; ++point_id)
-	{
-		auto id = point_id * 3;
-		stripe_pc->addPoint(CCVector3(cloud[id], cloud[id + 1], cloud[id + 2]));
-	}
-
-	m_app->addToDB(stripe_pc);
-
-	auto        id      = m_current_cloud->addScalarField("dist_id");
-	auto*       dist_id = m_current_cloud->getScalarField(id);
-	std::size_t count   = 0;
-	for (auto elem : stripe)
-	{
-		dist_id->setValue(count, elem);
-		++count;
-	}
-	dist_id->computeMinAndMax();
-	m_current_cloud->setCurrentDisplayedScalarField(id);
-
 	drawCircles(circles, tree_data.tree_descriptors);
 	drawTreeLocators(tree_data.tree_descriptors);
 	drawTreeHeights(tree_data.tree_descriptors);
 	drawAxes(tree_data.tree_descriptors);
+	exportEnrichedCloud(tree_data, z0);
 	m_app->addToDB(m_base_group.release());
 	m_app->redrawAll();
 	m_current_cloud = nullptr;
@@ -243,7 +234,6 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_
 		circle_points_pc->toggleSF();
 		m_base_group->addChild(circle_points_pc);
 	}
-
 }
 
 void cc3DFin::drawAxes(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
@@ -289,7 +279,6 @@ void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree
 	ccPointCloud* tree_locations = new ccPointCloud("Tree Locations");
 	tree_locations->copyGlobalShiftAndScale(*m_current_cloud);
 
-
 	tree_locations->setPointSize(8);
 	tree_locations->setColor(255, 0, 255, 255);
 	tree_locations->toggleColors();
@@ -317,6 +306,7 @@ void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree
 		tree_locations->addChild(label);
 		++tree_id;
 	}
+	dbh_sf->computeMinAndMax();
 	tree_locations->toggleColors();
 	m_base_group->addChild(tree_locations);
 }
@@ -351,13 +341,62 @@ void cc3DFin::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_
 		tree_heights->addChild(label);
 		++tree_id;
 	}
-
+	z0_sf->computeMinAndMax();
+	deviated_sf->computeMinAndMax();
 	tree_heights->toggleColors();
 	m_base_group->addChild(tree_heights);
 }
 
-void cc3DFin::exportEnrichedCloud(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
+void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std::vector<double>& z0)
 {
-    // TODO export enriched cloud.
+	ccPointCloud* enriched_cloud = new ccPointCloud(m_current_cloud->getName());
 
+	enriched_cloud->copyGlobalShiftAndScale(*m_current_cloud);
+
+	if (!enriched_cloud->reserve(m_current_cloud->size()))
+	{
+		ccLog::Error("[3DFin] Not enough memory!");
+		delete enriched_cloud;
+		return;
+	}
+
+	int dist_axes_id = enriched_cloud->addScalarField("dist_axes");
+	int tree_id_id   = enriched_cloud->addScalarField("tree_ID");
+	int z0_id        = enriched_cloud->addScalarField("Z0");
+
+	auto dist_axes_sf = enriched_cloud->getScalarField(dist_axes_id);
+	auto tree_id_sf   = enriched_cloud->getScalarField(tree_id_id);
+	auto z0_sf        = enriched_cloud->getScalarField(z0_id);
+
+	try
+	{
+		dist_axes_sf->reserve(enriched_cloud->size());
+		tree_id_sf->reserve(enriched_cloud->size());
+		z0_sf->reserve(enriched_cloud->size());
+	}
+	catch (const std::exception& e)
+	{
+		ccLog::Error("[3DFin] Failed to reserve memory for scalar fields");
+		delete enriched_cloud;
+		return;
+	}
+
+	for (unsigned i = 0; i < m_current_cloud->size(); i++)
+	{
+		enriched_cloud->addPoint(*m_current_cloud->getPoint(i));
+		dist_axes_sf->addElement(tree_data.axis_distance(i));
+		tree_id_sf->addElement(tree_data.axis_cluster_indicator(i));
+		z0_sf->addElement(z0[i]);
+	}
+	dist_axes_sf->computeMinAndMax();
+	tree_id_sf->computeMinAndMax();
+	z0_sf->computeMinAndMax();
+
+	auto color_scale = m_app->getColorScalesManager()->getScale(s_color_scale_uuid);
+
+	enriched_cloud->setCurrentDisplayedScalarField(dist_axes_id);
+	enriched_cloud->getCurrentDisplayedScalarField()->setColorScale(color_scale);
+	enriched_cloud->toggleSF();
+
+	m_base_group->addChild(enriched_cloud);
 }

@@ -51,7 +51,7 @@ class cc3DFin : public QObject
 
 	void drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 
-	void exportEnrichedCloud(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
+	void exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std::vector<double>& z0);
   private:
 	//! Default action
 	QAction* m_action;
@@ -60,4 +60,5 @@ class cc3DFin : public QObject
 
 	ccPointCloud* m_current_cloud{nullptr};
 
+	const QString s_color_scale_uuid = "{25ec76a1-9b8d-4e4a-a129-21ae313ef8ba}";
 };
