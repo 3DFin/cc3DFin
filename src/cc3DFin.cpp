@@ -38,6 +38,9 @@
 #include <QtGui>
 #include <ScalarField.h>
 
+// stdlib
+#include <chrono>
+
 cc3DFin::cc3DFin(QObject* parent)
     : QObject(parent)
     , ccStdPluginInterface(":/CC/plugin/3DFin/info.json")
@@ -112,6 +115,7 @@ void cc3DFin::do3DFinAction()
 			scalarFieldNames.push_back(QString(sf->getName().c_str()));
 	}
 
+	std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
 	m_current_cloud->setEnabled(false);
 	m_current_cloud->placeIteratorAtBeginning();
 	const auto [cloud, z0, tree_data, circles] = lib3dfin::process(&(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()));
@@ -121,13 +125,13 @@ void cc3DFin::do3DFinAction()
 	drawCircles(circles, tree_data.tree_descriptors);
 	drawTreeLocators(tree_data.tree_descriptors);
 	drawTreeHeights(tree_data.tree_descriptors);
-	drawAxes(tree_data.tree_descriptors);
+	drawAxis(tree_data.tree_descriptors);
 	exportEnrichedCloud(tree_data, z0);
 	m_app->addToDB(m_base_group.release());
 	m_app->redrawAll();
 	m_current_cloud = nullptr;
 	// draw circles
-	ccLog::Print("3DFin done!");
+	ccLog::Print("3DFin done in %f seconds!", std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count() / 1000000.0);
 	// cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
 	// tdfDlg.exec();
@@ -249,42 +253,36 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_
 	}
 }
 
-void cc3DFin::drawAxes(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
+void cc3DFin::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
 	// TODO: go back to point cloud sampling since we need to visualize the tilt deviation scalar field
-	//  Create a group to hold all axes as polylines
-	ccHObject* axes_group = new ccHObject(QString("Tree Axes"));
+	// Create a group to hold all axes as polylines
+	constexpr double step_size = 0.1; // TODO parameters
 
-	size_t tree_id = 0;
+	ccPointCloud* axis_points  = new ccPointCloud(QString("Tree Axes"));
+	int           axis_tilt_id = axis_points->addScalarField("tilting_degree");
+	auto          axis_tilt_sf = axis_points->getScalarField(axis_tilt_id);
+	size_t        tree_id      = 0;
+
 	for (const auto& desc : tree_descriptors)
 	{
-		Eigen::Vector3d bottom_point = desc.bottom_point;
-		Eigen::Vector3d top_point    = desc.top_point;
-		double          length       = desc.height_difference;
-
-		// Create a polyline for the axis
-		ccPointCloud* axis_points = new ccPointCloud();
-		axis_points->copyGlobalShiftAndScale(*m_current_cloud);
-		axis_points->addPoint(CCVector3(bottom_point.x(), bottom_point.y(), bottom_point.z()));
-		axis_points->addPoint(CCVector3(top_point.x(), top_point.y(), top_point.z()));
-
-		ccPolyline* axis_line = new ccPolyline(axis_points);
-		axis_line->copyGlobalShiftAndScale(*m_current_cloud);
-		axis_line->addPointIndex(0);
-		axis_line->addPointIndex(1);
-		axis_line->setName(QString("Axis %1").arg(tree_id));
-		axis_line->setColor(ccColor::Rgb(255, 0, 0));
-		axis_line->showColors(true);
-		axis_line->setWidth(3);
-
-		axis_points->setEnabled(false);
-
-		axes_group->addChild(axis_line);
-
-		++tree_id;
+		const Eigen::Vector3d axis_step      = step_size * desc.axis; // TODO parameters
+		const double          tilting_degree = desc.axis_vertical_deviation;
+		Eigen::Vector3d       bottom_point   = desc.bottom_point;
+		Eigen::Vector3d       top_point      = desc.top_point;
+		Eigen::Vector3d       curr_point     = bottom_point;
+		while (curr_point.z() < top_point.z())
+		{
+			axis_points->addPoint(CCVector3(curr_point.x(), curr_point.y(), curr_point.z()));
+			curr_point += axis_step;
+			axis_tilt_sf->addElement(tilting_degree);
+		}
 	}
-
-	m_base_group->addChild(axes_group);
+	axis_tilt_sf->computeMinAndMax();
+	axis_points->setCurrentDisplayedScalarField(axis_tilt_id);
+	axis_points->toggleSF();
+	axis_points->setEnabled(false);
+	m_base_group->addChild(axis_points);
 }
 // https://github.com/3DFin/3DFin/blob/main/src/three_d_fin/cloudcompare/plugin_processing.py
 void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)

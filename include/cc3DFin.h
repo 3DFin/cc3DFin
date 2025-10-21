@@ -48,7 +48,7 @@ class cc3DFin : public QObject
 
 	void drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_circles, const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 
-	void drawAxes(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
+	void drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 
 	void drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 
