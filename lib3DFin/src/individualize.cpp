@@ -36,12 +36,12 @@ namespace lib3dfin
 
 		TreeData axes_data;
 		axes_data.tree_descriptors = std::move(voxelated_axes_data.tree_descriptors);
-		axes_data.axis_cluster_indicator.resize(point_cloud_.rows());
+		axes_data.cluster_indicator.resize(point_cloud_.rows());
 		axes_data.axis_distance.resize(point_cloud_.rows());
 		for (Eigen::Index point_id = 0; point_id < point_cloud_.rows(); ++point_id)
 		{
-			axes_data.axis_cluster_indicator(point_id) = voxelated_axes_data.axis_cluster_indicator(cloud_to_vox(point_id));
-			axes_data.axis_distance(point_id)          = voxelated_axes_data.axis_distance(cloud_to_vox(point_id));
+			axes_data.cluster_indicator(point_id) = voxelated_axes_data.cluster_indicator(cloud_to_vox(point_id));
+			axes_data.axis_distance(point_id)     = voxelated_axes_data.axis_distance(cloud_to_vox(point_id));
 		}
 		return axes_data;
 	}
@@ -82,8 +82,8 @@ namespace lib3dfin
 		// initialize result set
 		TreeData result;
 		result.tree_descriptors.reserve(valid_cluster_ids.size());
-		result.axis_cluster_indicator = ArrayClusterIndicator(num_voxels);
-		result.axis_distance          = Eigen::VectorXd(num_voxels);
+		result.cluster_indicator = ArrayClusterIndicator(num_voxels);
+		result.axis_distance     = Eigen::VectorXd(num_voxels);
 
 		// Height range (actual value, not the %) that points should extend throughout
 		const double h_range_value = (stripe_.upper_limit - stripe_.lower_limit) * params_.height_range;
@@ -184,10 +184,10 @@ namespace lib3dfin
 
 					if(sq_distance > sq_dmax)
 					{
-					    result.axis_cluster_indicator(voxel_id) = NO_CLUSTER_ID;
+					    result.cluster_indicator(voxel_id) = NO_CLUSTER_ID;
 						result.axis_distance(voxel_id) = params_.maximum_dist_axis;
 					} else {
-					    result.axis_cluster_indicator(voxel_id) =  axis_indicator(index);
+					    result.cluster_indicator(voxel_id) =  axis_indicator(index);
 						result.axis_distance(voxel_id) = std::sqrt(sq_distance);
 					} });
 		executor.run(taskflow).get();
@@ -233,7 +233,7 @@ namespace lib3dfin
 			const auto   tree_id  = tree_descriptor.tree_id;
 			for (size_t voxel_id = 0; voxel_id < voxelated_cloud.rows(); ++voxel_id)
 			{
-				const auto point_tree_id = axis_data.axis_cluster_indicator[voxel_id];
+				const auto point_tree_id = axis_data.cluster_indicator[voxel_id];
 				if (point_tree_id != tree_id)
 					continue;
 				const auto large_vox_id = vox_to_large_vox(voxel_id);

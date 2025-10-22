@@ -56,6 +56,8 @@ class cc3DFin : public QObject
 
 	void exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std::vector<double>& z0);
 
+	void exportStripe(const lib3dfin::TreeData& tree_data);
+
   private:
 	//! Default action
 	QAction* m_action;

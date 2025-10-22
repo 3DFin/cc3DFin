@@ -5,7 +5,6 @@
 
 #include <Eigen/Dense>
 
-
 namespace lib3dfin
 {
 
@@ -115,14 +114,14 @@ namespace lib3dfin
 		void setLocation(const TreeLocatorResult& location_)
 		{
 			location = location_.location;
-			dbh = location_.dbh;
+			dbh      = location_.dbh;
 		}
 
 		PointCloud3 computeAxisSampling(const Vec3& bb_min, const Vec3& bb_max, double sample_step)
 		{
-			const auto  maybe_range    = axis_bb_intersection(centroid_coordinates, axis, bb_min, bb_max);
-			bottom_point = maybe_range.value().first;
-			top_point = maybe_range.value().second;
+			const auto maybe_range     = axis_bb_intersection(centroid_coordinates, axis, bb_min, bb_max);
+			bottom_point               = maybe_range.value().first;
+			top_point                  = maybe_range.value().second;
 			const auto  range_distance = (top_point - bottom_point).norm();
 			const auto  num_sample     = static_cast<size_t>(std::ceil(range_distance / sample_step));
 			PointCloud3 axis_point_cloud(num_sample, 3);
@@ -152,13 +151,8 @@ namespace lib3dfin
 	struct TreeData
 	{
 		std::vector<TreeDescriptor> tree_descriptors;
-		Eigen::VectorXd     axis_distance;
-		ArrayClusterIndicator       axis_cluster_indicator; // TODO: refactor tree cluster indicator
-
-		void updateIndicator(const ArrayClusterIndicator& mask_indicator)
-		{
-			axis_cluster_indicator = (mask_indicator > -1).select(axis_cluster_indicator, -1);
-		}
+		Eigen::VectorXd             axis_distance;
+		ArrayClusterIndicator       cluster_indicator; // TODO: refactor tree cluster indicator
 	};
 
 	struct CircleData

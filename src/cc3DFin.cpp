@@ -121,7 +121,7 @@ void cc3DFin::do3DFinAction()
 	const auto [cloud, z0, tree_data, circles] = lib3dfin::process(&(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()));
 
 	// reset the base group
-	m_base_group.reset(new ccHObject("3DFin group"));
+	m_base_group.reset(new ccHObject(m_current_cloud->getName() + "_3DFin"));
 	drawCircles(circles, tree_data.tree_descriptors);
 	drawTreeLocators(tree_data.tree_descriptors);
 	drawTreeHeights(tree_data.tree_descriptors);
@@ -170,13 +170,13 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_
 	circle_points_pc->copyGlobalShiftAndScale(*m_current_cloud);
 
 	// Add scalar fields for circle properties
-	int tree_id_sf_id    = circle_points_pc->addScalarField("Tree_ID");
-	int radius_sf_id     = circle_points_pc->addScalarField("Radius");
-	int height_sf_id     = circle_points_pc->addScalarField("Height");
-	int status_sf_id     = circle_points_pc->addScalarField("Status");
-	int num_points_sf_id = circle_points_pc->addScalarField("Number of points inner circle");
-	int sector_sf_id     = circle_points_pc->addScalarField("Sector coverage");
-	int outlier_sf_id    = circle_points_pc->addScalarField("Outlier probability");
+	int tree_id_sf_id    = circle_points_pc->addScalarField("tree_ID");
+	int radius_sf_id     = circle_points_pc->addScalarField("radius");
+	int height_sf_id     = circle_points_pc->addScalarField("height");
+	int status_sf_id     = circle_points_pc->addScalarField("status");
+	int num_points_sf_id = circle_points_pc->addScalarField("number of points inner circle");
+	int sector_sf_id     = circle_points_pc->addScalarField("sector coverage");
+	int outlier_sf_id    = circle_points_pc->addScalarField("outlier probability");
 
 	auto* tree_id_sf    = circle_points_pc->getScalarField(tree_id_sf_id);
 	auto* radius_sf     = circle_points_pc->getScalarField(radius_sf_id);
@@ -259,7 +259,7 @@ void cc3DFin::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descrip
 	// Create a group to hold all axes as polylines
 	constexpr double step_size = 0.1; // TODO parameters
 
-	ccPointCloud* axis_points  = new ccPointCloud(QString("Tree Axes"));
+	ccPointCloud* axis_points  = new ccPointCloud(QString("tree axes"));
 	int           axis_tilt_id = axis_points->addScalarField("tilting_degree");
 	auto          axis_tilt_sf = axis_points->getScalarField(axis_tilt_id);
 	size_t        tree_id      = 0;
@@ -396,7 +396,7 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 	{
 		enriched_cloud->addPoint(*m_current_cloud->getPoint(i));
 		dist_axes_sf->addElement(tree_data.axis_distance(i));
-		tree_id_sf->addElement(tree_data.axis_cluster_indicator(i));
+		tree_id_sf->addElement(tree_data.cluster_indicator(i));
 		z0_sf->addElement(z0[i]);
 	}
 	dist_axes_sf->computeMinAndMax();
@@ -411,4 +411,18 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 	enriched_cloud->setEnabled(false);
 
 	m_base_group->addChild(enriched_cloud);
+}
+
+void cc3DFin::exportStripe(const lib3dfin::TreeData& tree_data)
+{
+	ccPointCloud* stripe_cloud = new ccPointCloud("Stems in stripe");
+	stripe_cloud->copyGlobalShiftAndScale(*m_current_cloud);
+	int  tree_id_id = stripe_cloud->addScalarField("tree_ID");
+	auto tree_id_sf = stripe_cloud->getScalarField(tree_id_id);
+
+
+	stripe_cloud->setCurrentDisplayedScalarField(tree_id_id);
+	stripe_cloud->toggleSF();
+	stripe_cloud->setEnabled(false);
+	m_base_group->addChild(stripe_cloud);
 }

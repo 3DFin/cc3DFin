@@ -35,8 +35,9 @@ namespace lib3dfin
 		};
 
 	  public:
-		explicit SectionExtractor(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, TreeData& trees, const Parameters params)
+		explicit SectionExtractor(const PointCloud3& point_cloud, const ArrayClusterIndicator& sections_indicator, const Eigen::VectorXd& z0, TreeData& trees, const Parameters params)
 		    : point_cloud_(point_cloud)
+		    , section_indicator_(sections_indicator)
 		    , num_points_(point_cloud.rows())
 		    , z0_(z0)
 		    , trees_(trees)
@@ -53,9 +54,7 @@ namespace lib3dfin
 			// iterate over the trees
 			for (auto& tree : trees_.tree_descriptors)
 			{
-				const auto& cluster_indicator = trees_.axis_cluster_indicator;
-
-				const auto         tree_mask          = (cluster_indicator.array() == tree.tree_id);
+				const auto         tree_mask          = (section_indicator_.array() == tree.tree_id);
 				const Eigen::Index number_points_tree = tree_mask.count();
 
 				PointCloud3  tree_cloud(number_points_tree, 3);
@@ -481,13 +480,14 @@ namespace lib3dfin
 		}
 
 	  private: // members
-		const PointCloud3&     point_cloud_;
-		const Eigen::VectorXd& z0_;
-		TreeData&        trees_;
-		const Eigen::Index     num_points_;
-		const Parameters       params_;
-		const Eigen::Index     num_sections_;
-		size_t                 dbh_section_id_{0};
+		const PointCloud3&           point_cloud_;
+		const ArrayClusterIndicator& section_indicator_;
+		const Eigen::VectorXd&       z0_;
+		TreeData&                    trees_;
+		const Eigen::Index           num_points_;
+		const Parameters             params_;
+		const Eigen::Index           num_sections_;
+		size_t                       dbh_section_id_{0};
 	};
 
 } // namespace lib3dfin
