@@ -9,6 +9,10 @@
 #include "section.hpp"
 #include "types.hpp"
 
+#ifdef TDFIN_USES_OPENXLSX
+#include <OpenXLSX.hpp>
+#endif
+
 namespace lib3dfin
 {
 

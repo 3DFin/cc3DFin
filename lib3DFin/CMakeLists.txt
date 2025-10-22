@@ -9,6 +9,7 @@ if (${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
 endif()
 
 option(3DFin_BUILD_SHARED "Build 3DFin as a shared library" OFF)
+option(3DFin_EXPORT_XLSX "Build 3DFin with XLSX support" ON)
 
 # Define the library target
 if (3DFin_BUILD_SHARED)
@@ -61,15 +62,27 @@ endif()
 # Taskflow handling
 # TODO maybe thread lib linking should be propagated...
 set(TF_BUILD_TESTS OFF CACHE BOOL "Taskflow: Enables builds of tests" FORCE)
-
 set(TF_BUILD_EXAMPLES OFF CACHE BOOL "Taskflow: Enables builds of examples" FORCE)
 add_subdirectory(third_party/taskflow EXCLUDE_FROM_ALL)
 
 # csf
 add_subdirectory(third_party/CSF-3DFin)
 
-# All libs are private since we do not want to expose them in the public API
-target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen PRIVATE nanoflann::nanoflann Taskflow::Taskflow CSF::CSF)
+# XLSX
+if(3DFin_EXPORT_XLSX)
+    set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "OpenXLSX: Enables builds of samples" FORCE)
+    set(OPENXLSX_BUILD_TESTS OFF CACHE BOOL "OpenXLSX: Enables builds of tests" FORCE)
+
+    add_subdirectory(third_party/OpenXLSX)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE TDFIN_USES_OPENXLSX)
+    # All libs are private since we do not want to expose them in the public API
+    # TODO improve drawing interface in order to make Eigen3 private
+
+    target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen PRIVATE nanoflann::nanoflann Taskflow::Taskflow CSF::CSF OpenXLSX::OpenXLSX)
+else()
+    target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen PRIVATE nanoflann::nanoflann Taskflow::Taskflow CSF::CSF)
+endif()
+
 get_property(all_targets GLOBAL PROPERTY TARGETS)
 message(STATUS "All targets: ${all_targets}")
 

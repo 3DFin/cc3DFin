@@ -13,3 +13,6 @@
 [submodule "lib3DFin/third_party/dset"]
 	path = lib3DFin/third_party/dset
 	url = https://github.com/wjakob/dset
+[submodule "lib3DFin/third_party/OpenXLSX"]
+	path = lib3DFin/third_party/OpenXLSX
+	url = https://github.com/troldal/OpenXLSX.git
