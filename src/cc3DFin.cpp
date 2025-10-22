@@ -118,7 +118,9 @@ void cc3DFin::do3DFinAction()
 	std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
 	m_current_cloud->setEnabled(false);
 	m_current_cloud->placeIteratorAtBeginning();
-	const auto [cloud, z0, tree_data, circles] = lib3dfin::process(&(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()));
+	// cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
+	// tdfDlg.exec();
+	const auto [stem_indicator, z0, tree_data, circles] = lib3dfin::process(&(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()));
 
 	// reset the base group
 	m_base_group.reset(new ccHObject(m_current_cloud->getName() + "_3DFin"));
@@ -127,14 +129,12 @@ void cc3DFin::do3DFinAction()
 	drawTreeHeights(tree_data.tree_descriptors);
 	drawAxis(tree_data.tree_descriptors);
 	exportEnrichedCloud(tree_data, z0);
+	exportStripe(stem_indicator);
 	m_app->addToDB(m_base_group.release());
 	m_app->redrawAll();
 	m_current_cloud = nullptr;
 	// draw circles
 	ccLog::Print("3DFin done in %f seconds!", std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count() / 1000000.0);
-	// cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
-
-	// tdfDlg.exec();
 
 	QApplication::processEvents();
 }
@@ -385,7 +385,7 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 		tree_id_sf->reserve(enriched_cloud->size());
 		z0_sf->reserve(enriched_cloud->size());
 	}
-	catch (const std::exception& e)
+	catch (const std::bad_alloc)
 	{
 		ccLog::Error("[3DFin] Failed to reserve memory for scalar fields");
 		delete enriched_cloud;
@@ -413,14 +413,45 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 	m_base_group->addChild(enriched_cloud);
 }
 
-void cc3DFin::exportStripe(const lib3dfin::TreeData& tree_data)
+void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 {
 	ccPointCloud* stripe_cloud = new ccPointCloud("Stems in stripe");
 	stripe_cloud->copyGlobalShiftAndScale(*m_current_cloud);
 	int  tree_id_id = stripe_cloud->addScalarField("tree_ID");
 	auto tree_id_sf = stripe_cloud->getScalarField(tree_id_id);
 
+	unsigned count_valid = std::count_if(stem_indicator.begin(), stem_indicator.end(), [](int32_t stem_id)
+	                                     { return stem_id >= 0; });
 
+	if (!stripe_cloud->reserve(m_current_cloud->size()))
+	{
+		ccLog::Error("[3DFin] Not enough memory!");
+		delete stripe_cloud;
+		return;
+	}
+
+	try
+	{
+		tree_id_sf->reserve(stripe_cloud->size());
+	}
+	catch (const std::bad_alloc)
+	{
+		ccLog::Error("[3DFin] Failed to reserve memory for scalar fields");
+		delete stripe_cloud;
+		return;
+	}
+
+	for (size_t i = 0; i < stem_indicator.size(); i++)
+	{
+		auto stem_id = stem_indicator[i];
+		if (stem_id >= 0)
+		{
+			stripe_cloud->addPoint(*m_current_cloud->getPoint(i));
+			tree_id_sf->addElement(stem_id);
+		}
+	}
+
+	tree_id_sf->computeMinAndMax();
 	stripe_cloud->setCurrentDisplayedScalarField(tree_id_id);
 	stripe_cloud->toggleSF();
 	stripe_cloud->setEnabled(false);
