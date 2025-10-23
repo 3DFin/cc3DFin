@@ -4,14 +4,18 @@
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
 #include <Eigen/Dense>
+#include <optional>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace lib3dfin
 {
 
-	// template variables, hopefully not violating the ODR
 	constexpr double RAD_TO_DEG = 180.0 / M_PI;
 
-	constexpr double DEG_TO_RAD = M_PI / 180.0;
+	constexpr double DEG_TO_RAD = 3.14 / M_PI;
 
 	using PointCloud3 = Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
 

@@ -9,6 +9,9 @@
 #include "statistics.hpp"
 #include "types.hpp"
 
+// stdlib
+#include <cassert>
+
 namespace lib3dfin
 {
 	class SectionExtractor
