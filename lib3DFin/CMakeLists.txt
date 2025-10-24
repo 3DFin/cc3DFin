@@ -38,19 +38,17 @@ endif()
 
 # Eigen Handling (taken and modified from OpenMVG)
 # Could be improved in case of exposition of Eigen in the public API
-find_package(Eigen3 QUIET)
+find_package(Eigen3 3.3.4...5 NO_MODULE)
 if(Eigen3_FOUND)
     message(STATUS "[lib3DFin] Using external Eigen")
     message(STATUS "eigen found in ${EIGEN3_INCLUDE_DIRS}")
 else()
     add_subdirectory(third_party/eigen EXCLUDE_FROM_ALL)
-    #set(EIGEN_INCLUDE_DIR_HINTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/eigen)
     set(3DFin_USE_INTERNAL_EIGEN ON)
     message(STATUS "[lib3DFin] Using internal Eigen")
-    #find_package(Eigen3 REQUIRED)
 endif()
 
-# test if nanoflann is already an imported target
+# Test if nanoflann is already an imported target (needed for CC interop)
 if(NOT TARGET nanoflann::nanoflann)
     find_package(nanoflann QUIET)
     if(NOT nanoflann_FOUND)
@@ -96,11 +94,18 @@ set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 add_subdirectory(include)
 add_subdirectory(src)
 
-# Install the library
-install(TARGETS ${PROJECT_NAME}
+install(
+    TARGETS ${PROJECT_NAME}
     EXPORT ${PROJECT_NAME}Targets
     DESTINATION lib
 )
+if(3DFin_USE_INTERNAL_EIGEN)
+    install(
+        TARGETS eigen
+        EXPORT ${PROJECT_NAME}Targets
+        DESTINATION lib
+    )
+endif()
 
 # Create and install CMake config files
 include(CMakePackageConfigHelpers)
