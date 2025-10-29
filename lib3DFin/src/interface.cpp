@@ -42,17 +42,19 @@ namespace lib3dfin
 
 		// stem_search_diameter / 2, minimum_height, maximum_height + section_width
 		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, 2.0 / 2, 0.3, 25 + 0.05);
+
 		// TODO: verticality could change at this point
 		// double verticality_scale_stem  = 0.1;  // verticality_thresh_stems
 		// double verticality_thresh_stem = 0.7;
 
-		//TODO Beware Side effect on indicator
+		// TODO Beware Side effect on indicator
 		stripe_peeler.peel(stem_indicator);
 
 		ArrayClusterIndicator sections_indicator = (stem_indicator > -1).select(tree_data.cluster_indicator, -1);
 		SectionExtractor      section_extractor(point_cloud, sections_indicator, z0, tree_data, SectionExtractor::Parameters());
 
-		const auto circle_sections = section_extractor.extract();
+		// TODO: beware side effect on tree_data
+		section_extractor.extract();
 
 		std::vector<int32_t> stem_indicator_vector(stripe.cluster_indicator.data(), stripe.cluster_indicator.data() + stripe.cluster_indicator.size());
 

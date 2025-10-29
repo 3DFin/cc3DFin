@@ -120,11 +120,11 @@ void cc3DFin::do3DFinAction()
 	m_current_cloud->placeIteratorAtBeginning();
 	// cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 	// tdfDlg.exec();
-	const auto [stem_indicator, z0, tree_data, circles] = lib3dfin::process(&(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()));
+	const auto [stem_indicator, z0, tree_data] = lib3dfin::process(&(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()));
 
 	// reset the base group
 	m_base_group.reset(new ccHObject(m_current_cloud->getName() + "_3DFin"));
-	drawCircles(circles, tree_data.tree_descriptors);
+	drawCircles(tree_data.tree_descriptors);
 	drawTreeLocators(tree_data.tree_descriptors);
 	drawTreeHeights(tree_data.tree_descriptors);
 	drawAxis(tree_data.tree_descriptors);
@@ -161,7 +161,7 @@ void cc3DFin::initCustomColorScale()
 	ccColorScalesManager::GetUniqueInstance()->addScale(customColorScale);
 }
 
-void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_circles, const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
+void cc3DFin::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
 	size_t tree_id = 0;
 
@@ -186,9 +186,9 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::CircleSections>& all_tree_
 	auto* sector_sf     = circle_points_pc->getScalarField(sector_sf_id);
 	auto* outlier_sf    = circle_points_pc->getScalarField(outlier_sf_id);
 
-	for (const auto& tree_circles : all_tree_circles)
+	for (const auto& tree_data : tree_descriptors)
 	{
-		for (const auto& circle_data : tree_circles)
+		for (const auto& circle_data : tree_data.circle_data)
 		{
 			// Only draw successful circles
 			if (circle_data.status >= lib3dfin::CircleData::Status::SUCCESS)
@@ -399,6 +399,7 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 		tree_id_sf->addElement(tree_data.cluster_indicator(i));
 		z0_sf->addElement(z0[i]);
 	}
+
 	dist_axes_sf->computeMinAndMax();
 	tree_id_sf->computeMinAndMax();
 	z0_sf->computeMinAndMax();

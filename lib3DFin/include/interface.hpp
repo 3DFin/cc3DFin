@@ -8,6 +8,6 @@
 
 namespace lib3dfin
 {
-	std::tuple<std::vector<int32_t>, std::vector<double>, TreeData, std::vector<CircleSections>> process(const float* cloud_data, size_t num_points);
+	std::tuple<std::vector<int32_t>, std::vector<double>, TreeData> process(const float* cloud_data, size_t num_points);
 
 } // namespace lib3dfin

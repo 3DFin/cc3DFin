@@ -61,6 +61,30 @@ namespace lib3dfin
 		double                upper_limit{0.0};
 	};
 
+	struct CircleData
+	{
+		enum class Status
+		{
+			NOT_COMPUTED      = -2,
+			NOT_ENOUGH_POINTS = -1,
+			SUCCESS           = 0,
+			TILT_OUTLIER,
+			DIAMETER_TOO_SMALL,
+			DIAMETER_TOO_LARGE,
+			TOO_MANY_POINTS_INNER,
+			NOT_ENOUGH_SECTOR_COVERAGE,
+		};
+
+		Circle   circle{};
+		double   z0{0};
+		Status   status{Status::NOT_COMPUTED};
+		double   sector_percentage{0.0};
+		double   outlier_probability{0.0};
+		uint32_t number_points_inner{0};
+	};
+
+	using CircleSections = std::vector<CircleData>;
+
 	struct TreeDescriptor
 	{
 		TreeDescriptor(Eigen::Index tree_id_)
@@ -150,6 +174,7 @@ namespace lib3dfin
 		double       highest_z0{0.0};
 		double       dbh{0.0};
 		Vec3         location{0.0, 0.0, 0.0};
+		std::vector<CircleData> circle_data{};
 	};
 
 	struct TreeData
@@ -159,28 +184,5 @@ namespace lib3dfin
 		ArrayClusterIndicator       cluster_indicator; // TODO: refactor tree cluster indicator
 	};
 
-	struct CircleData
-	{
-		enum class Status
-		{
-			NOT_COMPUTED      = -2,
-			NOT_ENOUGH_POINTS = -1,
-			SUCCESS           = 0,
-			TILT_OUTLIER,
-			DIAMETER_TOO_SMALL,
-			DIAMETER_TOO_LARGE,
-			TOO_MANY_POINTS_INNER,
-			NOT_ENOUGH_SECTOR_COVERAGE,
-		};
-
-		Circle   circle{};
-		double   z0{0};
-		Status   status{Status::NOT_COMPUTED};
-		double   sector_percentage{0.0};
-		double   outlier_probability{0.0};
-		uint32_t number_points_inner{0};
-	};
-
-	using CircleSections = std::vector<CircleData>;
 
 } // namespace lib3dfin
