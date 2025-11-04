@@ -19,46 +19,46 @@ namespace lib3dfin
 #ifdef TDFIN_USES_OPENXLSX
 	void export_xlsx(const TreeData& tree_data, const std::string& filename)
 	{
+
+		if (tree_data.tree_descriptors.empty())
+		{
+			std::cout << "[3DFin] Nothing to write" << std::endl;
+			return;
+		}
+
 		// TODO: global shift
-		std::string sheet_1_name       = "Plot metrics";
-		std::string sheet_1_header     = R"(Total height (TH) of each tree (T).
-        Diameter at breast height (DBH) of each tree (T).
-        (x, y) coordinates (X and Y) of each tree (T).)";
-		std::string sheet_1_sub_header = R"(This cloud has 61.100854 million points and its area is 3176 m2)";
+		using SheetDescriptor = std::pair<std::string, std::string>;
 
-		std::string sheet_2_name   = "Diameters";
-		std::string sheet_2_header = "Diameter of every section (S) of every tree (T). Units are meters.";
+		constexpr size_t num_worksheets = 9;
+		// TODO: global shift
+		const std::array<SheetDescriptor, num_worksheets> sheet_descriptors = {
+		    {{"Plot metrics", "Total height(TH) of each tree(T).\nDiameter at breast height(DBH) of each tree(T).\n(x, y)coordinates(X and Y) of each tree(T).)"},
+		     {"Diameters", "Diameter of every section (S) of every tree (T). Units are meters."},
+		     {"X", "(x) coordinates of every section (S) of every tree (T). Units are meters"},
+		     {"Y", "(y) coordinates of every section (S) of every tree (T). Units are meters."},
+		     {"Sections", "Normalized height (Z0) of every section (S).\nUnits are meters."},
+		     {"Q(Overall Quality 0-1)", "Overall quality of every section (S) of every tree (T).\n0 : Section does not pass quality checks - 1 : Section passes quality checks."},
+		     {"Q1(Outlier Probability)", "(Normalized height (Z0) of every section (S).\nUnits are meters."},
+		     {"Q2(Sector Occupancy)", "Percentage of occupied sectors of every section (S) of every tree (T).\nIt takes values between 0 and 100."},
+		     {"Q3(Points Inner Circle)", "Number of points in the inner circle of every section (S) of every tree (T).\nThe lowest, the better."}}};
 
-		std::string sheet_3_name   = "X";
-		std::string sheet_3_header = "(x) coordinates of every section (S) of every tree (T). Units are meters.";
+		// Container to store our reference to worksheets
+		std::vector<OpenXLSX::XLWorksheet> worksheets;
 
-		std::string sheet_4_name   = "Y";
-		std::string sheet_4_header = "(y) coordinates of every section (S) of every tree (T). Units are meters.";
+		// Use first cell of each worksheet as a header
+		const OpenXLSX::XLCellReference header_cell_ref("A1");
 
-		std::string sheet_5_name   = "Sections";
-		std::string sheet_5_header = R"(Normalized height (Z0) of every section (S).
-        Units are meters.)";
+		OpenXLSX::XLDocument doc;
 
-		std::string sheet_6_name   = "Q(Overall Quality 0-1)";
-		std::string sheet_6_header = R"(Overall quality of every section (S) of every tree (T).
-        0: Section does not pass quality checks - 1: Section passes quality checks.)";
-
-		std::string sheet_7_name   = "Q1(Outlier Probability)";
-		std::string sheet_7_header = R"(Normalized height (Z0) of every section (S).
-        Units are meters.)";
-
-		std::string sheet_8_name   = "Q2(Sector Occupancy)";
-		std::string sheet_8_header = R"(Percentage of occupied sectors of every section (S) of every tree (T).
-        It takes values between 0 and 100.)";
-
-		std::string sheet_9_name   = "Q3(Points Inner Circle)";
-		std::string sheet_9_header = R"(Number of points in the inner circle of every section (S) of every tree (T).
-        The lowest, the better.)";
-
-		OpenXLSX::XLDocument doc{};
-		// TODO catch exceptions
-		doc.create(filename, OpenXLSX::XLForceOverwrite);
-		OpenXLSX::XLWorksheet sheet_1 = doc.workbook().worksheet(1); // worksheet are 1 based in Excel
+		try
+		{
+			doc.create(filename, OpenXLSX::XLForceOverwrite);
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "[3DFin] Failed to create XLSX file: " << e.what() << '\n';
+			return;
+		}
 
 		// define the style of the table header (column and rows)
 		OpenXLSX::XLCellFormats& formats = doc.styles().cellFormats();
@@ -69,95 +69,77 @@ namespace lib3dfin
 		fonts[font_bold].setBold();
 		formats[bold_format].setFontIndex(font_bold);
 
+		// worksheet 1 is "special". it's already there and it needs some custom (table) headers
+		auto& sheet_1 = worksheets.emplace_back(doc.workbook().worksheet(1));
+
 		// sheet_1
-		sheet_1.setName(sheet_1_name);
-		sheet_1.cell("A1").value() = sheet_1_header;
-		sheet_1.cell("A2").value() = sheet_1_sub_header;
+		sheet_1.setName(sheet_descriptors[0].first);
+		sheet_1.cell(header_cell_ref) = sheet_descriptors[0].second;
+
+		// TODO interpolate string with real data.
+		sheet_1.cell("A2") = "This cloud has 61.100854 million points and its area is 3176 m2";
 
 		// Table Header
 		auto table_header       = sheet_1.range("C3:F3");
 		sheet_1.row(3).values() = std::vector<std::string>{"", "", "TH", "DBH", "X", "Y"};
 		table_header.setFormat(bold_format);
 
-		// sheet_2
-		doc.workbook().addWorksheet(sheet_2_name);
-		OpenXLSX::XLWorksheet sheet_2 = doc.workbook().worksheet(2);
-		sheet_2.cell("A1").value()    = sheet_2_header;
-		// sheet_3
-		doc.workbook().addWorksheet(sheet_3_name);
-		OpenXLSX::XLWorksheet sheet_3 = doc.workbook().worksheet(3);
-		sheet_3.cell("A1").value()    = sheet_3_header;
-		// sheet_4
-		doc.workbook().addWorksheet(sheet_4_name);
-		OpenXLSX::XLWorksheet sheet_4 = doc.workbook().worksheet(4);
-		sheet_4.cell("A1").value()    = sheet_4_header;
-		// sheet_5
-		doc.workbook().addWorksheet(sheet_5_name);
-		OpenXLSX::XLWorksheet sheet_5 = doc.workbook().worksheet(5);
-		sheet_5.cell("A1").value()    = sheet_5_header;
-		// sheet_6
-		doc.workbook().addWorksheet(sheet_6_name);
-		OpenXLSX::XLWorksheet sheet_6 = doc.workbook().worksheet(6);
-		sheet_6.cell("A1").value()    = sheet_6_header;
-		// sheet_7
-		doc.workbook().addWorksheet(sheet_7_name);
-		OpenXLSX::XLWorksheet sheet_7 = doc.workbook().worksheet(7);
-		sheet_7.cell("A1").value()    = sheet_7_header;
-		// sheet_8
-		doc.workbook().addWorksheet(sheet_8_name);
-		OpenXLSX::XLWorksheet sheet_8 = doc.workbook().worksheet(8);
-		sheet_8.cell("A1").value()    = sheet_8_header;
-		// sheet_9
-		doc.workbook().addWorksheet(sheet_9_name);
-		OpenXLSX::XLWorksheet sheet_9 = doc.workbook().worksheet(9);
-		sheet_9.cell("A1").value()    = sheet_9_header;
+		// other sheets
+		for (size_t worksheet_id = 1; worksheet_id < num_worksheets; ++worksheet_id)
+		{
+			// sheet_2
+			const auto& cur_sheet_desc = sheet_descriptors[worksheet_id];
+			doc.workbook().addWorksheet(cur_sheet_desc.first);
+			auto& cur_sheet                 = worksheets.emplace_back(doc.workbook().worksheet(worksheet_id + 1));
+			cur_sheet.cell(header_cell_ref) = cur_sheet_desc.second;
+		}
 
-		size_t tree_id = 1;
+		uint32_t tree_id = 1;
 		for (const auto& tree : tree_data.tree_descriptors)
 		{
-			size_t      row_id     = tree_id + 2; // header offset
+			uint32_t    row_id     = tree_id + 2; // header offset
 			std::string row_header = "T" + std::to_string(tree_id);
 
-			const auto header_row_ref            = OpenXLSX::XLCellReference(row_id, 2);
-			sheet_2.cell(header_row_ref).value() = row_header;
-			sheet_3.cell(header_row_ref).value() = row_header;
-			sheet_4.cell(header_row_ref).value() = row_header;
-			sheet_6.cell(header_row_ref).value() = row_header;
-			sheet_7.cell(header_row_ref).value() = row_header;
-			sheet_8.cell(header_row_ref).value() = row_header;
-			sheet_9.cell(header_row_ref).value() = row_header;
+			const auto header_row_ref = OpenXLSX::XLCellReference(row_id, 2);
+			for (uint32_t worksheet_id = 1; worksheet_id < num_worksheets; ++worksheet_id)
+			{
+				if (worksheet_id != 4)
+				{
+					worksheets[worksheet_id].cell(header_row_ref) = row_header;
+				}
+			}
 
 			// special case for sheet_1 row_id is shifted by 1 because of the subheader
-			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 2)).value() = row_header;
-			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 3)).value() = tree.highest_z0;
-			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 4))         = tree.dbh;
-			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 5))         = tree.location.x();
-			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 6))         = tree.location.y();
+			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 2)) = row_header;
+			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 3)) = tree.highest_z0;
+			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 4)) = tree.dbh;
+			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 5)) = tree.location.x();
+			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 6)) = tree.location.y();
 
-			size_t col_id = 3;
+			uint32_t col_id = 3;
 			for (const auto& section : tree.circle_data)
 			{
 
 				const auto section_ref = OpenXLSX::XLCellReference(row_id, col_id);
 				if (section.status == CircleData::Status::SUCCESS)
 				{
-					sheet_2.cell(section_ref).value() = section.circle.radius;
-					sheet_3.cell(section_ref).value() = section.circle.center.x();
-					sheet_4.cell(section_ref).value() = section.circle.center.y();
-					sheet_6.cell(section_ref).value() = 0;
+					worksheets[1].cell(section_ref) = section.circle.radius;
+					worksheets[2].cell(section_ref) = section.circle.center.x();
+					worksheets[3].cell(section_ref) = section.circle.center.y();
+					worksheets[5].cell(section_ref) = 0;
 				}
 				else
 				{
-					sheet_2.cell(section_ref).value() = 0.0;
-					sheet_3.cell(section_ref).value() = 0.0;
-					sheet_4.cell(section_ref).value() = 0.0;
-					sheet_6.cell(section_ref).value() = 1;
+					worksheets[1].cell(section_ref) = 0.0;
+					worksheets[2].cell(section_ref) = 0.0;
+					worksheets[3].cell(section_ref) = 0.0;
+					worksheets[5].cell(section_ref) = 1;
 				}
 
 				// Outlier probability
-				sheet_7.cell(section_ref).value() = section.outlier_probability;
-				sheet_8.cell(section_ref).value() = section.sector_percentage;
-				sheet_9.cell(section_ref).value() = section.number_points_inner;
+				worksheets[6].cell(section_ref) = section.outlier_probability;
+				worksheets[7].cell(section_ref) = section.sector_percentage;
+				worksheets[8].cell(section_ref) = section.number_points_inner;
 
 				++col_id;
 			}
@@ -167,8 +149,8 @@ namespace lib3dfin
 		// special case for sheet_5 (section z0) and column headers
 		const auto sample_circle_data = tree_data.tree_descriptors.front().circle_data;
 
-		size_t column_id = 1;
-		size_t row_id    = 2;
+		uint32_t column_id = 1;
+		uint32_t row_id    = 2;
 		for (const auto& circle : sample_circle_data)
 		{
 			std::string column_header = "S" + std::to_string(column_id);
@@ -176,16 +158,16 @@ namespace lib3dfin
 			// index for the common case (sheet 2 - 9 exculding sheet 5)
 			const auto regular_column_header_ref = OpenXLSX::XLCellReference(row_id, column_id + 2);
 
-			sheet_2.cell(regular_column_header_ref).value() = column_header;
-			sheet_3.cell(regular_column_header_ref).value() = column_header;
-			sheet_4.cell(regular_column_header_ref).value() = column_header;
-			sheet_6.cell(regular_column_header_ref).value() = column_header;
-			sheet_7.cell(regular_column_header_ref).value() = column_header;
-			sheet_8.cell(regular_column_header_ref).value() = column_header;
-			sheet_9.cell(regular_column_header_ref).value() = column_header;
+			for (uint32_t worksheet_id = 1; worksheet_id < num_worksheets; ++worksheet_id)
+			{
+				if (worksheet_id != 4)
+				{
+					worksheets[worksheet_id].cell(regular_column_header_ref) = column_header;
+				}
+			}
 
-			sheet_5.cell(OpenXLSX::XLCellReference(row_id, column_id)).value()     = column_header;
-			sheet_5.cell(OpenXLSX::XLCellReference(row_id + 1, column_id)).value() = circle.z0;
+			worksheets[4].cell(OpenXLSX::XLCellReference(row_id, column_id))     = column_header;
+			worksheets[4].cell(OpenXLSX::XLCellReference(row_id + 1, column_id)) = circle.z0;
 			++column_id;
 		}
 
