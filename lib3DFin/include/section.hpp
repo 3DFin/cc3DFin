@@ -208,8 +208,8 @@ namespace lib3dfin
 			}
 
 			// count the number of occupied sectors
-			const uint32_t num_occupied_sectors = std::count(std::begin(sector_occupancy_indicator),
-			                                                 std::end(sector_occupancy_indicator),
+			const uint32_t num_occupied_sectors = std::count(std::cbegin(sector_occupancy_indicator),
+			                                                 std::cend(sector_occupancy_indicator),
 			                                                 true);
 			// percentage of occupied sectors
 			return num_occupied_sectors;
@@ -411,7 +411,6 @@ namespace lib3dfin
 
 		TreeLocatorResult dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles) const
 		{
-
 			TreeLocatorResult result;
 			result.dbh         = circles[section_index].circle.radius * 2.0;
 			result.location(0) = circles[section_index].circle.center(0);
@@ -422,18 +421,17 @@ namespace lib3dfin
 
 		TreeLocatorResult treeLocator(const TreeDescriptor& tree_descriptor) const
 		{
-			// Early exit if minimum section height is above DBH
-			if (params_.stem_minimum_height > params_.DBH)
-				return axisLocation(tree_descriptor);
-
-			// Find section closest to breast height and its neighborhood
+			// Early return if DBH is not included in the range of admissible stem sizes
+			if (params_.stem_minimum_height >= params_.DBH || params_.stem_maximum_height <= params_.DBH)
+				return axisLocation(tree_descriptor); // Find the closest section to the DBH and its neighborhood
 			const auto [lower_d_section, upper_d_section, total_sections] = getDBHRange();
 
-			// Check section validity in DBH neighborhood
+			// Check section validity of the DBH neighborhood
 			const auto [num_valid_circles, num_enough_sector_coverage] = countValidSections(tree_descriptor.circle_data, lower_d_section, upper_d_section);
 
 			if (num_valid_circles < total_sections || num_valid_circles < 2)
 				return axisLocation(tree_descriptor);
+			}
 
 			const bool all_sections_valids = (num_valid_circles == total_sections) && (num_enough_sector_coverage == total_sections);
 
@@ -441,6 +439,7 @@ namespace lib3dfin
 			// all sections are valid but there is only two valid circles dbh_section_id == 0 or dbh_section_id == total_sections - 1
 			if (num_valid_circles == 2 && all_sections_valids)
 			{
+
 				// case that arise if dbh_section_id == 0
 				if (lower_d_section == 0)
 				{

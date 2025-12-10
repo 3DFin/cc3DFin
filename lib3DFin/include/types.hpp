@@ -162,18 +162,18 @@ namespace lib3dfin
 			return axis_point_cloud;
 		}
 
-		Eigen::Index tree_id{0};
-		double       height_difference{0}; // z - z0
-		Vec3         centroid_coordinates{0., 0., 0.};
-		Vec3         axis{0., 0., 0.}; // most significant eigen vector
-		Vec3         top_point{0., 0., 0.};
-		Vec3         bottom_point{0., 0., 0.};
-		double       axis_vertical_deviation{0.};
-		bool         valid{false}; // under max deviation threshold
-		Vec3         highest_point{0.0, 0.0, 0.0};
-		double       highest_z0{0.0};
-		double       dbh{0.0};
-		Vec3         location{0.0, 0.0, 0.0};
+		Eigen::Index            tree_id{0};
+		double                  height_difference{0}; // z - z0
+		Vec3                    centroid_coordinates{0., 0., 0.};
+		Vec3                    axis{0., 0., 0.}; // most significant eigen vector
+		Vec3                    top_point{0., 0., 0.};
+		Vec3                    bottom_point{0., 0., 0.};
+		double                  axis_vertical_deviation{0.};
+		bool                    valid{false}; // under max deviation threshold
+		Vec3                    highest_point{0.0, 0.0, 0.0};
+		double                  highest_z0{0.0};
+		double                  dbh{0.0};
+		Vec3                    location{0.0, 0.0, 0.0};
 		std::vector<CircleData> circle_data{};
 	};
 
@@ -183,6 +183,5 @@ namespace lib3dfin
 		Eigen::VectorXd             axis_distance;
 		ArrayClusterIndicator       cluster_indicator; // TODO: refactor tree cluster indicator
 	};
-
 
 } // namespace lib3dfin

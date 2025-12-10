@@ -220,7 +220,7 @@ namespace lib3dfin
 
 		std::vector<double> z0_vector(z0.data(), z0.data() + z0.size());
 
-#ifdef TDFIN_USES_OPENXLSX
+#if 0
 		export_xlsx(tree_data, "3DFin.xlsx");
 #endif
 		return std::make_tuple(std::move(stem_indicator_vector), std::move(z0_vector), std::move(tree_data));
