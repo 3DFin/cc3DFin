@@ -51,9 +51,8 @@ namespace lib3dfin
 			computeDBHSectionID();
 		}
 
-		std::vector<CircleSections> extract()
+		void extract()
 		{
-			std::vector<CircleSections> tree_circle_sections;
 			// iterate over the trees
 			for (auto& tree : trees_.tree_descriptors)
 			{
@@ -125,12 +124,11 @@ namespace lib3dfin
 				// detect tilt outliers on the fitted sections
 				tiltDetection(circles);
 
+				tree.circle_data = std::move(circles);
 				// run tree localization on the fitted sections
-				auto tree_localization = treeLocator(circles, tree);
+				auto tree_localization = treeLocator(tree);
 				tree.setLocation(tree_localization);
-				tree_circle_sections.emplace_back(std::move(circles));
 			}
-			return tree_circle_sections;
 		}
 
 	  private: // methods
@@ -210,8 +208,8 @@ namespace lib3dfin
 			}
 
 			// count the number of occupied sectors
-			const uint32_t num_occupied_sectors = std::count(std::begin(sector_occupancy_indicator),
-			                                                 std::end(sector_occupancy_indicator),
+			const uint32_t num_occupied_sectors = std::count(std::cbegin(sector_occupancy_indicator),
+			                                                 std::cend(sector_occupancy_indicator),
 			                                                 true);
 			// percentage of occupied sectors
 			return num_occupied_sectors;
@@ -413,7 +411,6 @@ namespace lib3dfin
 
 		TreeLocatorResult dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles) const
 		{
-
 			TreeLocatorResult result;
 			result.dbh         = circles[section_index].circle.radius * 2.0;
 			result.location(0) = circles[section_index].circle.center(0);
@@ -422,20 +419,19 @@ namespace lib3dfin
 			return result;
 		}
 
-		TreeLocatorResult treeLocator(const CircleSections& circles, const TreeDescriptor& tree_descriptor) const
+		TreeLocatorResult treeLocator(const TreeDescriptor& tree_descriptor) const
 		{
-			// Early exit if minimum section height is above DBH
-			if (params_.stem_minimum_height > params_.DBH)
-				return axisLocation(tree_descriptor);
-
-			// Find section closest to breast height and its neighborhood
+			// Early return if DBH is not included in the range of admissible stem sizes
+			if (params_.stem_minimum_height >= params_.DBH || params_.stem_maximum_height <= params_.DBH)
+				return axisLocation(tree_descriptor); // Find the closest section to the DBH and its neighborhood
 			const auto [lower_d_section, upper_d_section, total_sections] = getDBHRange();
 
-			// Check section validity in DBH neighborhood
-			const auto [num_valid_circles, num_enough_sector_coverage] = countValidSections(circles, lower_d_section, upper_d_section);
+			// Check section validity of the DBH neighborhood
+			const auto [num_valid_circles, num_enough_sector_coverage] = countValidSections(tree_descriptor.circle_data, lower_d_section, upper_d_section);
 
 			if (num_valid_circles < total_sections || num_valid_circles < 2)
 				return axisLocation(tree_descriptor);
+			}
 
 			const bool all_sections_valids = (num_valid_circles == total_sections) && (num_enough_sector_coverage == total_sections);
 
@@ -443,12 +439,13 @@ namespace lib3dfin
 			// all sections are valid but there is only two valid circles dbh_section_id == 0 or dbh_section_id == total_sections - 1
 			if (num_valid_circles == 2 && all_sections_valids)
 			{
+
 				// case that arise if dbh_section_id == 0
 				if (lower_d_section == 0)
 				{
 					// First section case - check coherence between two sections
-					if (checkTwoRadiusCoherence(circles, lower_d_section, lower_d_section + 1, 0.1))
-						return dbhLocation(tree_descriptor, dbh_section_id_, circles);
+					if (checkTwoRadiusCoherence(tree_descriptor.circle_data, lower_d_section, lower_d_section + 1, 0.1))
+						return dbhLocation(tree_descriptor, dbh_section_id_, tree_descriptor.circle_data);
 					else
 						return axisLocation(tree_descriptor);
 				}
@@ -457,8 +454,8 @@ namespace lib3dfin
 				if (upper_d_section == static_cast<size_t>(num_sections_))
 				{
 					// Last section case
-					if (checkTwoRadiusCoherence(circles, upper_d_section - 2, upper_d_section - 1, 0.15))
-						return dbhLocation(tree_descriptor, dbh_section_id_, circles);
+					if (checkTwoRadiusCoherence(tree_descriptor.circle_data, upper_d_section - 2, upper_d_section - 1, 0.15))
+						return dbhLocation(tree_descriptor, dbh_section_id_, tree_descriptor.circle_data);
 					else
 						return axisLocation(tree_descriptor);
 				}
@@ -474,8 +471,8 @@ namespace lib3dfin
 
 			// else we can take the average of the sections estimations and check coherence
 			// if the coherence test fails, we fall back to axis estimation
-			if (checkRadiusCoherence(circles, lower_d_section, upper_d_section))
-				return dbhLocation(tree_descriptor, dbh_section_id_, circles);
+			if (checkRadiusCoherence(tree_descriptor.circle_data, lower_d_section, upper_d_section))
+				return dbhLocation(tree_descriptor, dbh_section_id_, tree_descriptor.circle_data);
 			else
 			{
 				return axisLocation(tree_descriptor);

@@ -15,7 +15,7 @@ namespace lib3dfin
 
 	constexpr double RAD_TO_DEG = 180.0 / M_PI;
 
-	constexpr double DEG_TO_RAD = 3.14 / M_PI;
+	constexpr double DEG_TO_RAD = M_PI / 180.0;
 
 	using PointCloud3 = Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
@@ -60,6 +60,30 @@ namespace lib3dfin
 		double                lower_limit{0.0};
 		double                upper_limit{0.0};
 	};
+
+	struct CircleData
+	{
+		enum class Status
+		{
+			NOT_COMPUTED      = -2,
+			NOT_ENOUGH_POINTS = -1,
+			SUCCESS           = 0,
+			TILT_OUTLIER,
+			DIAMETER_TOO_SMALL,
+			DIAMETER_TOO_LARGE,
+			TOO_MANY_POINTS_INNER,
+			NOT_ENOUGH_SECTOR_COVERAGE,
+		};
+
+		Circle   circle{};
+		double   z0{0};
+		Status   status{Status::NOT_COMPUTED};
+		double   sector_percentage{0.0};
+		double   outlier_probability{0.0};
+		uint32_t number_points_inner{0};
+	};
+
+	using CircleSections = std::vector<CircleData>;
 
 	struct TreeDescriptor
 	{
@@ -138,18 +162,19 @@ namespace lib3dfin
 			return axis_point_cloud;
 		}
 
-		Eigen::Index tree_id{0};
-		double       height_difference{0}; // z - z0
-		Vec3         centroid_coordinates{0., 0., 0.};
-		Vec3         axis{0., 0., 0.}; // most significant eigen vector
-		Vec3         top_point{0., 0., 0.};
-		Vec3         bottom_point{0., 0., 0.};
-		double       axis_vertical_deviation{0.};
-		bool         valid{false}; // under max deviation threshold
-		Vec3         highest_point{0.0, 0.0, 0.0};
-		double       highest_z0{0.0};
-		double       dbh{0.0};
-		Vec3         location{0.0, 0.0, 0.0};
+		Eigen::Index            tree_id{0};
+		double                  height_difference{0}; // z - z0
+		Vec3                    centroid_coordinates{0., 0., 0.};
+		Vec3                    axis{0., 0., 0.}; // most significant eigen vector
+		Vec3                    top_point{0., 0., 0.};
+		Vec3                    bottom_point{0., 0., 0.};
+		double                  axis_vertical_deviation{0.};
+		bool                    valid{false}; // under max deviation threshold
+		Vec3                    highest_point{0.0, 0.0, 0.0};
+		double                  highest_z0{0.0};
+		double                  dbh{0.0};
+		Vec3                    location{0.0, 0.0, 0.0};
+		std::vector<CircleData> circle_data{};
 	};
 
 	struct TreeData
@@ -158,29 +183,5 @@ namespace lib3dfin
 		Eigen::VectorXd             axis_distance;
 		ArrayClusterIndicator       cluster_indicator; // TODO: refactor tree cluster indicator
 	};
-
-	struct CircleData
-	{
-		enum class Status
-		{
-			NOT_COMPUTED      = -2,
-			NOT_ENOUGH_POINTS = -1,
-			SUCCESS           = 0,
-			TILT_OUTLIER,
-			DIAMETER_TOO_SMALL,
-			DIAMETER_TOO_LARGE,
-			TOO_MANY_POINTS_INNER,
-			NOT_ENOUGH_SECTOR_COVERAGE,
-		};
-
-		Circle   circle{};
-		double   z0{0};
-		Status   status{Status::NOT_COMPUTED};
-		double   sector_percentage{0.0};
-		double   outlier_probability{0.0};
-		uint32_t number_points_inner{0};
-	};
-
-	using CircleSections = std::vector<CircleData>;
 
 } // namespace lib3dfin
