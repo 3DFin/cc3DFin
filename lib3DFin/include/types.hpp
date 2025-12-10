@@ -15,7 +15,7 @@ namespace lib3dfin
 
 	constexpr double RAD_TO_DEG = 180.0 / M_PI;
 
-	constexpr double DEG_TO_RAD = 3.14 / M_PI;
+	constexpr double DEG_TO_RAD = M_PI / 180.0;
 
 	using PointCloud3 = Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
