@@ -191,7 +191,9 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_desc
 		for (const auto& circle_data : tree_data.circle_data)
 		{
 			// Only draw successful circles
-			if (circle_data.status >= lib3dfin::CircleData::Status::SUCCESS)
+			if (circle_data.status >= lib3dfin::CircleData::Status::SUCCESS
+			    && circle_data.status != lib3dfin::CircleData::Status::DIAMETER_TOO_LARGE
+			    && circle_data.status != lib3dfin::CircleData::Status::DIAMETER_TOO_SMALL) // Maybe we could display diameters too small, it wont hurt
 			{
 				const auto& circle = circle_data.circle;
 				// We need to shift the circle center to go from z0 coordinates to the actual coordinates
