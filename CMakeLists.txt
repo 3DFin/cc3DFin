@@ -8,6 +8,7 @@ if (PLUGIN_STANDARD_3DFIN)
 	project(3DFIN_STANDARD_PLUGIN)
 
 	AddPlugin(NAME ${PROJECT_NAME})
+	set_property(TARGET ${PROJECT_NAME} PROPERTY AUTORCC ON)
 
 	add_subdirectory(ui)
 	add_subdirectory(include)

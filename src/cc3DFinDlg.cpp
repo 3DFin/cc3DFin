@@ -48,7 +48,6 @@ cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
 	connect(tutorial_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showTutorial);
 	connect(documentation_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showDocumentation);
 	connect(expert_info_btn, &QPushButton::clicked, this, &cc3DFinDlg::showExpertDialog);
-	connect(compute_btn, &QPushButton::clicked, this, &cc3DFinDlg::computeClicked);
 
 	populateFields();
 }
@@ -185,11 +184,6 @@ void cc3DFinDlg::showExpertDialog()
 {
 	cc3DFinExpertDlg dialog(this);
 	dialog.exec();
-}
-
-void cc3DFinDlg::computeClicked()
-{
-    //do nothing for now
 }
 
 void cc3DFinDlg::populateSfCombo()

@@ -18,7 +18,6 @@
 #include "cc3DFinConfig.h"
 
 #include <cstddef>
-#include <qchar.h>
 #include <unordered_map>
 #include <vector>
 

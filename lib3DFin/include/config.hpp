@@ -13,7 +13,6 @@ namespace lib3dfin
 	{
 
 		// advanced
-
 		uint32_t minimum_points     = 20;   // TODO minimum_points_stem ? // this is incoherent it should be >= to number_of_point
 		double   maximum_distance   = 15.0; // maximum_d
 		double   distance_from_axis = 1.5;  // distance_to_axis

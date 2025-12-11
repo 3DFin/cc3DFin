@@ -430,6 +430,7 @@ namespace lib3dfin
 			const auto [num_valid_circles, num_enough_sector_coverage] = countValidSections(tree_descriptor.circle_data, lower_d_section, upper_d_section);
 
 			if (num_valid_circles < total_sections || num_valid_circles < 2)
+			{
 				return axisLocation(tree_descriptor);
 			}
 
