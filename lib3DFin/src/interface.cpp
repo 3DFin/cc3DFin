@@ -176,7 +176,7 @@ namespace lib3dfin
 	}
 #endif
 
-	std::tuple<std::vector<int32_t>, std::vector<double>, TreeData> process(const float* cloud_data, size_t num_points)
+	std::tuple<std::vector<int32_t>, std::vector<double>, TreeData> process(const float* cloud_data, size_t num_points, const Params& params)
 	{
 
 		// Convert point cloud to double

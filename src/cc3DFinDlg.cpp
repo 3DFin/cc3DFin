@@ -125,6 +125,12 @@ void cc3DFinDlg::populateFields()
 	}
 }
 
+lib3dfin::Params cc3DFinDlg::get3DFinParameters()
+{
+	lib3dfin::Params params;
+	return params;
+}
+
 void cc3DFinDlg::askOutputPath()
 {
 	QString initialPathText = output_dir_in->text();

@@ -11,7 +11,6 @@ namespace lib3dfin
 	// WIP. comment show original variable names (in dendromatics) if we changed the name
 	struct Params
 	{
-
 		// advanced
 		uint32_t minimum_points     = 20;   // TODO minimum_points_stem ? // this is incoherent it should be >= to number_of_point
 		double   maximum_distance   = 15.0; // maximum_d

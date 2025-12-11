@@ -407,8 +407,7 @@ namespace tdf
 	const std::unordered_map<QString, Field> Field::getConfigFields()
 	{
 		std::unordered_map<QString, Field> mapConfigFields;
-		// private lambda
-		auto vecToFieldMap = [&mapConfigFields](const std::vector<Field>& vecField)
+		auto                               vecToFieldMap = [&mapConfigFields](const std::vector<Field>& vecField)
 		{
 			for (const auto& field : vecField)
 			{

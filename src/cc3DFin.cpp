@@ -115,26 +115,16 @@ void cc3DFin::do3DFinAction()
 			scalarFieldNames.push_back(QString(sf->getName().c_str()));
 	}
 
-	std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
 	m_current_cloud->setEnabled(false);
 	m_current_cloud->placeIteratorAtBeginning();
-	// cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
-	// tdfDlg.exec();
-	const auto [stem_indicator, z0, tree_data] = lib3dfin::process(&(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()));
 
-	// reset the base group
-	m_base_group.reset(new ccHObject(m_current_cloud->getName() + "_3DFin"));
-	drawCircles(tree_data.tree_descriptors);
-	drawTreeLocators(tree_data.tree_descriptors);
-	drawTreeHeights(tree_data.tree_descriptors);
-	drawAxis(tree_data.tree_descriptors);
-	exportEnrichedCloud(tree_data, z0);
-	exportStripe(stem_indicator);
-	m_app->addToDB(m_base_group.release());
-	m_app->redrawAll();
-	m_current_cloud = nullptr;
+	cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
+	connect(tdfDlg.compute_btn, &QPushButton::clicked, [this, &tdfDlg]
+	        { const auto params = tdfDlg.get3DFinParameters();
+		      compute3DFin(params); });
 	// draw circles
-	ccLog::Print("3DFin done in %f seconds!", std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count() / 1000000.0);
+	tdfDlg.exec();
+	m_current_cloud = nullptr;
 
 	QApplication::processEvents();
 }
@@ -459,4 +449,21 @@ void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 	stripe_cloud->toggleSF();
 	stripe_cloud->setEnabled(false);
 	m_base_group->addChild(stripe_cloud);
+}
+
+void cc3DFin::compute3DFin(const lib3dfin::Params& params)
+{
+	std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+	const auto [stem_indicator, z0, tree_data]                = lib3dfin::process(&(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()), params);
+	//  reset the base group
+	m_base_group.reset(new ccHObject(m_current_cloud->getName() + "_3DFin"));
+	drawCircles(tree_data.tree_descriptors);
+	drawTreeLocators(tree_data.tree_descriptors);
+	drawTreeHeights(tree_data.tree_descriptors);
+	drawAxis(tree_data.tree_descriptors);
+	exportEnrichedCloud(tree_data, z0);
+	exportStripe(stem_indicator);
+	m_app->addToDB(m_base_group.release());
+	m_app->redrawAll();
+	ccLog::Print("3DFin done in %f seconds!", std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count() / 1000000.0);
 }

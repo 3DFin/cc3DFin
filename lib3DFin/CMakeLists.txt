@@ -9,7 +9,7 @@ if (${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
 endif()
 
 option(3DFin_BUILD_SHARED "Build 3DFin as a shared library" OFF)
-option(3DFin_EXPORT_XLSX "Build 3DFin with XLSX support" ON)
+option(3DFin_EXPORT_XLSX "Build 3DFin with XLSX support" OFF)
 
 # Define the library target
 if (3DFin_BUILD_SHARED)

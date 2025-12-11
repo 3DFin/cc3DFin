@@ -21,6 +21,9 @@
 #include "cc3DFinConfig.h"
 #include "ui_cc3dfindlg.h"
 
+// lib3dfin
+#include <lib3DFin/config.hpp>
+
 // QT
 #include <QDialog>
 #include <QStringList>
@@ -40,19 +43,18 @@ class cc3DFinDlg : public QDialog
 
 	//! Destrcuctor
 	virtual ~cc3DFinDlg() override = default;
+	lib3dfin::Params get3DFinParameters();
 
   protected: // methods
 	void populateFields();
 	void populateSfCombo();
 	void populateToolTipAndLabel(const tdf::Field& field, QWidget* widget);
-	void getParameters();
 
   protected slots: // slots
 	void askOutputPath();
 	void showTutorial();
 	void showDocumentation();
 	void showExpertDialog();
-	void computeClicked();
 
   protected: // members
 	const QStringList&                      m_scalarFields;

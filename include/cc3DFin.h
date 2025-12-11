@@ -19,6 +19,7 @@
 
 #include "ccStdPluginInterface.h"
 
+#include <lib3DFin/config.hpp>
 #include <lib3DFin/types.hpp>
 
 //! 3DFin qCC plugin
@@ -37,34 +38,24 @@ class cc3DFin : public QObject
 	~cc3DFin() override = default;
 
 	// Inherited from ccStdPluginInterface
-	void onNewSelection(const ccHObject::Container& selectedEntities) override;
-
+	void            onNewSelection(const ccHObject::Container& selectedEntities) override;
 	QList<QAction*> getActions() override;
 
   private:
 	void initCustomColorScale();
-
 	void do3DFinAction();
-
 	void drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
-
 	void drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
-
 	void drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
-
 	void drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
-
 	void exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std::vector<double>& z0);
-
 	void exportStripe(const std::vector<int32_t>& stem_indicator);
+	void compute3DFin(const lib3dfin::Params& params);
 
   private:
 	//! Default action
-	QAction* m_action;
-
+	QAction*                   m_action;
 	std::unique_ptr<ccHObject> m_base_group{nullptr};
-
-	ccPointCloud* m_current_cloud{nullptr};
-
-	const QString s_color_scale_uuid = "{25ec76a1-9b8d-4e4a-a129-21ae313ef8ba}";
+	ccPointCloud*              m_current_cloud{nullptr};
+	const QString              s_color_scale_uuid = "{25ec76a1-9b8d-4e4a-a129-21ae313ef8ba}";
 };
