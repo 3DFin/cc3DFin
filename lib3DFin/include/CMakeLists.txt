@@ -13,6 +13,7 @@ set(HEADERS
 	types.hpp
 	verticality.hpp
 	voxel.hpp
+	xlsx.hpp
 )
 
 target_sources(${PROJECT_NAME} PRIVATE ${HEADERS})
