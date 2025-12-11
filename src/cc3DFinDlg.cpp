@@ -138,7 +138,6 @@ void cc3DFinDlg::askOutputPath()
 	QFileDialog dialog(this, "3DFin output directory");
 	dialog.setFileMode(QFileDialog::Directory);
 	dialog.setOption(QFileDialog::ShowDirsOnly, true);
-	dialog.setOption(QFileDialog::DontUseNativeDialog, true); // TODO: issue with native dialog on macOS
 	if (dialog.exec() == QDialog::Accepted)
 	{
 		QString outputDir = dialog.selectedFiles().first();
