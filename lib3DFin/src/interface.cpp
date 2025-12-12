@@ -15,10 +15,15 @@
 
 namespace lib3dfin
 {
+	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData>;
 
-	std::tuple<std::vector<int32_t>, std::vector<double>, TreeData> process(const float* cloud_data, size_t num_points, const Params& params)
+	TDFResult process(const float* cloud_data, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger> logger)
 	{
 
+		if (logger)
+		{
+			spdlog::set_default_logger(logger);
+		}
 		// Convert point cloud to double
 		PointCloud3 point_cloud(num_points, 3);
 		for (size_t i = 0; i < num_points; ++i)

@@ -7,6 +7,8 @@
 #include "connected_components.hpp"
 #include "voxel.hpp"
 
+#include <spdlog/spdlog.h>
+
 // nanoflann
 #include <nanoflann.hpp>
 
@@ -25,14 +27,12 @@ namespace lib3dfin
 		auto                          t1                  = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> elapsed             = t1 - t0;
 
-		std::cout << "[Individualize] compute_axes_approximate: "
-		          << elapsed.count() << " seconds\n";
+		spdlog::info("[Individualize] compute_axes_approximate: {} seconds", elapsed.count());
 		t0 = std::chrono::high_resolution_clock::now();
 		compute_heights(voxelated_cloud, voxelated_axes_data);
 		t1      = std::chrono::high_resolution_clock::now();
 		elapsed = t1 - t0;
-		std::cout << "[Individualize] compute_height: "
-		          << elapsed.count() << " seconds\n";
+		spdlog::info("[Individualize] compute_height: {} seconds", elapsed.count());
 
 		TreeData axes_data;
 		axes_data.tree_descriptors = std::move(voxelated_axes_data.tree_descriptors);
@@ -131,7 +131,7 @@ namespace lib3dfin
 				// safe guard
 				if (tree_descriptor.axis_vertical_deviation > 88.0)
 				{
-					std::cout << "[Individualize] invalid axis, tree skipped" << std::endl;
+					spdlog::warn("[Individualize] Invalid axis (near horizontal), tree skipped");
 					continue;
 				}
 
@@ -148,8 +148,7 @@ namespace lib3dfin
 			total_axis_point += axis_point_cloud.rows();
 			vec_axis_point_clouds.push_back(std::move(axis_point_cloud));
 		}
-
-		std::cout << "[Individualize] num valid trees: " << result.tree_descriptors.size() << std::endl;
+		spdlog::info("[Individualize] num valid trees: {}", result.tree_descriptors.size());
 
 		// Concat axis clouds
 		ArrayClusterIndicator axis_indicator(total_axis_point);

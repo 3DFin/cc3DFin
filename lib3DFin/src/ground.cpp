@@ -7,6 +7,9 @@
 #include "types.hpp"
 #include "voxel.hpp"
 
+// spdlog
+#include <spdlog/spdlog.h>
+
 // CSF
 #include <CSF.h>
 #include <PointCloud.h>
@@ -200,7 +203,7 @@ namespace lib3dfin
 			throw std::runtime_error("Input DTM too small (less than 15 points).");
 
 		if (n_points == N_NEIGHBORS)
-			std::cerr << "Warning: Input DTM has exactly 15 points.\n";
+			spdlog::warn("Input DTM has exactly 15 points.");
 
 		const size_t half_n_points = n_points / 2;
 

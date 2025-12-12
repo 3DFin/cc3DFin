@@ -68,8 +68,12 @@ add_subdirectory(third_party/taskflow EXCLUDE_FROM_ALL)
 # csf
 add_subdirectory(third_party/CSF-3DFin)
 
+# spdlog
+add_subdirectory(third_party/spdlog)
+#find_package(spdlog REQUIRED)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen spdlog::spdlog PRIVATE nanoflann::nanoflann Taskflow::Taskflow CSF::CSF)
 # XLSX
-target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen PRIVATE nanoflann::nanoflann Taskflow::Taskflow CSF::CSF)
 if(3DFin_EXPORT_XLSX)
 	set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "OpenXLSX: Enables builds of samples" FORCE)
 	set(OPENXLSX_BUILD_TESTS OFF CACHE BOOL "OpenXLSX: Enables builds of tests" FORCE)
@@ -95,6 +99,11 @@ add_subdirectory(src)
 
 install(
 	TARGETS ${PROJECT_NAME}
+	EXPORT ${PROJECT_NAME}Targets
+	DESTINATION lib
+)
+install(
+	TARGETS spdlog
 	EXPORT ${PROJECT_NAME}Targets
 	DESTINATION lib
 )

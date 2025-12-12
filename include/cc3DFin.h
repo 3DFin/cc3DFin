@@ -22,6 +22,11 @@
 #include <lib3DFin/config.hpp>
 #include <lib3DFin/types.hpp>
 
+namespace spdlog
+{
+	class logger;
+}
+
 //! 3DFin qCC plugin
 class cc3DFin : public QObject
     , public ccStdPluginInterface
@@ -50,7 +55,7 @@ class cc3DFin : public QObject
 	void drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 	void exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std::vector<double>& z0);
 	void exportStripe(const std::vector<int32_t>& stem_indicator);
-	void compute3DFin(const lib3dfin::Params& params);
+	void compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlog::logger> logger);
 
   private:
 	//! Default action

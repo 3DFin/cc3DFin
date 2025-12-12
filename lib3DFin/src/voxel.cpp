@@ -3,6 +3,7 @@
 
 #include "voxel.hpp"
 
+#include <spdlog/spdlog.h>
 #include <taskflow/algorithm/for_each.hpp>
 #include <taskflow/algorithm/scan.hpp>
 #include <taskflow/algorithm/sort.hpp>
@@ -27,7 +28,7 @@ namespace lib3dfin
 		const auto start_total = std::chrono::high_resolution_clock::now();
 
 		if (verbose)
-			std::cout << "-Voxelization\n Voxel resolution: " << res_xy << " x " << res_xy << " x " << res_z << " m" << std::endl;
+			spdlog::info("[Voxelization] Voxel resolution: {}, {}, {} m", res_xy, res_xy, res_z);
 
 		tf::Executor executor;
 		tf::Taskflow tf;
@@ -193,7 +194,8 @@ namespace lib3dfin
 
 		std::stringstream log;
 
-		log << "  Hashing in "
+		log << "[Voxelization]\n"
+		    << "  Hashing in "
 		    << std::chrono::duration_cast<std::chrono::milliseconds>(stop_hashing - start_hashing).count() << " ms\n"
 		    << "  Sorting in "
 		    << std::chrono::duration_cast<std::chrono::milliseconds>(stop_sorting - start_sorting).count() << " ms\n"
@@ -212,7 +214,7 @@ namespace lib3dfin
 		    << "  Voxels account for " << vox_pc.rows() * 100 / static_cast<double>(num_points) << "% of original points";
 
 		if (verbose)
-			std::cout << log.str().c_str() << std::endl;
+			spdlog::info(log.str());
 
 		return {vox_pc, cloud_to_vox_ind};
 	}

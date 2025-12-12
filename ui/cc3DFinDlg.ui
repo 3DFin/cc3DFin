@@ -846,7 +846,7 @@ You can get a brief description of what they do by hovering the mouse over the i
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab">
+     <widget class="QWidget" name="expertTab">
       <attribute name="title">
        <string>Expert</string>
       </attribute>
@@ -1711,7 +1711,17 @@ You can get a brief description of what they do by hovering the mouse over the i
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_2">
+     <widget class="QWidget" name="logTab">
+      <attribute name="title">
+       <string>Log</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QTextEdit" name="logTextEdit"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="aboutTab">
       <attribute name="title">
        <string>About</string>
       </attribute>

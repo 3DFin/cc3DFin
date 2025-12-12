@@ -16,3 +16,6 @@
 [submodule "lib3DFin/third_party/OpenXLSX"]
 	path = lib3DFin/third_party/OpenXLSX
 	url = https://github.com/troldal/OpenXLSX.git
+[submodule "lib3DFin/third_party/spdlog"]
+	path = lib3DFin/third_party/spdlog
+	url = https://github.com/gabime/spdlog

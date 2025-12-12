@@ -7,8 +7,11 @@
 #include "types.hpp"
 
 #include <cstddef>
+#include <spdlog/spdlog.h>
 
 namespace lib3dfin
 {
-	std::tuple<std::vector<int32_t>, std::vector<double>, TreeData> process(const float* cloud_data, size_t num_points, const Params& params);
+	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData>;
+
+	TDFResult process(const float* cloud_data, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger>);
 } // namespace lib3dfin
