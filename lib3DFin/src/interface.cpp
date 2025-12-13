@@ -13,6 +13,9 @@
 #include "xlsx.hpp"
 #endif
 
+// stdlib
+#include <chrono>
+
 namespace lib3dfin
 {
 	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData>;
@@ -24,6 +27,8 @@ namespace lib3dfin
 		{
 			spdlog::set_default_logger(logger);
 		}
+
+		spdlog::info("Starting 3DFin computation... ");
 		// Convert point cloud to double
 		PointCloud3 point_cloud(num_points, 3);
 		for (size_t i = 0; i < num_points; ++i)
@@ -68,6 +73,7 @@ namespace lib3dfin
 #ifdef TDFIN_USES_OPENXLSX
 		export_xlsx(tree_data, "3DFin.xlsx");
 #endif
+		spdlog::info("End of 3DFin computation, total time: {} ms");
 		return std::make_tuple(std::move(stem_indicator_vector), std::move(z0_vector), std::move(tree_data));
 	}
 

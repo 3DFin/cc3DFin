@@ -19,7 +19,6 @@
 
 // stdlib
 #include <cstdint>
-#include <iostream>
 
 namespace lib3dfin
 {
@@ -45,7 +44,7 @@ namespace lib3dfin
 			stripe_indicator = verticalityClustering(stripe_indicator);
 		}
 
-		spdlog::info("[TreePeeler] total time: {}", total_time_);
+		spdlog::info("[TreePeeler] Total time: {0:.2f}", total_time_);
 	}
 
 	ArrayClusterIndicator TreePeeler::filterInitialStripe(const Eigen::VectorXd& z0, double stripe_lower_limit, double stripe_upper_limit)
@@ -94,7 +93,7 @@ namespace lib3dfin
 	ArrayClusterIndicator TreePeeler::verticalityClustering(const ArrayClusterIndicator& stripe_indicator)
 	{
 		auto t_start = std::chrono::high_resolution_clock::now();
-		spdlog::info(" -Computing verticality...");
+		spdlog::info("[Peeling] Computing verticality...");
 
 		// filter stripe by cluster indicator
 		const auto stripe_cloud     = extractStripe(point_cloud_, stripe_indicator);
@@ -129,12 +128,12 @@ namespace lib3dfin
 			}
 		}
 
-		spdlog::info("number of valid voxels (pass verticality test): {}", num_valid_voxels);
+		spdlog::info("[Peeling] Number of valid voxels (pass verticality test): {}", num_valid_voxels);
 
 		auto t_mid = std::chrono::high_resolution_clock::now();
-		spdlog::info("   {} s", std::chrono::duration<double>(t_mid - t_start).count());
+		spdlog::info("[Peeling] Verticality done in {0:.2f} s", std::chrono::duration<double>(t_mid - t_start).count());
 
-		spdlog::info(" -Clustering...");
+		spdlog::info("[Peeling] -Clustering...");
 
 		// TODO : this does not handle anisotropy in the voxelization...
 		// this is already the case in the original implementation...
@@ -154,8 +153,8 @@ namespace lib3dfin
 		}
 
 		auto start_post = std::chrono::high_resolution_clock::now();
-		spdlog::info("   {} s", std::chrono::duration<double>(start_post - t_mid).count());
-		spdlog::info(" -Extracting 'candidate' stems...");
+		spdlog::info("[Peeling] Clutesring done in {0:.2f} s", std::chrono::duration<double>(start_post - t_mid).count());
+		spdlog::info("[Peeling] -Extracting 'candidate' stems...");
 
 		// Find large clusters
 		std::set<uint32_t> large_clusters;
@@ -196,8 +195,8 @@ namespace lib3dfin
 		auto   t_end          = std::chrono::high_resolution_clock::now();
 		double iteration_time = std::chrono::duration<double>(t_end - t_start).count();
 
-		spdlog::info("   {} clusters", large_clusters.size());
-		spdlog::info("   iteration took {} s", iteration_time);
+		spdlog::info("[Peeling] {} clusters", large_clusters.size());
+		spdlog::info("[Peeling] Full iteration took {0:.2f} s", iteration_time);
 		total_time_ += iteration_time;
 		return new_stripe_indicator;
 	}
