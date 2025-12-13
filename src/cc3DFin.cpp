@@ -287,15 +287,13 @@ void cc3DFin::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descrip
 	axis_points->setEnabled(false);
 	m_base_group->addChild(axis_points);
 }
-// https://github.com/3DFin/3DFin/blob/main/src/three_d_fin/cloudcompare/plugin_processing.py
+
 void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
 	ccPointCloud* tree_locations = new ccPointCloud("Tree Locations");
 	tree_locations->copyGlobalShiftAndScale(*m_current_cloud);
 
 	tree_locations->setPointSize(8);
-	tree_locations->setColor(255, 0, 255, 255);
-	tree_locations->toggleColors();
 	int    id_dbh  = tree_locations->addScalarField("dbh");
 	auto   dbh_sf  = tree_locations->getScalarField(id_dbh);
 	size_t tree_id = 0;
@@ -321,6 +319,7 @@ void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree
 		++tree_id;
 	}
 	dbh_sf->computeMinAndMax();
+	tree_locations->setColor(255, 0, 255, 255);
 	tree_locations->toggleColors();
 	m_base_group->addChild(tree_locations);
 }
@@ -329,10 +328,7 @@ void cc3DFin::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_
 {
 	ccPointCloud* tree_heights = new ccPointCloud("Highest points");
 	tree_heights->copyGlobalShiftAndScale(*m_current_cloud);
-
 	tree_heights->setPointSize(8);
-	tree_heights->setColor(255, 0, 255, 255);
-	tree_heights->toggleColors();
 	int    id_z0       = tree_heights->addScalarField("z0");
 	auto   z0_sf       = tree_heights->getScalarField(id_z0);
 	int    id_deviated = tree_heights->addScalarField("deviated");
@@ -357,6 +353,7 @@ void cc3DFin::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_
 	}
 	z0_sf->computeMinAndMax();
 	deviated_sf->computeMinAndMax();
+	tree_heights->setColor(255, 0, 255, 255);
 	tree_heights->toggleColors();
 	m_base_group->addChild(tree_heights);
 }
