@@ -129,9 +129,8 @@ void cc3DFin::do3DFinAction()
 		        const auto params    = tdfDlg.get3DFinParameters();
 		        int        max_lines = 1000;
 		        auto       logger    = spdlog::qt_color_logger_mt("3DFin", tdfDlg.logTextEdit, max_lines);
-
-					logger->set_pattern("[%T] %^[%l]%$ %v");
-		            tdfDlg.tabWidget->setCurrentIndex(3); // switch to log tab
+		        logger->set_pattern("[%T] %^[%L]%$ %v");
+		        tdfDlg.tabWidget->setCurrentIndex(3); // switch to log tab
 		        compute3DFin(params, logger); });
 	// draw circles
 	tdfDlg.exec();
@@ -463,7 +462,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 {
 	QFuture<lib3dfin::TDFResult> TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()), params, logger);
 
-	// Create watcher to notify when done
+	// Create watcher to notify when its done
 	// will be cleaned by using ::deleteLater()
 	auto* TdfComputationWatcher = new QFutureWatcher<lib3dfin::TDFResult>(this);
 
@@ -472,10 +471,15 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 		// Retrieve result
 		lib3dfin::TDFResult result = TdfComputationWatcher->future().result();
 
+		// Drop the logger so we can clean it and recreate it
+		spdlog::drop("3DFin");
+
+		// get the results
 		auto& stem_indicator = std::get<0>(result);
 		auto& z0             = std::get<1>(result);
 		auto& tree_data      = std::get<2>(result);
 
+		// TODO factorize the drawing
 		m_base_group.reset(new ccHObject(m_current_cloud->getName() + "_3DFin"));
 		drawCircles(tree_data.tree_descriptors);
 		drawTreeLocators(tree_data.tree_descriptors);
