@@ -4,7 +4,6 @@ cmake_minimum_required(VERSION 3.22)
 option(PLUGIN_STANDARD_3DFIN "Install 3DFin plugin" OFF)
 
 if (PLUGIN_STANDARD_3DFIN)
-
 	project(3DFIN_STANDARD_PLUGIN)
 
 	AddPlugin(NAME ${PROJECT_NAME})

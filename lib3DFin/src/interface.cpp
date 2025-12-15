@@ -28,6 +28,7 @@ namespace lib3dfin
 			spdlog::set_default_logger(logger);
 		}
 
+		const auto start_total = std::chrono::steady_clock::now();
 		spdlog::info("Starting 3DFin computation... ");
 		// Convert point cloud to double
 		PointCloud3 point_cloud(num_points, 3);
@@ -70,10 +71,14 @@ namespace lib3dfin
 
 		std::vector<double> z0_vector(z0.data(), z0.data() + z0.size());
 
+		// TODO: use the future draw interface here.
 #ifdef TDFIN_USES_OPENXLSX
 		export_xlsx(tree_data, "3DFin.xlsx");
 #endif
-		spdlog::info("End of 3DFin computation, total time: {} ms");
+
+		const auto drawing    = std::chrono::high_resolution_clock::now();
+		const auto stop_total = std::chrono::steady_clock::now();
+		spdlog::info("End of 3DFin computation, total time: {0:.2f} s", std::chrono::duration_cast<std::chrono::milliseconds>(stop_total - start_total).count() / 1000.0);
 		return std::make_tuple(std::move(stem_indicator_vector), std::move(z0_vector), std::move(tree_data));
 	}
 

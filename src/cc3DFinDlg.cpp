@@ -69,8 +69,8 @@ void cc3DFinDlg::setComputationMode(bool state)
 	else
 	{
 		m_is_computation_active = false;
-		tabWidget->tabBar()->setDisabled(true);
 		compute_btn->setText("Compute");
+		tabWidget->tabBar()->setDisabled(false);
 		bottomFrame->setDisabled(false);
 	}
 }

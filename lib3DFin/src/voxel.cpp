@@ -28,7 +28,7 @@ namespace lib3dfin
 		const auto start_total = std::chrono::high_resolution_clock::now();
 
 		if (verbose)
-			spdlog::info("[Voxelization] Voxel resolution: {}x{}x{} m", res_xy, res_xy, res_z);
+			spdlog::info("[Voxelization] Voxel resolution: {} x {} x {} m", res_xy, res_xy, res_z);
 
 		tf::Executor executor;
 		tf::Taskflow tf;
