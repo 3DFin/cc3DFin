@@ -490,13 +490,12 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 		exportEnrichedCloud(tree_data, z0);
 		exportStripe(stem_indicator);
 
-		//emit computationFiniesh
 		dialog.setComputationMode(false);
 		m_app->addToDB(m_base_group.release());
 		m_app->redrawAll();
 
 		TdfComputationWatcher->deleteLater(); });
 
-	// TODO: error handling
+	// TODO: error and computation handling
 	TdfComputationWatcher->setFuture(TdfFutureResult);
 }

@@ -68,7 +68,7 @@ namespace lib3dfin
 
 		// Filter clusters without enough points
 		// TODO: This filter exists in the original algorithm but appears to be weak because it is
-		// less restrictive than the minimum voxel threshold used in the peeling process before
+		// less restrictive than the minimum voxel threshold used in the peeling process before.
 		std::vector<int32_t> valid_cluster_ids;
 		valid_cluster_ids.reserve(counts.size());
 		for (const auto& [cluster_id, count] : counts)
