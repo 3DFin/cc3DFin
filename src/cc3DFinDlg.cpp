@@ -60,18 +60,33 @@ void cc3DFinDlg::setComputationMode(bool state)
 {
 	if (state)
 	{
+		m_is_computation_active = true;
 		tabWidget->setCurrentIndex(3); // switch to log tab
 		compute_btn->setText("Computing...");
-		compute_btn->setDisabled(true);
-		tabWidget->setDisabled(true);
-		output_dir_btn->setDisabled(true);
+		tabWidget->tabBar()->setDisabled(true);
+		bottomFrame->setDisabled(true);
 	}
 	else
 	{
+		m_is_computation_active = false;
+		tabWidget->tabBar()->setDisabled(true);
 		compute_btn->setText("Compute");
-		compute_btn->setDisabled(false);
-		tabWidget->setDisabled(false);
-		output_dir_btn->setEnabled(true);
+		bottomFrame->setDisabled(false);
+	}
+}
+
+void cc3DFinDlg::closeEvent(QCloseEvent* event)
+{
+	if (m_is_computation_active)
+	{
+		// Prevent closing the dialog while computation is active.
+		// we could show a dialog to inform the user...
+		// ...we could implement a graceful cancelation inside the lib3DFin computation
+		event->ignore();
+	}
+	else
+	{
+		event->accept();
 	}
 }
 

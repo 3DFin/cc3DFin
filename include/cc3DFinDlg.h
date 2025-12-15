@@ -50,6 +50,7 @@ class cc3DFinDlg : public QDialog
 	void populateFields();
 	void populateSfCombo();
 	void populateToolTipAndLabel(const tdf::Field& field, QWidget* widget);
+	void closeEvent(QCloseEvent* event) override;
 
   protected slots: // slots
 	void askOutputPath();
@@ -60,4 +61,5 @@ class cc3DFinDlg : public QDialog
   protected: // members
 	const QStringList&                      m_scalarFields;
 	std::unordered_map<QString, tdf::Field> m_fields;
+	bool                                    m_is_computation_active{false};
 };
