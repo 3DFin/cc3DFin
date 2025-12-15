@@ -465,6 +465,7 @@ void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 
 void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlog::logger> logger, cc3DFinDlg& dialog)
 {
+	m_current_cloud->placeIteratorAtBeginning();
 	QFuture<lib3dfin::TDFResult> TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()), params, logger);
 
 	// Create watcher to notify when its done
