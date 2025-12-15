@@ -43,9 +43,6 @@
 #include <QtGui>
 #include <ScalarField.h>
 
-// stdlib
-#include <chrono>
-
 cc3DFin::cc3DFin(QObject* parent)
     : QObject(parent)
     , ccStdPluginInterface(":/CC/plugin/3DFin/info.json")
@@ -124,17 +121,23 @@ void cc3DFin::do3DFinAction()
 	m_current_cloud->placeIteratorAtBeginning();
 
 	cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
-	connect(tdfDlg.compute_btn, &QPushButton::clicked, [this, &tdfDlg]
+
+	int  max_lines = 1000;
+	auto logger    = spdlog::qt_color_logger_mt("3DFin", tdfDlg.logTextEdit, max_lines);
+	logger->set_pattern("[%T] %^[%L]%$ %v");
+
+	m_app->freezeUI(true);
+	connect(tdfDlg.compute_btn, &QPushButton::clicked, [this, &tdfDlg, logger]
 	        {
-		        const auto params    = tdfDlg.get3DFinParameters();
-		        int        max_lines = 1000;
-		        auto       logger    = spdlog::qt_color_logger_mt("3DFin", tdfDlg.logTextEdit, max_lines);
-		        logger->set_pattern("[%T] %^[%L]%$ %v");
-		        tdfDlg.tabWidget->setCurrentIndex(3); // switch to log tab
-		        compute3DFin(params, logger); });
+				const auto params    = tdfDlg.get3DFinParameters();
+				tdfDlg.setComputationMode(true);
+		        compute3DFin(params, logger, tdfDlg); });
 	// draw circles
 	tdfDlg.exec();
-	m_current_cloud = nullptr;
+
+	// Cleanup. Drop the logger and unfreeze ui
+	spdlog::drop("3DFin");
+	m_app->freezeUI(false);
 
 	QApplication::processEvents();
 }
@@ -238,6 +241,7 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_desc
 		}
 		++tree_id;
 	}
+
 	if (circle_points_pc->size() > 0)
 	{
 		tree_id_sf->computeMinAndMax();
@@ -280,6 +284,7 @@ void cc3DFin::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descrip
 			axis_tilt_sf->addElement(tilting_degree);
 		}
 	}
+
 	axis_tilt_sf->computeMinAndMax();
 	axis_points->setCurrentDisplayedScalarField(axis_tilt_id);
 	axis_points->toggleSF();
@@ -458,7 +463,7 @@ void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 	m_base_group->addChild(stripe_cloud);
 }
 
-void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlog::logger> logger)
+void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlog::logger> logger, cc3DFinDlg& dialog)
 {
 	QFuture<lib3dfin::TDFResult> TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()), params, logger);
 
@@ -466,15 +471,12 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 	// will be cleaned by using ::deleteLater()
 	auto* TdfComputationWatcher = new QFutureWatcher<lib3dfin::TDFResult>(this);
 
-	connect(TdfComputationWatcher, &QFutureWatcher<lib3dfin::TDFResult>::finished, this, [=]()
+	connect(TdfComputationWatcher, &QFutureWatcher<lib3dfin::TDFResult>::finished, this, [TdfComputationWatcher, this, &dialog]()
 	        {
 		// Retrieve result
 		lib3dfin::TDFResult result = TdfComputationWatcher->future().result();
 
-		// Drop the logger so we can clean it and recreate it
-		spdlog::drop("3DFin");
-
-		// get the results
+		// Get the results
 		auto& stem_indicator = std::get<0>(result);
 		auto& z0             = std::get<1>(result);
 		auto& tree_data      = std::get<2>(result);
@@ -487,6 +489,9 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 		drawAxis(tree_data.tree_descriptors);
 		exportEnrichedCloud(tree_data, z0);
 		exportStripe(stem_indicator);
+
+		//emit computationFiniesh
+		dialog.setComputationMode(false);
 		m_app->addToDB(m_base_group.release());
 		m_app->redrawAll();
 

@@ -56,6 +56,25 @@ cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
 	populateFields();
 }
 
+void cc3DFinDlg::setComputationMode(bool state)
+{
+	if (state)
+	{
+		tabWidget->setCurrentIndex(3); // switch to log tab
+		compute_btn->setText("Computing...");
+		compute_btn->setDisabled(true);
+		tabWidget->setDisabled(true);
+		output_dir_btn->setDisabled(true);
+	}
+	else
+	{
+		compute_btn->setText("Compute");
+		compute_btn->setDisabled(false);
+		tabWidget->setDisabled(false);
+		output_dir_btn->setEnabled(true);
+	}
+}
+
 void cc3DFinDlg::populateFields()
 {
 	QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);

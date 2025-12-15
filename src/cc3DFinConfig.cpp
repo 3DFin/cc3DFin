@@ -66,7 +66,7 @@ namespace tdf
 	        "Cloth resolution",
 	        "Initial cloth grid resolution to generate the DTM that will be used to compute normalized heights.",
 	        // TODO gt=0,
-	        0.7,
+	        0.45,
 	        "meters",
 	    } // TODO: lower limit validator
 	};

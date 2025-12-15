@@ -44,6 +44,7 @@ class cc3DFinDlg : public QDialog
 	//! Destrcuctor
 	virtual ~cc3DFinDlg() override = default;
 	lib3dfin::Params get3DFinParameters();
+	void             setComputationMode(bool);
 
   protected: // methods
 	void populateFields();
