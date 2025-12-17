@@ -33,7 +33,7 @@ namespace tdf
 	        "Z0",
 	    },
 	    {
-	        "upper_limit",
+	        "stripe_upper_limit",
 	        "Stripe upper Limit",
 	        "Upper (vertical) limit of the stripe where it should be reasonable "
 	        "to find stems with minimum presence of shrubs or branches. \n"
@@ -42,7 +42,7 @@ namespace tdf
 	        // TODO gt          = 0,
 	        "meters",
 	    },
-	    {"lower_limit",
+	    {"stripe_lower_limit",
 	     "Stripe lower Limit",
 	     "Lower (vertical) limit of the stripe where it should be reasonable "
 	     "to find stems with minimum presence of shrubs or branches. \n"
@@ -51,7 +51,7 @@ namespace tdf
 	     // TODO gt = 0
 	     "meters"},
 	    {
-	        "number_of_iterations",
+	        "stripe_peeling_num_iterations",
 	        "Prunning intensity",
 	        "Number of iterations of \"pruning\" during stem identification. \n"
 	        "Values between 1 (slight stem peeling/cleaning) "
@@ -126,7 +126,7 @@ namespace tdf
 
 	const std::vector<Field> expertFields = {
 	    {
-	        "res_xy_stripe",
+	        "stripe_peeling_resolution_xy",
 	        "(x, y) voxel resolution",
 	        "(x, y) voxel resolution during stem extraction.",
 	        // TODO / gt=0,
@@ -134,7 +134,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "res_z_stripe",
+	        "stripe_peeling_resolution_z",
 	        "(z) voxel resolution",
 	        "(z) voxel resolution during stem extraction.",
 	        // TODO: gt=0,
@@ -142,7 +142,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "number_of_points",
+	        "stripe_peeling_voxels_threshold",
 	        "Number of points",
 	        "minimum number of points (voxels) per stem within the stripe "
 	        "(DBSCAN clustering). Reasonable values are between 500 and 3000.",
@@ -150,7 +150,7 @@ namespace tdf
 	        1000,
 	    },
 	    {
-	        "verticality_scale_stripe",
+	        "verticality_radius_stripe",
 	        "Vicinity radius (verticality computation)",
 	        "Vicinity radius for PCA during stem identification.",
 	        // TODO gt=0,
@@ -158,7 +158,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "verticality_thresh_stripe",
+	        "verticality_threshold_stripe",
 	        "Verticality threshold",
 	        "Verticality threshold durig stem identification.\n"
 	        "Verticality is defined as (1 - sin(V)), being V the vertical angle of the "
@@ -170,7 +170,7 @@ namespace tdf
 	        "(0, 1)",
 	    },
 	    {
-	        "height_range",
+	        "tree_height_range",
 	        "Vertical Range",
 	        "Proportion (0: none - 1: all) of the vertical range of the stripe "
 	        "that points need to extend through to be valid stems.",
@@ -180,15 +180,15 @@ namespace tdf
 	        "[0, 1]",
 	    },
 	    {
-	        "res_xy",
+	        "tree_resolution_xy",
 	        "(x, y) voxel resolution",
-	        "(x, y) voxel resolution during stem extraction.",
+	        "(x, y) voxel resolution during tree extraction.",
 	        // TODO / gt=0,
 	        0.035,
 	        "meters",
 	    },
 	    {
-	        "res_z",
+	        "tree_resolution_z",
 	        "(z) voxel resolution",
 	        "(z) voxel resolution during tree extraction.",
 	        // gt=0,
@@ -196,7 +196,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "minimum_points",
+	        "tree_minimum_points_stem",
 	        "Minimum points",
 	        "Minimum number of points (voxels) within a stripe to consider it "
 	        "as a potential tree during tree individualization.",
@@ -225,7 +225,7 @@ namespace tdf
 	        "(0, 1)",
 	    },
 	    {
-	        "maximum_d",
+	        "tree_dist_axis_threshold",
 	        "Maximum distance to tree axis",
 	        "Points that are closer than this distance to an axis "
 	        "are assigned to that axis during tree individualization process.",
@@ -234,7 +234,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "distance_to_axis",
+	        "tree_height_distance_from_axis",
 	        "Distance from axis",
 	        "Maximum distance from tree axis at which points will "
 	        "be considered while computing tree height.\n"
@@ -245,7 +245,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "res_heights",
+	        "tree_resolution_height",
 	        "Voxel resolution for height computation",
 	        "(x, y, z) voxel resolution during tree height computation.",
 	        // gt=0,
@@ -253,7 +253,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "maximum_dev",
+	        "tree_axis_max_vertical_deviation",
 	        "Maximum vertical deviation from axis",
 	        "Maximum degree of vertical deviation from the axis for a tree height to be considered as valid.",
 	        // gt=0,
@@ -324,7 +324,6 @@ namespace tdf
 	    },
 	    {
 	        "circa",
-
 	        "N of points to draw each circle",
 	        "Number of points that will be used to draw the circles.",
 	        // TODO: gt=0,
@@ -339,7 +338,6 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-
 	        "axis_downstep",
 	        "Axis downstep from stripe center",
 	        "From the stripe centroid, how much (downwards direction) "

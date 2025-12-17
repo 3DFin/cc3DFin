@@ -19,9 +19,9 @@ namespace lib3dfin
 			double   resolution_xy{0.035};
 			double   resolution_z{0.035};
 			double   height_range{0.7};
-			double   maximum_dist_axis{15.0};               // maximum_
-			uint32_t minimum_points_stem{20};               // minimum_points this is the minimum number of voxels required to consider stripe cluster to be a valid as a stem
-			double   axis_maximum_vertical_deviation{25.0}; // maximum_dev
+			double   maximum_dist_axis{15.0};
+			uint32_t minimum_points_stem{20};
+			double   axis_maximum_vertical_deviation{25.0};
 			double   height_distance_from_axis{1.5};
 			double   resolution_height{0.3};
 		};

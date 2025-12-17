@@ -56,10 +56,11 @@ namespace lib3dfin
 		}
 
 		TreePeeler stripe_peeler(point_cloud, TreePeeler::Parameters());
-		Stripe     stripe(0.7, 3.5);
-		stripe.cluster_indicator = TreePeeler::filterInitialStripe(z0, 0.7, 3.5);
 
-		// side effect on indicator
+		Stripe stripe(params.stripe_lower_limit, params.stripe_upper_limit);
+		stripe.cluster_indicator = TreePeeler::filterInitialStripe(z0, params.stripe_lower_limit, params.stripe_upper_limit);
+
+		// Beware side effect on indicator
 		stripe_peeler.peel(stripe.cluster_indicator);
 
 		TreeIndividualizer tree_individualizer(point_cloud, stripe, z0, TreeIndividualizer::Parameters());

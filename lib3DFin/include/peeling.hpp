@@ -14,12 +14,12 @@ namespace lib3dfin
 	  public: // struct
 		struct Parameters
 		{
-			double   verticality_nn_scale{0.1};  // verticality_scale_stripe
-			double   verticality_threshold{0.7}; // / verticality_thresh_stripe
-			uint32_t num_voxels_threshold{1000}; // number_of_points
+			double   verticality_nn_scale{0.1};
+			double   verticality_threshold{0.7};
+			uint32_t num_voxels_threshold{1000};
 			double   resolution_xy{0.02};
 			double   resolution_z{0.02};
-			uint32_t num_iterations{2}; // number_of_iterations
+			uint32_t num_iterations{2};
 		};
 
 	  public: // static
