@@ -256,14 +256,14 @@
          </property>
          <layout class="QGridLayout" name="gridLayout_3">
           <item row="1" column="0">
-           <widget class="QCheckBox" name="do_denoise_chk">
+           <widget class="QCheckBox" name="denoise_point_cloud_chk">
             <property name="text">
              <string>Clean noise on dtm</string>
             </property>
            </widget>
           </item>
           <item row="8" column="1">
-           <widget class="QLineEdit" name="res_cloth_in">
+           <widget class="QLineEdit" name="cloth_resolution_in">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -309,14 +309,14 @@
            </widget>
           </item>
           <item row="8" column="2">
-           <widget class="QLabel" name="res_cloth_ht">
+           <widget class="QLabel" name="cloth_resolution_ht">
             <property name="text">
              <string>meters</string>
             </property>
            </widget>
           </item>
           <item row="0" column="0">
-           <widget class="QCheckBox" name="do_normalize_chk">
+           <widget class="QCheckBox" name="compute_height_normalization_chk">
             <property name="text">
              <string>Normalize point cloud</string>
             </property>
@@ -337,7 +337,7 @@
            </widget>
           </item>
           <item row="8" column="0">
-           <widget class="QLabel" name="res_cloth_lbl">
+           <widget class="QLabel" name="cloth_resolution_lbl">
             <property name="text">
              <string>Cloth resolution</string>
             </property>
@@ -1478,14 +1478,14 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="15" column="4">
-        <widget class="QLabel" name="res_ground_lbl">
+        <widget class="QLabel" name="denoise_resolution_lbl">
          <property name="text">
           <string>(x, y) voxel resolution</string>
          </property>
         </widget>
        </item>
        <item row="16" column="4">
-        <widget class="QLabel" name="min_points_ground_lbl">
+        <widget class="QLabel" name="denoise_minimum_points_lbl">
          <property name="text">
           <string>Minimum number of points</string>
          </property>
@@ -1520,7 +1520,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="15" column="6">
-        <widget class="QLabel" name="res_ground_ht">
+        <widget class="QLabel" name="denoise_resolution_ht">
          <property name="text">
           <string>meters</string>
          </property>
@@ -1541,7 +1541,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="15" column="5">
-        <widget class="QLineEdit" name="res_ground_in">
+        <widget class="QLineEdit" name="denoise_resolution_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1658,7 +1658,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="16" column="5">
-        <widget class="QLineEdit" name="min_points_ground_in">
+        <widget class="QLineEdit" name="denoise_minimum_points_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1703,7 +1703,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="16" column="6">
-        <widget class="QLabel" name="min_points_ground_ht">
+        <widget class="QLabel" name="denoise_minimum_points_ht">
          <property name="text">
           <string/>
          </property>

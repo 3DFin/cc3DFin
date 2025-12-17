@@ -465,21 +465,60 @@ void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 
 void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlog::logger> logger, cc3DFinDlg& dialog)
 {
+	assert(m_current_cloud);
 	m_current_cloud->placeIteratorAtBeginning();
-	QFuture<lib3dfin::TDFResult> TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_current_cloud->getNextPoint()->u[0]), static_cast<size_t>(m_current_cloud->size()), params, logger);
+
+	double* z0 = nullptr;
+
+	// TODO: encapsulation of the UI operations
+	if (dialog.compute_height_normalization_chk->checkState() == Qt::CheckState::Unchecked)
+	{
+		ccLog::Print("Use provided z0 field");
+		const auto z0_str = dialog.z0_name_cbx->currentText().toStdString();
+		const auto z0_id  = m_current_cloud->getScalarFieldIndexByName(z0_str);
+		if (z0_id != -1)
+		{
+			const auto* z0_sf = m_current_cloud->getScalarField(z0_id);
+
+			// try to allocate the sf array
+			try
+			{
+				z0 = new double[z0_sf->size()];
+			}
+			catch (const std::bad_alloc&)
+			{
+				delete z0;
+				ccLog::Error("[cc3DFin] Scalar field allocation failure");
+				return;
+			}
+
+			// copy the scalar_field to double
+			for (size_t svId = 0; svId < z0_sf->size(); ++svId)
+			{
+				z0[svId] = z0_sf->getValue(svId);
+			}
+		}
+	}
+
+	QFuture<lib3dfin::TDFResult> TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_current_cloud->getNextPoint()->u[0]), z0, static_cast<size_t>(m_current_cloud->size()), params, logger);
 
 	// Create watcher to notify when its done
 	// will be cleaned by using ::deleteLater()
 	auto* TdfComputationWatcher = new QFutureWatcher<lib3dfin::TDFResult>(this);
 
-	connect(TdfComputationWatcher, &QFutureWatcher<lib3dfin::TDFResult>::finished, this, [TdfComputationWatcher, this, &dialog]()
+	connect(TdfComputationWatcher, &QFutureWatcher<lib3dfin::TDFResult>::finished, this, [TdfComputationWatcher, this, &dialog, z0]()
 	        {
 		// Retrieve result
 		lib3dfin::TDFResult result = TdfComputationWatcher->future().result();
 
+		// clean z0 if needed
+		if(z0) {
+		    delete z0;
+		}
+
 		// Get the results
 		auto& stem_indicator = std::get<0>(result);
-		auto& z0             = std::get<1>(result);
+		auto& z0_out         = std::get<1>(result);
 		auto& tree_data      = std::get<2>(result);
 
 		// TODO factorize the drawing
@@ -488,7 +527,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 		drawTreeLocators(tree_data.tree_descriptors);
 		drawTreeHeights(tree_data.tree_descriptors);
 		drawAxis(tree_data.tree_descriptors);
-		exportEnrichedCloud(tree_data, z0);
+		exportEnrichedCloud(tree_data, z0_out);
 		exportStripe(stem_indicator);
 
 		dialog.setComputationMode(false);

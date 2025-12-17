@@ -101,7 +101,7 @@ void cc3DFinDlg::populateFields()
 	{
 		QWidget* widget = nullptr;
 
-		// handle "corner" cases fist
+		// handle "corner cases" first
 		if ((widget = findChild<QWidget*>(fieldName + "_rb_1")))
 		{
 			QRadioButton* rb1 = qobject_cast<QRadioButton*>(widget);
@@ -165,6 +165,8 @@ void cc3DFinDlg::populateFields()
 
 lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 {
+
+	// Collect params from the GUI
 	lib3dfin::Params params;
 	return params;
 }

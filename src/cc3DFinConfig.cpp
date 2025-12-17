@@ -62,7 +62,7 @@ namespace tdf
 	        "0-5",
 	    },
 	    {
-	        "res_cloth",
+	        "cloth_resolution",
 	        "Cloth resolution",
 	        "Initial cloth grid resolution to generate the DTM that will be used to compute normalized heights.",
 	        // TODO gt=0,
@@ -360,7 +360,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "res_ground",
+	        "denoise_resolution",
 	        "(x, y, z) voxel resolution",
 	        "(x, y, z) voxel resolution during denoising.\nNote that the whole point cloud is voxelated.",
 	        // TODO: gt=0,
@@ -368,7 +368,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "min_points_ground",
+	        "denoise_minimum_points",
 	        "Minimum number of points",
 	        "Clusters with size smaller than this value will be regarded as noise and thus eliminated.",
 	        // TODO: gt=0,
@@ -379,14 +379,14 @@ namespace tdf
 	const std::vector<Field> miscFields = {
 	    {
 
-	        "do_normalize",
+	        "compute_height_normalization",
 	        "Normalize point cloud",
 	        "If the point cloud is not height-normalized, a Digital Terrain "
 	        "Model (DTM) will be generated to compute normalized heights for all points.",
 	        false,
 	    },
 	    {
-	        "do_denoise",
+	        "denoise_point_cloud",
 	        "Clean noise on DTM",
 	        "If it is expected to be noise below ground level (or if you know "
 	        "that there is noise), a denoising step will be added before "

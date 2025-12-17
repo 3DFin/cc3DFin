@@ -12,11 +12,11 @@ namespace lib3dfin
 	  public: // struct
 		struct Parameters
 		{
-			double   cloth_resolution{0.45}; // basic / res_cloth // changed from 0.7 to 0.45
+			double   cloth_resolution{0.45};
 			bool     denoise_point_cloud{false};
-			double   denoise_resolution{0.15};  // res_ground
-			uint32_t denoise_minimum_points{2}; // minimum_points_ground
-			bool     clean_dtm{true};
+			double   denoise_resolution{0.15};
+			uint32_t denoise_minimum_points{2};
+			bool     clean_dtm{true}; // New, not mapped to any global config
 		};
 
 	  public:

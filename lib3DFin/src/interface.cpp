@@ -20,7 +20,7 @@ namespace lib3dfin
 {
 	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData>;
 
-	TDFResult process(const float* cloud_data, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger> logger)
+	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger> logger)
 	{
 
 		if (logger)
@@ -30,19 +30,33 @@ namespace lib3dfin
 
 		const auto start_total = std::chrono::steady_clock::now();
 		spdlog::info("Starting 3DFin computation... ");
-		// Convert point cloud to double
+
+		// Convert point cloud to our datastructure (it uses double precision)
 		PointCloud3 point_cloud(num_points, 3);
 		for (size_t i = 0; i < num_points; ++i)
 		{
 			point_cloud.row(i) = Vec3(cloud_data[i * 3], cloud_data[i * 3 + 1], cloud_data[i * 3 + 2]);
 		}
 
-		// TODO: check height normalization calculation, this doe not seams to give the same
-		//  extent as its use in python
-		HeightNormalization height_normalizer(point_cloud, HeightNormalization::Parameters());
-		const auto          z0 = height_normalizer.normalize();
-		TreePeeler          stripe_peeler(point_cloud, TreePeeler::Parameters());
-		Stripe              stripe(0.7, 3.5);
+		Eigen::VectorXd z0;
+		// Compute normalization of needed
+		if (params.compute_height_normalization || !z0_sf)
+		{
+			if (!params.compute_height_normalization && !z0_sf)
+			{
+				spdlog::warn("Input height normalization is null, force computation of height normalization");
+			}
+			HeightNormalization height_normalizer(point_cloud, HeightNormalization::Parameters());
+			z0 = height_normalizer.normalize();
+		}
+		else
+		{
+			spdlog::info("Using provided height normalization");
+			z0 = Eigen::Map<const Eigen::VectorXd>(z0_sf, num_points);
+		}
+
+		TreePeeler stripe_peeler(point_cloud, TreePeeler::Parameters());
+		Stripe     stripe(0.7, 3.5);
 		stripe.cluster_indicator = TreePeeler::filterInitialStripe(z0, 0.7, 3.5);
 
 		// side effect on indicator
