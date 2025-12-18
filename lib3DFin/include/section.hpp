@@ -22,18 +22,18 @@ namespace lib3dfin
 		{
 			double       stem_minimum_height{0.3};
 			double       stem_maximum_height{25.0};
-			double       section_length{0.2};
-			double       section_width{0.05};
-			uint32_t     inner_circle_point_threshold{5};
+			double       stem_section_interval{0.2};
+			double       stem_section_thickness{0.05};
+			double       stem_section_circle_width{0.02};
+			uint32_t     stem_section_inner_point_threshold{5};
 			double       stem_diameter_proportion{0.5};
-			double       stem_minimum_diameter{0.09};
-			double       stem_maximum_diameter{1.0};
-			double       circle_point_distance{0.02};
+			double       stem_section_minimum_diameter{0.09};
+			double       stem_section_maximum_diameter{1.0};
+			double       stem_section_clustering_distance{0.02};
 			uint32_t     min_num_points_section{80};
 			uint32_t     total_number_sectors{16};
 			uint32_t     minimum_number_sectors{9};
-			double       circle_width{0.02};
-			double       outlier_probability_threshold{0.3}; // this is added vs. the original implementation
+			double       outlier_probability_threshold{0.3}; // TODO: new, not mapped to in the GUI
 			const double DBH{1.3};
 		};
 
@@ -44,7 +44,7 @@ namespace lib3dfin
 		    , num_points_(point_cloud.rows())
 		    , z0_(z0)
 		    , trees_(trees)
-		    , num_sections_(static_cast<Eigen::Index>(std::floor((params_.stem_maximum_height - params_.stem_minimum_height) / params_.section_length)))
+		    , num_sections_(static_cast<Eigen::Index>(std::floor((params_.stem_maximum_height - params_.stem_minimum_height) / params_.stem_section_interval)))
 		    , params_(std::move(params))
 		{
 			// Iinitialize DBH
@@ -74,8 +74,8 @@ namespace lib3dfin
 
 				for (Eigen::Index section_id = 0; section_id < num_sections_; ++section_id)
 				{
-					const auto section_start = params_.stem_minimum_height + section_id * params_.section_length;
-					const auto section_end   = section_start + params_.section_width;
+					const auto section_start = params_.stem_minimum_height + section_id * params_.stem_section_interval;
+					const auto section_end   = section_start + params_.stem_section_thickness;
 					auto&      cur_circle    = circles[section_id];
 					cur_circle.z0            = section_start;
 
@@ -108,7 +108,7 @@ namespace lib3dfin
 					{
 						// cluster the cloud with single linkage algorithm
 						// rerun the algorithm on the clustered cloud
-						const auto max_cc_section = fcluster_slink(section_cloud, params_.circle_width);
+						const auto max_cc_section = fcluster_slink(section_cloud, params_.stem_section_clustering_distance);
 
 						// no luck with single linkage clustering, we pass this section
 						if (max_cc_section.size() < params_.min_num_points_section)
@@ -137,13 +137,13 @@ namespace lib3dfin
 			circle_data.circle          = LMCircleFit(section_cloud);
 			const Circle& circle_params = circle_data.circle;
 
-			if (circle_params.radius < params_.stem_minimum_diameter / 2)
+			if (circle_params.radius < params_.stem_section_maximum_diameter / 2)
 			{
 				circle_data.status = CircleData::Status::DIAMETER_TOO_SMALL;
 				return;
 			}
 
-			if (circle_params.radius > params_.stem_maximum_diameter / 2)
+			if (circle_params.radius > params_.stem_section_maximum_diameter / 2)
 			{
 				circle_data.status = CircleData::Status::DIAMETER_TOO_LARGE;
 				return;
@@ -151,7 +151,7 @@ namespace lib3dfin
 
 			circle_data.number_points_inner = innerCircle(section_cloud, circle_params);
 
-			if (circle_data.number_points_inner > params_.inner_circle_point_threshold)
+			if (circle_data.number_points_inner > params_.stem_section_inner_point_threshold)
 			{
 				circle_data.status = CircleData::Status::TOO_MANY_POINTS_INNER;
 				return;
@@ -178,8 +178,8 @@ namespace lib3dfin
 
 		uint32_t sectorOccupancy(const PointCloud2& circle_cloud, const Circle& circle_params)
 		{
-			const double R_min_sq        = (circle_params.radius - params_.circle_width) * (circle_params.radius - params_.circle_width);
-			const double R_max_sq        = (circle_params.radius + params_.circle_width) * (circle_params.radius + params_.circle_width);
+			const double R_min_sq        = (circle_params.radius - params_.stem_section_circle_width) * (circle_params.radius - params_.stem_section_circle_width);
+			const double R_max_sq        = (circle_params.radius + params_.stem_section_circle_width) * (circle_params.radius + params_.stem_section_circle_width);
 			const double inv_sector_size = static_cast<double>(params_.total_number_sectors) / (2.0 * M_PI);
 
 			const Eigen::Index n_points = circle_cloud.rows();
@@ -329,7 +329,7 @@ namespace lib3dfin
 
 			for (size_t section_id = 1; section_id < static_cast<size_t>(num_sections_); ++section_id)
 			{
-				const double section_height = params_.stem_minimum_height + section_id * params_.section_length;
+				const double section_height = params_.stem_minimum_height + section_id * params_.stem_section_interval;
 				const double diff           = std::abs(section_height - params_.DBH);
 				if (diff < min_diff)
 				{

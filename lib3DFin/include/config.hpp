@@ -9,6 +9,7 @@ namespace lib3dfin
 {
 
 	// WIP. comment show original variable names (in dendromatics) if we changed the name
+	// NOLINTBEGIN
 	struct Params
 	{
 		// WIP. comment show original variable names (in dendromatics) if we changed the name
@@ -40,5 +41,29 @@ namespace lib3dfin
 		double   tree_axis_max_vertical_deviation{25.0};
 		double   tree_height_distance_from_axis{1.5};
 		double   tree_resolution_height{0.3};
+
+		// Section extraction: stem filtering / peeling
+		double   stem_search_diameter{2.0};
+		double   stem_minimum_height{0.3};
+		double   stem_maximum_height{25.0};
+		double   verticality_radius_stem{0.1};
+		double   verticality_threshold_stem{0.7};
+		double   stem_section_thickness{0.05};
+		double   stem_section_circle_width{0.02};
+		double   stem_section_interval{0.2};
+		double   stem_section_clustering_distance{0.02};
+		double   stem_section_minimum_diameter{0.09};
+		double   stem_section_maximum_diameter{1.0};
+		uint32_t stem_section_inner_point_threshold{5};
+
+		double   stem_diameter_proportion{0.5};
+		uint32_t min_num_points_section{80};
+		uint32_t total_number_sectors{16};
+		uint32_t minimum_number_sectors{9};
+
+		// double   outlier_probability_threshold{0.3}; // TODO: new, not mapped to in the GUI
+
+		const double DBH{1.3};
 	};
+	// NOLINTEND
 } // namespace lib3dfin

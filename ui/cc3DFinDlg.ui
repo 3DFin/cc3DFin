@@ -669,7 +669,7 @@ You can get a brief description of what they do by hovering the mouse over the i
            </widget>
           </item>
           <item row="5" column="1">
-           <widget class="QLineEdit" name="section_wid_in">
+           <widget class="QLineEdit" name="stem_section_thickness_in">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -685,14 +685,14 @@ You can get a brief description of what they do by hovering the mouse over the i
            </widget>
           </item>
           <item row="5" column="2">
-           <widget class="QLabel" name="section_wid_ht">
+           <widget class="QLabel" name="stem_section_thickness_ht">
             <property name="text">
              <string>meters</string>
             </property>
            </widget>
           </item>
           <item row="4" column="1">
-           <widget class="QLineEdit" name="section_len_in">
+           <widget class="QLineEdit" name="stem_section_interval_in">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -731,7 +731,7 @@ You can get a brief description of what they do by hovering the mouse over the i
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QLineEdit" name="minimum_height_in">
+           <widget class="QLineEdit" name="stem_minimum_height_in">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -747,14 +747,14 @@ You can get a brief description of what they do by hovering the mouse over the i
            </widget>
           </item>
           <item row="0" column="2">
-           <widget class="QLabel" name="maximum_diameter_ht">
+           <widget class="QLabel" name="stem_section_maximum_diameter_ht">
             <property name="text">
              <string>meters</string>
             </property>
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLineEdit" name="maximum_diameter_in">
+           <widget class="QLineEdit" name="stem_section_maximum_diameter_in">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -770,7 +770,7 @@ You can get a brief description of what they do by hovering the mouse over the i
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QLineEdit" name="maximum_height_in">
+           <widget class="QLineEdit" name="stem_maximum_height_in">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -786,56 +786,56 @@ You can get a brief description of what they do by hovering the mouse over the i
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QLabel" name="minimum_height_lbl">
+           <widget class="QLabel" name="stem_minimum_height_lbl">
             <property name="text">
              <string>Lowest section</string>
             </property>
            </widget>
           </item>
           <item row="4" column="2">
-           <widget class="QLabel" name="section_len_ht">
+           <widget class="QLabel" name="stem_section_interval_ht">
             <property name="text">
              <string>meters</string>
             </property>
            </widget>
           </item>
           <item row="3" column="2">
-           <widget class="QLabel" name="maximum_height_ht">
+           <widget class="QLabel" name="stem_maximum_height_ht">
             <property name="text">
              <string>meters</string>
             </property>
            </widget>
           </item>
           <item row="0" column="0">
-           <widget class="QLabel" name="maximum_diameter_lbl">
+           <widget class="QLabel" name="stem_section_maximum_diameter_lbl">
             <property name="text">
              <string>Expected maximum diameter</string>
             </property>
            </widget>
           </item>
           <item row="2" column="2">
-           <widget class="QLabel" name="minimum_height_ht">
+           <widget class="QLabel" name="stem_minimum_height_ht">
             <property name="text">
              <string>meters</string>
             </property>
            </widget>
           </item>
           <item row="5" column="0">
-           <widget class="QLabel" name="section_wid_lbl">
+           <widget class="QLabel" name="stem_section_thickness_lbl">
             <property name="text">
              <string>Section width</string>
             </property>
            </widget>
           </item>
           <item row="4" column="0">
-           <widget class="QLabel" name="section_len_lbl">
+           <widget class="QLabel" name="stem_section_interval_lbl">
             <property name="text">
              <string>Distance between sections</string>
             </property>
            </widget>
           </item>
           <item row="3" column="0">
-           <widget class="QLabel" name="maximum_height_lbl">
+           <widget class="QLabel" name="stem_maximum_height_lbl">
             <property name="text">
              <string>Highest section</string>
             </property>
@@ -906,14 +906,14 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="4" column="4">
-        <widget class="QLabel" name="point_threshold_lbl">
+        <widget class="QLabel" name="stem_section_inner_point_threshold_lbl">
          <property name="text">
           <string>Points within inner circle</string>
          </property>
         </widget>
        </item>
        <item row="3" column="4">
-        <widget class="QLabel" name="minimum_diameter_lbl">
+        <widget class="QLabel" name="stem_section_minimum_diameter_lbl">
          <property name="text">
           <string>Minimum expected diameter</string>
          </property>
@@ -930,7 +930,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="12" column="0">
-        <widget class="QLabel" name="verticality_scale_stems_lbl">
+        <widget class="QLabel" name="verticality_radius_stem_lbl">
          <property name="text">
           <string>Vicinity radius (verticality computation)</string>
          </property>
@@ -1037,7 +1037,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="3" column="6">
-        <widget class="QLabel" name="minimum_diameter_ht">
+        <widget class="QLabel" name="stem_section_minimum_diameter_ht">
          <property name="text">
           <string>meters</string>
          </property>
@@ -1082,7 +1082,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="3" column="5">
-        <widget class="QLineEdit" name="minimum_diameter_in">
+        <widget class="QLineEdit" name="stem_section_minimum_diameter_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1204,7 +1204,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="12" column="2">
-        <widget class="QLabel" name="verticality_scale_stems_ht">
+        <widget class="QLabel" name="verticality_radius_stem_ht">
          <property name="text">
           <string>meters</string>
          </property>
@@ -1228,7 +1228,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="5" column="5">
-        <widget class="QLineEdit" name="point_distance_in">
+        <widget class="QLineEdit" name="stem_section_clustering_distance_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1345,7 +1345,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="8" column="5">
-        <widget class="QLineEdit" name="circle_width_in">
+        <widget class="QLineEdit" name="stem_section_circle_width_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1365,7 +1365,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="4" column="5">
-        <widget class="QLineEdit" name="point_threshold_in">
+        <widget class="QLineEdit" name="stem_section_inner_point_threshold_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1409,7 +1409,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="8" column="6">
-        <widget class="QLabel" name="circle_width_ht">
+        <widget class="QLabel" name="stem_section_circle_width_ht">
          <property name="text">
           <string>centimeters</string>
          </property>
@@ -1430,7 +1430,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="12" column="1">
-        <widget class="QLineEdit" name="verticality_scale_stems_in">
+        <widget class="QLineEdit" name="verticality_radius_stem_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1447,7 +1447,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="5" column="6">
-        <widget class="QLabel" name="point_distance_ht">
+        <widget class="QLabel" name="stem_section_clustering_distance_ht">
          <property name="text">
           <string>meters</string>
          </property>
@@ -1461,7 +1461,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="13" column="1">
-        <widget class="QLineEdit" name="verticality_thresh_stems_in">
+        <widget class="QLineEdit" name="verticality_threshold_stems_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1471,7 +1471,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="13" column="2">
-        <widget class="QLabel" name="verticality_thresh_stems_ht">
+        <widget class="QLabel" name="verticality_threshold_stems_ht">
          <property name="text">
           <string>(0,1)</string>
          </property>
@@ -1492,7 +1492,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="8" column="4">
-        <widget class="QLabel" name="circle_width_lbl">
+        <widget class="QLabel" name="stem_section_circle_width_lbl">
          <property name="text">
           <string>Circle width</string>
          </property>
@@ -1572,7 +1572,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="13" column="0">
-        <widget class="QLabel" name="verticality_thresh_stems_lbl">
+        <widget class="QLabel" name="verticality_threshold_stems_lbl">
          <property name="text">
           <string>Verticality threshold</string>
          </property>
@@ -1593,7 +1593,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="5" column="4">
-        <widget class="QLabel" name="point_distance_lbl">
+        <widget class="QLabel" name="stem_section_clustering_distance_lbl">
          <property name="text">
           <string>Maximum point distance</string>
          </property>
@@ -1675,7 +1675,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="4" column="6">
-        <widget class="QLabel" name="point_threshold_ht">
+        <widget class="QLabel" name="stem_section_inner_point_threshold_ht">
          <property name="text">
           <string/>
          </property>

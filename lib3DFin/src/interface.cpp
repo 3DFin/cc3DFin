@@ -60,20 +60,20 @@ namespace lib3dfin
 		Stripe stripe(params.stripe_lower_limit, params.stripe_upper_limit);
 		stripe.cluster_indicator = TreePeeler::filterInitialStripe(z0, params.stripe_lower_limit, params.stripe_upper_limit);
 
-		// Beware side effect on indicator
+		// Beware the side effect on indicator
 		stripe_peeler.peel(stripe.cluster_indicator);
 
 		TreeIndividualizer tree_individualizer(point_cloud, stripe, z0, TreeIndividualizer::Parameters());
 		auto               tree_data = tree_individualizer.individualize();
 
-		// stem_search_diameter / 2, minimum_height, maximum_height + section_width
-		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, 2.0 / 2, 0.3, 25 + 0.05);
+		// minimum_height, maximum_height + section_width
+		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, params.stem_search_diameter / 2, params.stem_minimum_height, params.stem_maximum_height + params.stem_section_width);
 
 		// TODO: verticality could change at this point
-		// double verticality_scale_stem  = 0.1;  // verticality_thresh_stems
-		// double verticality_thresh_stem = 0.7;
+		// use params.verticality_scale_stem;
+		// and params.verticality_thresh_stem;
 
-		// TODO Beware Side effect on indicator
+		// Beware the side effect on indicator
 		stripe_peeler.peel(stem_indicator);
 
 		ArrayClusterIndicator sections_indicator = (stem_indicator > -1).select(tree_data.cluster_indicator, -1);

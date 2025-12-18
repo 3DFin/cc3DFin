@@ -72,7 +72,7 @@ namespace tdf
 	};
 
 	const std::vector<Field> advancedFields = {
-	    {"maximum_diameter",
+	    {"stem_section_maximum_diameter",
 	     "Expected maximum diameter",
 	     "Maximum diameter expected for any stem.",
 	     // TODO: gt          = 0,
@@ -90,7 +90,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "minimum_height",
+	        "stem_minimum_height",
 	        "Lowest section",
 	        "Lowest height at which stem diameter will be computed.",
 	        // gt=0,
@@ -98,7 +98,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "maximum_height",
+	        "stem_maximum_height",
 	        "Highest section",
 	        "Highest height at which stem diameter will be computed.",
 	        // gt=0,
@@ -106,7 +106,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "section_len",
+	        "stem_section_interval",
 	        "Distance between sections",
 	        "Height of the sections (z length). Diameters will then be computed for every section.",
 	        // TODO gt=0,
@@ -114,7 +114,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "section_wid",
+	        "stem_section_thickness",
 	        "Section width",
 	        "Sections are this wide. This means that points within this distance "
 	        "(vertical) are considered during circle fitting and diameter coumputation.",
@@ -204,7 +204,7 @@ namespace tdf
 	        20,
 	    },
 	    {
-	        "verticality_scale_stems",
+	        "verticality_radius_stem",
 	        "Vicinity radius (verticality computation)",
 	        "Vicinity radius for PCA during tree individualization.",
 	        // TODO gt=0,
@@ -213,7 +213,7 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "verticality_thresh_stems",
+	        "verticality_threshold_stem",
 	        "Verticality threshold",
 	        "Verticality threshold durig stem extraction.\n"
 	        "Verticality is defined as (1 - sin(V)), being V the vertical angle of the "
@@ -278,7 +278,7 @@ namespace tdf
 	        "[0, 1]",
 	    },
 	    {
-	        "minimum_diameter",
+	        "stem_section_minimum_diameter",
 	        "Minimum expected diameter",
 	        "Minimum diameter expected for any section during circle fitting.",
 	        // TODO gt=0,
@@ -286,14 +286,14 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "point_threshold",
+	        "stem_section_inner_point_threshold",
 	        "Points within inner circle",
 	        "Maximum number of points inside the inner circle to consider the fitting as OK.",
 	        // TODO gt=0,
 	        5,
 	    },
 	    {
-	        "point_distance",
+	        "stem_section_clustering_distance",
 	        "Maximum point distance",
 	        "Maximum distance among points to be considered within the same cluster during circle fitting.",
 	        // TODO: gt=0,
@@ -315,7 +315,7 @@ namespace tdf
 	        9,
 	    },
 	    {
-	        "circle_width",
+	        "stem_section_circle_width",
 	        "Circle width",
 	        "Width, in meters, around the circumference to look for points.",
 	        // TODO gt=0,
