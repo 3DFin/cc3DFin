@@ -42,7 +42,7 @@ class cc3DFinDlg : public QDialog
 	cc3DFinDlg(QWidget* parent, const QStringList& sfNames);
 
 	//! Destrcuctor
-	virtual ~cc3DFinDlg() override = default;
+	~cc3DFinDlg() override = default;
 	lib3dfin::Params get3DFinParameters();
 	void             setComputationMode(bool);
 

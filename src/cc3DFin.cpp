@@ -67,7 +67,7 @@ void cc3DFin::onNewSelection(const ccHObject::Container& selectedEntities)
 QList<QAction*> cc3DFin::getActions()
 {
 	// default action (if it has not been already created, this is the moment to do it)
-	if (!m_action)
+	if (m_action == nullptr)
 	{
 		// Here we use the default plugin name, description, and icon,
 		// but each action should have its own.
@@ -83,7 +83,7 @@ QList<QAction*> cc3DFin::getActions()
 void cc3DFin::do3DFinAction()
 {
 	assert(m_app);
-	if (!m_app)
+	if (m_app == nullptr)
 	{
 		return;
 	}
@@ -106,15 +106,15 @@ void cc3DFin::do3DFinAction()
 	}
 
 	// Cast to PC
-	m_current_cloud = static_cast<ccPointCloud*>(ent);
+	m_current_cloud = dynamic_cast<ccPointCloud*>(ent);
 
 	// Get scalar field names for plugin UI
 	QStringList scalarFieldNames;
 	for (int i = 0; i < m_current_cloud->getNumberOfScalarFields(); ++i)
 	{
-		const CCCoreLib::ScalarField* sf = m_current_cloud->getScalarField(i);
-		if (sf)
-			scalarFieldNames.push_back(QString(sf->getName().c_str()));
+		const CCCoreLib::ScalarField* scalarField = m_current_cloud->getScalarField(i);
+		if (scalarField != nullptr)
+			scalarFieldNames.push_back(QString(scalarField->getName().c_str()));
 	}
 
 	m_current_cloud->setEnabled(false);
@@ -201,7 +201,7 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_desc
 				const auto& circle = circle_data.circle;
 				// We need to shift the circle center to go from z0 coordinates to the actual coordinates
 				const double height   = circle_data.z0 + tree_descriptors[tree_id].height_difference;
-				const float  f_height = static_cast<float>(height);
+				const auto   f_height = static_cast<float>(height);
 
 				// Add circle center
 				circle_points_pc->addPoint({static_cast<float>(circle.center.x()),
@@ -265,10 +265,10 @@ void cc3DFin::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descrip
 	// Create a group to hold all axes as polylines
 	constexpr double step_size = 0.1; // TODO parameters
 
-	ccPointCloud* axis_points  = new ccPointCloud(QString("tree axes"));
-	int           axis_tilt_id = axis_points->addScalarField("tilting_degree");
-	auto          axis_tilt_sf = axis_points->getScalarField(axis_tilt_id);
-	size_t        tree_id      = 0;
+	auto*  axis_points  = new ccPointCloud(QString("tree axes"));
+	int    axis_tilt_id = axis_points->addScalarField("tilting_degree");
+	auto*  axis_tilt_sf = axis_points->getScalarField(axis_tilt_id);
+	size_t tree_id      = 0;
 
 	for (const auto& desc : tree_descriptors)
 	{
@@ -294,19 +294,19 @@ void cc3DFin::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descrip
 
 void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
-	ccPointCloud* tree_locations = new ccPointCloud("Tree Locations");
+	auto* tree_locations = new ccPointCloud("Tree Locations");
 	tree_locations->copyGlobalShiftAndScale(*m_current_cloud);
 
 	tree_locations->setPointSize(8);
 	int    id_dbh  = tree_locations->addScalarField("dbh");
-	auto   dbh_sf  = tree_locations->getScalarField(id_dbh);
+	auto*  dbh_sf  = tree_locations->getScalarField(id_dbh);
 	size_t tree_id = 0;
 
 	for (const auto& desc : tree_descriptors)
 	{
 		tree_locations->addPoint(CCVector3(desc.location.x(), desc.location.y(), desc.location.z()));
 		dbh_sf->addElement(desc.dbh);
-		cc2DLabel* label = new cc2DLabel();
+		auto* label = new cc2DLabel();
 		label->addPickedPoint(tree_locations, tree_id);
 		if (desc.dbh < std::numeric_limits<float>::epsilon())
 		{
@@ -330,13 +330,13 @@ void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree
 
 void cc3DFin::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
-	ccPointCloud* tree_heights = new ccPointCloud("Highest points");
+	auto* tree_heights = new ccPointCloud("Highest points");
 	tree_heights->copyGlobalShiftAndScale(*m_current_cloud);
 	tree_heights->setPointSize(8);
 	int    id_z0       = tree_heights->addScalarField("z0");
-	auto   z0_sf       = tree_heights->getScalarField(id_z0);
+	auto*  z0_sf       = tree_heights->getScalarField(id_z0);
 	int    id_deviated = tree_heights->addScalarField("deviated");
-	auto   deviated_sf = tree_heights->getScalarField(id_deviated);
+	auto*  deviated_sf = tree_heights->getScalarField(id_deviated);
 	size_t tree_id     = 0;
 	tree_heights->setPointSize(8);
 
@@ -345,8 +345,8 @@ void cc3DFin::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_
 	{
 		tree_heights->addPoint(CCVector3(desc.highest_point.x(), desc.highest_point.y(), desc.highest_point.z()));
 		z0_sf->addElement(desc.highest_z0);
-		deviated_sf->addElement(desc.valid);
-		cc2DLabel* label = new cc2DLabel(QString("point %1").arg(tree_id + 1));
+		deviated_sf->addElement(static_cast<double>(desc.valid));
+		auto* label = new cc2DLabel(QString("point %1").arg(tree_id + 1));
 		label->addPickedPoint(tree_heights, tree_id);
 		label->setName(QString::number(desc.highest_z0));
 		label->displayPointLegend(true);
@@ -364,14 +364,14 @@ void cc3DFin::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_
 
 void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std::vector<double>& z0)
 {
-	ccPointCloud* enriched_cloud = new ccPointCloud(m_current_cloud->getName());
+
+	auto enriched_cloud = std::make_unique<ccPointCloud>(m_current_cloud->getName());
 
 	enriched_cloud->copyGlobalShiftAndScale(*m_current_cloud);
 
 	if (!enriched_cloud->reserve(m_current_cloud->size()))
 	{
 		ccLog::Error("[3DFin] Not enough memory!");
-		delete enriched_cloud;
 		return;
 	}
 
@@ -379,9 +379,9 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 	int tree_id_id   = enriched_cloud->addScalarField("tree_ID");
 	int z0_id        = enriched_cloud->addScalarField("Z0");
 
-	auto dist_axes_sf = enriched_cloud->getScalarField(dist_axes_id);
-	auto tree_id_sf   = enriched_cloud->getScalarField(tree_id_id);
-	auto z0_sf        = enriched_cloud->getScalarField(z0_id);
+	auto* dist_axes_sf = enriched_cloud->getScalarField(dist_axes_id);
+	auto* tree_id_sf   = enriched_cloud->getScalarField(tree_id_id);
+	auto* z0_sf        = enriched_cloud->getScalarField(z0_id);
 
 	try
 	{
@@ -389,10 +389,9 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 		tree_id_sf->reserve(enriched_cloud->size());
 		z0_sf->reserve(enriched_cloud->size());
 	}
-	catch (const std::bad_alloc)
+	catch (const std::bad_alloc&)
 	{
 		ccLog::Error("[3DFin] Failed to reserve memory for scalar fields");
-		delete enriched_cloud;
 		return;
 	}
 
@@ -415,23 +414,23 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 	enriched_cloud->toggleSF();
 	enriched_cloud->setEnabled(false);
 
-	m_base_group->addChild(enriched_cloud);
+	m_base_group->addChild(enriched_cloud.release());
 }
 
 void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 {
-	ccPointCloud* stripe_cloud = new ccPointCloud("Stems in stripe");
-	stripe_cloud->copyGlobalShiftAndScale(*m_current_cloud);
-	int  tree_id_id = stripe_cloud->addScalarField("tree_ID");
-	auto tree_id_sf = stripe_cloud->getScalarField(tree_id_id);
+	auto stripe_cloud = std::make_unique<ccPointCloud>("Stems in stripe");
 
-	unsigned count_valid = std::count_if(stem_indicator.begin(), stem_indicator.end(), [](int32_t stem_id)
+	stripe_cloud->copyGlobalShiftAndScale(*m_current_cloud);
+	int   tree_id_id = stripe_cloud->addScalarField("tree_ID");
+	auto* tree_id_sf = stripe_cloud->getScalarField(tree_id_id);
+
+	unsigned count_valid = std::count_if(std::begin(stem_indicator), std::end(stem_indicator), [](int32_t stem_id)
 	                                     { return stem_id >= 0; });
 
 	if (!stripe_cloud->reserve(m_current_cloud->size()))
 	{
 		ccLog::Error("[3DFin] Not enough memory!");
-		delete stripe_cloud;
 		return;
 	}
 
@@ -442,7 +441,6 @@ void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 	catch (const std::bad_alloc)
 	{
 		ccLog::Error("[3DFin] Failed to reserve memory for scalar fields");
-		delete stripe_cloud;
 		return;
 	}
 
@@ -460,7 +458,7 @@ void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 	stripe_cloud->setCurrentDisplayedScalarField(tree_id_id);
 	stripe_cloud->toggleSF();
 	stripe_cloud->setEnabled(false);
-	m_base_group->addChild(stripe_cloud);
+	m_base_group->addChild(stripe_cloud.release());
 }
 
 void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlog::logger> logger, cc3DFinDlg& dialog)
@@ -522,7 +520,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 		auto& tree_data      = std::get<2>(result);
 
 		// TODO factorize the drawing
-		m_base_group.reset(new ccHObject(m_current_cloud->getName() + "_3DFin"));
+		m_base_group = std::make_unique<ccHObject>(m_current_cloud->getName() + "_3DFin");
 		drawCircles(tree_data.tree_descriptors);
 		drawTreeLocators(tree_data.tree_descriptors);
 		drawTreeHeights(tree_data.tree_descriptors);

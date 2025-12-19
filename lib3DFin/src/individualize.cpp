@@ -22,16 +22,16 @@ namespace lib3dfin
 	TreeData TreeIndividualizer::individualize()
 	{
 		const auto [voxelated_cloud, cloud_to_vox]        = voxelize(point_cloud_, params_.resolution_xy, params_.resolution_z, true);
-		auto                          t0                  = std::chrono::high_resolution_clock::now();
+		auto                          start               = std::chrono::high_resolution_clock::now();
 		auto                          voxelated_axes_data = computeAxesApproximate(voxelated_cloud);
-		auto                          t1                  = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<double> elapsed             = t1 - t0;
+		auto                          stop                = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> elapsed             = start - stop;
 
 		spdlog::info("[Individualize] compute_axes_approximate: {} seconds", elapsed.count());
-		t0 = std::chrono::high_resolution_clock::now();
+		start = std::chrono::high_resolution_clock::now();
 		compute_heights(voxelated_cloud, voxelated_axes_data);
-		t1      = std::chrono::high_resolution_clock::now();
-		elapsed = t1 - t0;
+		stop    = std::chrono::high_resolution_clock::now();
+		elapsed = start - stop;
 		spdlog::info("[Individualize] compute_height: {} seconds", elapsed.count());
 
 		TreeData axes_data;
@@ -123,13 +123,14 @@ namespace lib3dfin
 				const Eigen::Matrix3d covariance     = (centered_cloud.transpose() * centered_cloud) / double(stem_num_points);
 
 				// Eigen decomposition of the covariance
-				Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es(covariance);
+				Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver(covariance);
 
 				// Eigen values are sorted in increasing order, we looks for the more significant component / axis
-				tree_descriptor.setAxis(es.eigenvectors().col(2), params_.axis_maximum_vertical_deviation);
+				tree_descriptor.setAxis(eigen_solver.eigenvectors().col(2), params_.axis_maximum_vertical_deviation);
 
+				constexpr double verticality_threshold = 88.0;
 				// safe guard
-				if (tree_descriptor.axis_vertical_deviation > 88.0)
+				if (tree_descriptor.axis_vertical_deviation > verticality_threshold)
 				{
 					spdlog::warn("[Individualize] Invalid axis (near horizontal), tree skipped");
 					continue;
@@ -159,7 +160,7 @@ namespace lib3dfin
 			Eigen::Index       axis_id                                    = result.tree_descriptors[valid_tree_number].tree_id;
 			const PointCloud3& axis_pointcloud                            = vec_axis_point_clouds[valid_tree_number];
 			const auto         axis_num_points                            = axis_pointcloud.rows();
-			concat_axis_point_cloud.block(padding, 0, axis_num_points, 3) = std::move(axis_pointcloud);
+			concat_axis_point_cloud.block(padding, 0, axis_num_points, 3) = axis_pointcloud;
 			axis_indicator.segment(padding, axis_num_points).setConstant(axis_id);
 			padding += axis_num_points;
 		}
@@ -177,8 +178,8 @@ namespace lib3dfin
 		taskflow.for_each_index(
 		    Eigen::Index(0), num_voxels, Eigen::Index(1), [&](Eigen::Index voxel_id)
 		    {
-				    Eigen::Index                                         index;
-				    double sq_distance = 0.0;
+				    Eigen::Index                                         index{0};
+				    double sq_distance{0.0};
 					kd_tree.index_->knnSearch(voxelated_cloud.row(voxel_id).data(), 1, &index, &sq_distance);
 
 					if(sq_distance > sq_dmax)
@@ -196,13 +197,13 @@ namespace lib3dfin
 
 	void TreeIndividualizer::compute_heights(
 	    const PointCloud3& voxelated_cloud,
-	    TreeData&          axis_data)
+	    TreeData&          axis_data) const
 	{
 		// large voxel to avoid underpopulated cells
 		PointCloud3        large_voxels_cloud;
 		VecIndex<uint32_t> vox_to_large_vox;
 		std::tie(large_voxels_cloud, vox_to_large_vox) = voxelize(voxelated_cloud, params_.resolution_height, params_.resolution_height, true);
-		const double      eps                          = params_.resolution_height * std::sqrt(3) + 1e-6;
+		const double      eps                          = (params_.resolution_height * std::sqrt(3)) + 1e-6;
 		VecIndex<int32_t> cluster_labels               = connected_components(large_voxels_cloud, eps, 2);
 
 		// Count clusters

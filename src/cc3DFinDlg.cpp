@@ -104,8 +104,8 @@ void cc3DFinDlg::populateFields()
 		// handle "corner cases" first
 		if ((widget = findChild<QWidget*>(fieldName + "_rb_1")))
 		{
-			QRadioButton* rb1 = qobject_cast<QRadioButton*>(widget);
-			QRadioButton* rb2 = qobject_cast<QRadioButton*>(findChild<QWidget*>(fieldName + "_rb_2"));
+			auto* rb1 = qobject_cast<QRadioButton*>(widget);
+			auto* rb2 = qobject_cast<QRadioButton*>(findChild<QWidget*>(fieldName + "_rb_2"));
 			if (rb1 && rb2)
 			{
 				rb1->setChecked(field.value.toBool());
@@ -120,10 +120,10 @@ void cc3DFinDlg::populateFields()
 				ccLog::Warning("[3DFin] fail to configure export field");
 			}
 		}
-		else if ((widget = findChild<QWidget*>(fieldName + "_chk")))
+		else if ((widget = findChild<QWidget*>(fieldName + "_chk")) != nullptr)
 		{
 			populateToolTipAndLabel(field, widget);
-			if (QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget))
+			if (auto* checkBox = qobject_cast<QCheckBox*>(widget))
 			{
 				checkBox->setChecked(field.value.toBool());
 			}
@@ -144,15 +144,15 @@ void cc3DFinDlg::populateFields()
 				if (value.type() == QVariant::Double)
 				{
 					// TODO gt
-					auto* validator = new QDoubleValidator(this);
+					auto validator = std::make_unique<QDoubleValidator>(this);
 					validator->setLocale(QLocale::c());
-					lineEdit->setValidator(validator);
+					lineEdit->setValidator(validator.release());
 				}
 				else if (value.type() == QVariant::Int)
 				{
-					auto* validator = new QIntValidator(this);
+					auto validator = std::make_unique<QDoubleValidator>(this);
 					validator->setLocale(QLocale::c());
-					lineEdit->setValidator(validator);
+					lineEdit->setValidator(validator.release());
 				}
 			}
 			else
@@ -258,14 +258,14 @@ void cc3DFinDlg::populateToolTipAndLabel(const tdf::Field& field, QWidget* widge
 	{
 		widget->setToolTip(tooltip);
 
-		QLabel* label = findChild<QLabel*>(field.name + "_lbl");
-		if (label)
+		auto* label = findChild<QLabel*>(field.name + "_lbl");
+		if (label != nullptr)
 			label->setToolTip(tooltip);
 	}
 
 	const auto& hint      = field.hint;
-	QLabel*     hintLabel = findChild<QLabel*>(field.name + "_ht");
-	if (hintLabel && !hint.isEmpty())
+	auto*       hintLabel = findChild<QLabel*>(field.name + "_ht");
+	if (hintLabel != nullptr && !hint.isEmpty())
 	{
 		hintLabel->setText(hint);
 	}

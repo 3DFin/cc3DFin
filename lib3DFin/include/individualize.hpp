@@ -35,7 +35,7 @@ namespace lib3dfin
 		    : point_cloud_(point_cloud)
 		    , stripe_(stripe)
 		    , z0_(z0)
-		    , params_(std::move(params))
+		    , params_(params)
 		{
 		}
 
@@ -47,7 +47,7 @@ namespace lib3dfin
 
 		void compute_heights(
 		    const PointCloud3& voxelated_cloud,
-		    TreeData&          axis_data);
+		    TreeData&          axis_data) const;
 
 	  private: // variables
 		const PointCloud3&     point_cloud_;
