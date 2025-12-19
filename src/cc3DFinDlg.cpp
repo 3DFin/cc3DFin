@@ -60,7 +60,7 @@ void cc3DFinDlg::setComputationMode(bool state)
 {
 	if (state)
 	{
-		m_is_computation_active = true;
+		m_isComputationActive = true;
 		tabWidget->setCurrentIndex(3); // switch to log tab
 		compute_btn->setText("Computing...");
 		tabWidget->tabBar()->setDisabled(true);
@@ -68,7 +68,7 @@ void cc3DFinDlg::setComputationMode(bool state)
 	}
 	else
 	{
-		m_is_computation_active = false;
+		m_isComputationActive = false;
 		compute_btn->setText("Compute");
 		tabWidget->tabBar()->setDisabled(false);
 		bottomFrame->setDisabled(false);
@@ -77,7 +77,7 @@ void cc3DFinDlg::setComputationMode(bool state)
 
 void cc3DFinDlg::closeEvent(QCloseEvent* event)
 {
-	if (m_is_computation_active)
+	if (m_isComputationActive)
 	{
 		// Prevent closing the dialog while computation is active.
 		// we could show a dialog to inform the user...

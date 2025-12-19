@@ -41,25 +41,25 @@ class cc3DFinDlg : public QDialog
 	//! Default constructor
 	cc3DFinDlg(QWidget* parent, const QStringList& sfNames);
 
-	//! Destrcuctor
+	//! Destructor
 	~cc3DFinDlg() override = default;
 	lib3dfin::Params get3DFinParameters();
 	void             setComputationMode(bool);
 
-  protected: // methods
+  protected: // Methods
 	void populateFields();
 	void populateSfCombo();
 	void populateToolTipAndLabel(const tdf::Field& field, QWidget* widget);
 	void closeEvent(QCloseEvent* event) override;
 
-  protected slots: // slots
-	void askOutputPath();
-	void showTutorial();
-	void showDocumentation();
-	void showExpertDialog();
+  protected: // Slots
+	void        askOutputPath();
+	void        showExpertDialog();
+	static void showDocumentation();
+	static void showTutorial();
 
-  protected: // members
+  protected: // Members
 	const QStringList&                      m_scalarFields;
 	std::unordered_map<QString, tdf::Field> m_fields;
-	bool                                    m_is_computation_active{false};
+	bool                                    m_isComputationActive{false};
 };
