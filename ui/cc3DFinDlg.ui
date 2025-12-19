@@ -869,7 +869,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="2" column="4">
-        <widget class="QLabel" name="diameter_proportion_lbl">
+        <widget class="QLabel" name="stem_section_diameter_proportion_lbl">
          <property name="text">
           <string>Inner/outer circle proportion</string>
          </property>
@@ -1051,7 +1051,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="1" column="5">
-        <widget class="QLineEdit" name="number_points_section_in">
+        <widget class="QLineEdit" name="stem_section_min_points_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1092,14 +1092,14 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="1" column="4">
-        <widget class="QLabel" name="number_points_section_lbl">
+        <widget class="QLabel" name="stem_section_min_points_lbl">
          <property name="text">
           <string>Points within section</string>
          </property>
         </widget>
        </item>
        <item row="6" column="5">
-        <widget class="QLineEdit" name="number_sectors_in">
+        <widget class="QLineEdit" name="stem_section_sector_count_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1123,14 +1123,14 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="2" column="6">
-        <widget class="QLabel" name="diameter_proportion_ht">
+        <widget class="QLabel" name="stem_section_diameter_proportion_ht">
          <property name="text">
           <string>[0,1]</string>
          </property>
         </widget>
        </item>
        <item row="2" column="5">
-        <widget class="QLineEdit" name="diameter_proportion_in">
+        <widget class="QLineEdit" name="stem_section_diameter_proportion_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1170,7 +1170,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="6" column="4">
-        <widget class="QLabel" name="number_sectors_lbl">
+        <widget class="QLabel" name="stem_section_sector_count_lbl">
          <property name="text">
           <string>Number of sectors</string>
          </property>
@@ -1389,7 +1389,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="7" column="5">
-        <widget class="QLineEdit" name="m_number_sectors_in">
+        <widget class="QLineEdit" name="stem_section_min_occupied_sectors_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1534,7 +1534,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="7" column="4">
-        <widget class="QLabel" name="m_number_sectors_lbl">
+        <widget class="QLabel" name="stem_section_min_occupied_sectors_lbl">
          <property name="text">
           <string>Number of occupied sectors</string>
          </property>
@@ -1668,7 +1668,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="1" column="6">
-        <widget class="QLabel" name="number_points_section_ht">
+        <widget class="QLabel" name="stem_section_min_points_ht">
          <property name="text">
           <string/>
          </property>
@@ -1682,14 +1682,14 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="6" column="6">
-        <widget class="QLabel" name="number_sectors_ht">
+        <widget class="QLabel" name="stem_section_sector_count_ht">
          <property name="text">
           <string/>
          </property>
         </widget>
        </item>
        <item row="7" column="6">
-        <widget class="QLabel" name="m_number_sectors_ht">
+        <widget class="QLabel" name="stem_section_min_occupied_sectors_ht">
          <property name="text">
           <string/>
          </property>

@@ -8,13 +8,14 @@
 namespace lib3dfin
 {
 
-	// WIP. comment show original variable names (in dendromatics) if we changed the name
+	/// Parameter sctruct.
+	/// This is not aligned on purpose
 	// NOLINTBEGIN
 	struct Params
 	{
-		// WIP. comment show original variable names (in dendromatics) if we changed the name
 		// Global
 		bool compute_height_normalization{true};
+
 		// Ground Parameters (ground.hpp)
 		double   cloth_resolution{0.45};
 		bool     denoise_point_cloud{false};
@@ -55,15 +56,13 @@ namespace lib3dfin
 		double   stem_section_minimum_diameter{0.09};
 		double   stem_section_maximum_diameter{1.0};
 		uint32_t stem_section_inner_point_threshold{5};
-
-		double   stem_diameter_proportion{0.5};
-		uint32_t min_num_points_section{80};
-		uint32_t total_number_sectors{16};
-		uint32_t minimum_number_sectors{9};
+		uint32_t stem_section_min_points{80};
+		double   stem_section_diameter_proportion{0.5};
+		uint32_t stem_section_sector_count{16};
+		uint32_t stem_section_min_occupied_sectors{9};
 
 		// double   outlier_probability_threshold{0.3}; // TODO: new, not mapped to in the GUI
-
-		const double DBH{1.3};
+		// TODO Drawing
 	};
 	// NOLINTEND
 } // namespace lib3dfin

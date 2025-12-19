@@ -261,14 +261,14 @@ namespace tdf
 	        "degrees",
 	    },
 	    {
-	        "number_points_section",
+	        "stem_section_min_points",
 	        "Points within section",
 	        "Minimum number of points in a section to be considered as valid.",
 	        // gt=0,
 	        80,
 	    },
 	    {
-	        "diameter_proportion",
+	        "stem_section_diameter_proportion",
 	        "Inner/outer circle proportion",
 	        "Proportion, regarding the circumference fit by fit_circle, "
 	        "that the inner circumference diameter will have as length.",
@@ -301,14 +301,14 @@ namespace tdf
 	        "meters",
 	    },
 	    {
-	        "number_sectors",
+	        "stem_section_sector_count",
 	        "Number of sectors",
 	        "Number of sectors in which the circumference will be divided into.",
 	        // gt=0,
 	        16,
 	    },
 	    {
-	        "m_number_sectors",
+	        "stem_section_min_occupied_sectors",
 	        "Number of occupied sectors",
 	        "Minimum number of sectors that must be occupied.",
 	        // gt          = 0,

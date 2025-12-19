@@ -26,13 +26,13 @@ namespace lib3dfin
 			double       stem_section_thickness{0.05};
 			double       stem_section_circle_width{0.02};
 			uint32_t     stem_section_inner_point_threshold{5};
-			double       stem_diameter_proportion{0.5};
+			double       stem_section_diameter_proportion{0.5};
 			double       stem_section_minimum_diameter{0.09};
 			double       stem_section_maximum_diameter{1.0};
 			double       stem_section_clustering_distance{0.02};
-			uint32_t     min_num_points_section{80};
-			uint32_t     total_number_sectors{16};
-			uint32_t     minimum_number_sectors{9};
+			uint32_t     stem_section_min_points{80};
+			uint32_t     stem_section_sector_count{16};
+			uint32_t     stem_section_min_occupied_sectors{9};
 			double       outlier_probability_threshold{0.3}; // TODO: new, not mapped to in the GUI
 			const double DBH{1.3};
 		};
@@ -82,7 +82,7 @@ namespace lib3dfin
 					const auto         section_mask       = (tree_cloud.col(2).array() >= section_start) && (tree_cloud.col(2).array() < section_end);
 					const Eigen::Index num_section_points = section_mask.count();
 
-					if (num_section_points < params_.min_num_points_section)
+					if (num_section_points < params_.stem_section_min_points)
 					{
 						cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
 						continue;
@@ -111,7 +111,7 @@ namespace lib3dfin
 						const auto max_cc_section = fcluster_slink(section_cloud, params_.stem_section_clustering_distance);
 
 						// no luck with single linkage clustering, we pass this section
-						if (max_cc_section.size() < params_.min_num_points_section)
+						if (max_cc_section.size() < params_.stem_section_min_points)
 						{
 							cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
 							continue;
@@ -158,9 +158,9 @@ namespace lib3dfin
 			}
 
 			const auto num_occupied_sectors = sectorOccupancy(section_cloud, circle_params);
-			circle_data.sector_percentage   = static_cast<double>(num_occupied_sectors) / params_.total_number_sectors;
+			circle_data.sector_percentage   = static_cast<double>(num_occupied_sectors) / params_.stem_section_sector_count;
 
-			if (num_occupied_sectors < params_.minimum_number_sectors)
+			if (num_occupied_sectors < params_.stem_section_min_occupied_sectors)
 			{
 				circle_data.status = CircleData::Status::NOT_ENOUGH_SECTOR_COVERAGE;
 				return;
@@ -170,7 +170,7 @@ namespace lib3dfin
 
 		uint32_t innerCircle(const PointCloud2& circle_cloud, const Circle& circle_params)
 		{
-			const double sq_threshold = (circle_params.radius * params_.stem_diameter_proportion) * (circle_params.radius * params_.stem_diameter_proportion);
+			const double sq_threshold = (circle_params.radius * params_.stem_section_diameter_proportion) * (circle_params.radius * params_.stem_section_diameter_proportion);
 			// vectorize
 			auto num_valid_points = ((circle_cloud.rowwise() - circle_params.center.transpose()).rowwise().squaredNorm().array() < sq_threshold).count();
 			return num_valid_points;
@@ -180,11 +180,11 @@ namespace lib3dfin
 		{
 			const double R_min_sq        = (circle_params.radius - params_.stem_section_circle_width) * (circle_params.radius - params_.stem_section_circle_width);
 			const double R_max_sq        = (circle_params.radius + params_.stem_section_circle_width) * (circle_params.radius + params_.stem_section_circle_width);
-			const double inv_sector_size = static_cast<double>(params_.total_number_sectors) / (2.0 * M_PI);
+			const double inv_sector_size = static_cast<double>(params_.stem_section_sector_count) / (2.0 * M_PI);
 
 			const Eigen::Index n_points = circle_cloud.rows();
 
-			std::vector<bool> sector_occupancy_indicator(params_.total_number_sectors, false);
+			std::vector<bool> sector_occupancy_indicator(params_.stem_section_sector_count, false);
 
 			for (Eigen::Index point_id = 0; point_id < n_points; ++point_id)
 			{
@@ -202,7 +202,7 @@ namespace lib3dfin
 					angle += 2.0 * M_PI;
 
 				const uint32_t sector         = static_cast<uint32_t>(std::floor(angle * inv_sector_size));
-				const uint32_t clamped_sector = std::min(sector, params_.total_number_sectors - 1); // be sure we don't exceed the maximum sector index //TODO clamp angle instead
+				const uint32_t clamped_sector = std::min(sector, params_.stem_section_sector_count - 1); // be sure we don't exceed the maximum sector index //TODO clamp angle instead
 
 				sector_occupancy_indicator[clamped_sector] = true;
 			}
