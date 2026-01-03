@@ -150,7 +150,7 @@ void cc3DFinDlg::populateFields()
 				}
 				else if (value.type() == QVariant::Int)
 				{
-					auto validator = std::make_unique<QDoubleValidator>(this);
+					auto validator = std::make_unique<QIntValidator>(this);
 					validator->setLocale(QLocale::c());
 					lineEdit->setValidator(validator.release());
 				}
@@ -168,6 +168,50 @@ lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 
 	// Collect params from the GUI
 	lib3dfin::Params params;
+
+	params.compute_height_normalization = compute_height_normalization_chk->isChecked();
+
+	// Field are pre validated, the casts should succeed
+	params.cloth_resolution       = cloth_resolution_in->text().toDouble();
+	params.denoise_point_cloud    = denoise_point_cloud_chk->isChecked();
+	params.denoise_resolution     = denoise_resolution_in->text().toDouble();
+	params.denoise_minimum_points = denoise_minimum_points_in->text().toUInt();
+
+	params.stripe_lower_limit              = stripe_lower_limit_in->text().toDouble();
+	params.stripe_upper_limit              = stripe_lower_limit_in->text().toDouble();
+	params.verticality_radius_stripe       = verticality_radius_stripe_in->text().toDouble();
+	params.verticality_threshold_stripe    = verticality_threshold_stripe_in->text().toDouble();
+	params.stripe_peeling_voxels_threshold = stripe_peeling_voxels_threshold_in->text().toInt();
+	params.stripe_peeling_resolution_xy    = stripe_peeling_resolution_xy_in->text().toDouble();
+	params.stripe_peeling_resolution_z     = stripe_peeling_resolution_z_in->text().toDouble();
+	params.stripe_peeling_num_iterations   = stripe_peeling_num_iterations_in->text().toInt();
+
+	params.tree_resolution_xy               = tree_resolution_xy_in->text().toDouble();
+	params.tree_resolution_z                = tree_resolution_z_in->text().toDouble();
+	params.tree_height_range                = tree_height_range_in->text().toDouble();
+	params.tree_dist_axis_threshold         = tree_dist_axis_threshold_in->text().toDouble();
+	params.tree_minimum_points_stem         = tree_minimum_points_stem_in->text().toUInt();
+	params.tree_axis_max_vertical_deviation = tree_axis_max_vertical_deviation_in->text().toDouble();
+	params.tree_height_distance_from_axis   = tree_height_distance_from_axis_in->text().toDouble();
+	params.tree_resolution_height           = tree_resolution_height_in->text().toDouble();
+
+	params.stem_search_diameter               = stem_search_diameter_in->text().toDouble();
+	params.stem_minimum_height                = stem_minimum_height_in->text().toDouble();
+	params.stem_maximum_height                = stem_maximum_height_in->text().toDouble();
+	params.verticality_radius_stem            = verticality_radius_stem_in->text().toDouble();
+	params.verticality_threshold_stem         = verticality_threshold_stem_in->text().toDouble(); // TODO: plural in one side
+	params.stem_section_thickness             = stem_section_thickness_in->text().toDouble();
+	params.stem_section_circle_width          = stem_section_circle_width_in->text().toDouble();
+	params.stem_section_interval              = stem_section_interval_in->text().toDouble();
+	params.stem_section_clustering_distance   = stem_section_clustering_distance_in->text().toDouble();
+	params.stem_section_minimum_diameter      = stem_section_minimum_diameter_in->text().toDouble();
+	params.stem_section_maximum_diameter      = stem_section_maximum_diameter_in->text().toDouble();
+	params.stem_section_inner_point_threshold = stem_section_inner_point_threshold_in->text().toInt();
+	params.stem_section_min_points            = stem_section_min_points_in->text().toInt();
+	params.stem_section_diameter_proportion   = stem_section_diameter_proportion_in->text().toDouble();
+	params.stem_section_sector_count          = stem_section_sector_count_in->text().toInt();
+	params.stem_section_min_occupied_sectors  = stem_section_min_occupied_sectors_in->text().toInt();
+
 	return params;
 }
 

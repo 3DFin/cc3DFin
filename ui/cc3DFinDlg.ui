@@ -1461,7 +1461,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="13" column="1">
-        <widget class="QLineEdit" name="verticality_threshold_stems_in">
+        <widget class="QLineEdit" name="verticality_threshold_stem_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1471,7 +1471,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="13" column="2">
-        <widget class="QLabel" name="verticality_threshold_stems_ht">
+        <widget class="QLabel" name="verticality_threshold_stem_ht">
          <property name="text">
           <string>(0,1)</string>
          </property>
@@ -1572,7 +1572,7 @@ You can get a brief description of what they do by hovering the mouse over the i
         </widget>
        </item>
        <item row="13" column="0">
-        <widget class="QLabel" name="verticality_threshold_stems_lbl">
+        <widget class="QLabel" name="verticality_threshold_stem_lbl">
          <property name="text">
           <string>Verticality threshold</string>
          </property>

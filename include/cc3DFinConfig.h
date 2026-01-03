@@ -18,8 +18,6 @@
 // ##########################################################################
 
 #include <QVariant>
-#include <qchar.h>
-#include <qvariant.h>
 #include <unordered_map>
 
 namespace tdf
