@@ -198,7 +198,7 @@ lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 	params.stem_minimum_height                = stem_minimum_height_in->text().toDouble();
 	params.stem_maximum_height                = stem_maximum_height_in->text().toDouble();
 	params.verticality_radius_stem            = verticality_radius_stem_in->text().toDouble();
-	params.verticality_threshold_stem         = verticality_threshold_stem_in->text().toDouble(); // TODO: plural in one side
+	params.verticality_threshold_stem         = verticality_threshold_stem_in->text().toDouble();
 	params.stem_section_thickness             = stem_section_thickness_in->text().toDouble();
 	params.stem_section_circle_width          = stem_section_circle_width_in->text().toDouble();
 	params.stem_section_interval              = stem_section_interval_in->text().toDouble();

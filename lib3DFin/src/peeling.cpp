@@ -100,7 +100,7 @@ namespace lib3dfin
 		const auto num_point_stripe = stripe_cloud.rows();
 
 		// Voxelate stripe cloud
-		const auto [voxelated_stripe, stripe_cloud_to_vox] = voxelize(PointCloud3(stripe_cloud), params_.resolution_xy, params_.resolution_z, true);
+		const auto [voxelated_stripe, stripe_cloud_to_vox] = voxelize(stripe_cloud, params_.resolution_xy, params_.resolution_z, true);
 		const auto num_voxels                              = voxelated_stripe.rows();
 
 		// Compute verticality feature
