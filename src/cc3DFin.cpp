@@ -157,9 +157,9 @@ void cc3DFin::initCustomColorScale()
 	customColorScale->setRelative();
 
 	customColorScale->insert(ccColorScaleElement(0., {91, 155, 213}));
+	customColorScale->insert(ccColorScaleElement(1, {237, 125, 49}));
 	customColorScale->insert(ccColorScaleElement(0.28571428571, {112, 173, 71}));
 	customColorScale->insert(ccColorScaleElement(0.642857142857, {255, 192, 0}));
-	customColorScale->insert(ccColorScaleElement(1, {237, 125, 49}));
 
 	ccColorScalesManager::GetUniqueInstance()->addScale(customColorScale);
 }

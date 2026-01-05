@@ -165,13 +165,12 @@ void cc3DFinDlg::populateFields()
 
 lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 {
-
 	// Collect params from the GUI
 	lib3dfin::Params params;
 
 	params.compute_height_normalization = compute_height_normalization_chk->isChecked();
 
-	// Field are pre validated, the casts should succeed
+	// Fields are pre validated, the casts should succeed
 	params.cloth_resolution       = cloth_resolution_in->text().toDouble();
 	params.denoise_point_cloud    = denoise_point_cloud_chk->isChecked();
 	params.denoise_resolution     = denoise_resolution_in->text().toDouble();
