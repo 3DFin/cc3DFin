@@ -30,6 +30,7 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QRadioButton>
 #include <QtGui>
 
@@ -90,6 +91,25 @@ void cc3DFinDlg::closeEvent(QCloseEvent* event)
 	}
 }
 
+void cc3DFinDlg::onTextChanged()
+{
+	auto* lineEdit = qobject_cast<QLineEdit*>(sender());
+	if (!lineEdit)
+		return;
+
+	if (lineEdit->hasAcceptableInput())
+	{
+		lineEdit->setStyleSheet("");
+		m_InvalidEditFields.remove(lineEdit);
+	}
+	else
+	{
+		lineEdit->setToolTip("Invalid value");
+		lineEdit->setStyleSheet("border: 1px solid red;");
+		m_InvalidEditFields.insert(lineEdit);
+	}
+}
+
 void cc3DFinDlg::populateFields()
 {
 	QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
@@ -136,22 +156,39 @@ void cc3DFinDlg::populateFields()
 		{
 			populateToolTipAndLabel(field, widget);
 
-			const auto& value = field.value;
-			if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget))
+			const auto& value    = field.value;
+			QLineEdit*  lineEdit = qobject_cast<QLineEdit*>(widget);
+			if (lineEdit)
 			{
 				lineEdit->setText(value.toString());
-
 				if (value.type() == QVariant::Double)
 				{
-					// TODO gt
-					auto validator = std::make_unique<QDoubleValidator>(this);
+					auto validator = std::make_unique<QDoubleValidator>(widget);
 					validator->setLocale(QLocale::c());
+					if (field.topValue.type() == QVariant::Double)
+					{
+						validator->setTop(field.topValue.toDouble());
+					}
+					if (field.bottomValue.type() == QVariant::Double)
+					{
+						validator->setBottom(field.bottomValue.toDouble());
+					}
+					connect(lineEdit, &QLineEdit::textChanged, this, &cc3DFinDlg::onTextChanged);
 					lineEdit->setValidator(validator.release());
 				}
 				else if (value.type() == QVariant::Int)
 				{
-					auto validator = std::make_unique<QIntValidator>(this);
+					auto validator = std::make_unique<QIntValidator>(widget);
 					validator->setLocale(QLocale::c());
+					if (field.topValue.type() == QVariant::Int)
+					{
+						validator->setTop(field.topValue.toInt());
+					}
+					if (field.bottomValue.type() == QVariant::Int)
+					{
+						validator->setBottom(field.bottomValue.toInt());
+					}
+					connect(lineEdit, &QLineEdit::textChanged, this, &cc3DFinDlg::onTextChanged);
 					lineEdit->setValidator(validator.release());
 				}
 			}
@@ -163,6 +200,16 @@ void cc3DFinDlg::populateFields()
 	}
 }
 
+bool cc3DFinDlg::checkFieldValidity()
+{
+	if (!m_InvalidEditFields.isEmpty())
+	{
+		QMessageBox::critical(this, "Invalid input", "Please correct Invalid fields");
+		return false;
+	}
+	return true;
+}
+
 lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 {
 	// Collect params from the GUI
@@ -171,13 +218,21 @@ lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 	params.compute_height_normalization = compute_height_normalization_chk->isChecked();
 
 	// Fields are pre validated, the casts should succeed
-	params.cloth_resolution       = cloth_resolution_in->text().toDouble();
+
+	params.cloth_resolution = cloth_resolution_in->text().toDouble();
+
 	params.denoise_point_cloud    = denoise_point_cloud_chk->isChecked();
 	params.denoise_resolution     = denoise_resolution_in->text().toDouble();
 	params.denoise_minimum_points = denoise_minimum_points_in->text().toUInt();
 
-	params.stripe_lower_limit              = stripe_lower_limit_in->text().toDouble();
-	params.stripe_upper_limit              = stripe_lower_limit_in->text().toDouble();
+	bool valid = true;
+
+	if (!denoise_minimum_points_in->hasAcceptableInput())
+		valid = false;
+
+	params.stripe_lower_limit = stripe_lower_limit_in->text().toDouble();
+	params.stripe_upper_limit = stripe_upper_limit_in->text().toDouble();
+
 	params.verticality_radius_stripe       = verticality_radius_stripe_in->text().toDouble();
 	params.verticality_threshold_stripe    = verticality_threshold_stripe_in->text().toDouble();
 	params.stripe_peeling_voxels_threshold = stripe_peeling_voxels_threshold_in->text().toInt();
@@ -299,8 +354,6 @@ void cc3DFinDlg::populateToolTipAndLabel(const tdf::Field& field, QWidget* widge
 	const auto& tooltip = field.description;
 	if (!tooltip.isEmpty())
 	{
-		widget->setToolTip(tooltip);
-
 		auto* label = findChild<QLabel*>(field.name + "_lbl");
 		if (label != nullptr)
 			label->setToolTip(tooltip);

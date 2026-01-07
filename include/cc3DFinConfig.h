@@ -25,12 +25,14 @@ namespace tdf
 	//! 3DFin configuration
 	struct Field
 	{
-		QString  name;
-		QString  label;
-		QString  description;
-		QVariant value;
-		QString  hint;
-
+		QString                                         name;
+		QString                                         label;
+		QString                                         description;
+		QVariant                                        value;
+		QString                                         hint;
+		QVariant                                        bottomValue;
+		QVariant                                        topValue;
 		static const std::unordered_map<QString, Field> getConfigFields();
 	};
+
 } // namespace tdf

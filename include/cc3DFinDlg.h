@@ -44,6 +44,7 @@ class cc3DFinDlg : public QDialog
 	//! Destructor
 	~cc3DFinDlg() override = default;
 	lib3dfin::Params get3DFinParameters();
+	bool             checkFieldValidity();
 	void             setComputationMode(bool);
 
   protected: // Methods
@@ -55,11 +56,13 @@ class cc3DFinDlg : public QDialog
   protected: // Slots
 	void        askOutputPath();
 	void        showExpertDialog();
+	void        onTextChanged();
 	static void showDocumentation();
 	static void showTutorial();
 
   protected: // Members
 	const QStringList&                      m_scalarFields;
 	std::unordered_map<QString, tdf::Field> m_fields;
+	QSet<QLineEdit*>                        m_InvalidEditFields;
 	bool                                    m_isComputationActive{false};
 };
