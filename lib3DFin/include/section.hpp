@@ -87,7 +87,6 @@ namespace lib3dfin
 						cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
 						continue;
 					}
-
 					PointCloud2 section_cloud(num_section_points, 2);
 
 					Eigen::Index section_output_id = 0;

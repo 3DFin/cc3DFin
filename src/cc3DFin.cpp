@@ -498,7 +498,9 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 		}
 	}
 
-	QFuture<lib3dfin::TDFResult> TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_current_cloud->getNextPoint()->u[0]), z0_vec.data(), static_cast<size_t>(m_current_cloud->size()), params, logger);
+	// get the output path as a string
+	std::string                  output_path     = dialog.output_dir_in->text().toStdString();
+	QFuture<lib3dfin::TDFResult> TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_current_cloud->getNextPoint()->u[0]), z0_vec.data(), static_cast<size_t>(m_current_cloud->size()), params, logger, output_path);
 
 	// Create watcher to notify when its done
 	// will be cleaned by using QFutureWatcher::deleteLater()

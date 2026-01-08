@@ -8,19 +8,22 @@
 #include "peeling.hpp"
 #include "section.hpp"
 #include "types.hpp"
-
 #ifdef TDFIN_USES_OPENXLSX
 #include "xlsx.hpp"
 #endif
 
 // stdlib
 #include <chrono>
+#ifdef TDFIN_USES_OPENXLSX
+#include <filesystem>
+namespace fs = std::filesystem;
+#endif
 
 namespace lib3dfin
 {
 	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData>;
 
-	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger> logger)
+	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger> logger, const std::string& output_dir)
 	{
 
 		if (logger)
@@ -67,7 +70,7 @@ namespace lib3dfin
 		auto               tree_data = tree_individualizer.individualize();
 
 		// minimum_height, maximum_height + section_width
-		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, params.stem_search_diameter / 2, params.stem_minimum_height, params.stem_maximum_height + params.stem_section_thickness);
+		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, params.stem_search_diameter / 2.0, params.stem_minimum_height, params.stem_maximum_height + params.stem_section_thickness);
 
 		// TODO: verticality could change at this point
 		// use params.verticality_scale_stem;
@@ -86,9 +89,11 @@ namespace lib3dfin
 
 		std::vector<double> z0_vector(z0.data(), z0.data() + z0.size());
 
-		// TODO: use the future draw interface here.
+// TODO: use the future draw interface here.
+
+// TODO catch xlsx exceptions
 #ifdef TDFIN_USES_OPENXLSX
-		export_xlsx(tree_data, "3DFin.xlsx");
+		export_xlsx(tree_data, (fs::path(output_dir) / "3DFin.xlsx").string());
 #endif
 
 		const auto drawing    = std::chrono::high_resolution_clock::now();

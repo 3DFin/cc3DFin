@@ -65,7 +65,7 @@ namespace lib3dfin
 		sheet_1.setName(sheet_descriptors[0].first);
 		sheet_1.cell(header_cell_ref) = sheet_descriptors[0].second;
 
-		// TODO interpolate string with real data.
+		// TODO interpolate string with true data.
 		sheet_1.cell("A2") = "This cloud has 61.100854 million points and its area is 3176 m2";
 
 		// Table Header
@@ -99,17 +99,18 @@ namespace lib3dfin
 			}
 
 			// special case for sheet_1 row_id is shifted by 1 because of the subheader
-			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 2)) = row_header;
-			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 3)) = tree.highest_z0;
-			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 4)) = tree.dbh;
-			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 5)) = tree.location.x();
-			sheet_1.cell(OpenXLSX::XLCellReference(row_id + 1, 6)) = tree.location.y();
+			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 2)) = row_header;
+			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 3)) = tree.highest_z0;
+			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 4)) = tree.dbh;
+			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 5)) = tree.location.x();
+			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 6)) = tree.location.y();
 
 			uint32_t col_id = 3;
 			for (const auto& section : tree.circle_data)
 			{
 
 				const auto section_ref = OpenXLSX::XLCellReference(row_id, col_id);
+
 				if (section.status == CircleData::Status::SUCCESS)
 				{
 					worksheets[1].cell(section_ref) = section.circle.radius;
