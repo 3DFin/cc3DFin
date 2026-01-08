@@ -100,6 +100,7 @@ void cc3DFinDlg::onTextChanged()
 	if (lineEdit->hasAcceptableInput())
 	{
 		lineEdit->setStyleSheet("");
+		lineEdit->setToolTip("");
 		m_InvalidEditFields.remove(lineEdit);
 	}
 	else
@@ -200,7 +201,7 @@ void cc3DFinDlg::populateFields()
 	}
 }
 
-bool cc3DFinDlg::checkFieldValidity()
+bool cc3DFinDlg::checkFieldsValidity()
 {
 	if (!m_InvalidEditFields.isEmpty())
 	{
@@ -224,11 +225,6 @@ lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 	params.denoise_point_cloud    = denoise_point_cloud_chk->isChecked();
 	params.denoise_resolution     = denoise_resolution_in->text().toDouble();
 	params.denoise_minimum_points = denoise_minimum_points_in->text().toUInt();
-
-	bool valid = true;
-
-	if (!denoise_minimum_points_in->hasAcceptableInput())
-		valid = false;
 
 	params.stripe_lower_limit = stripe_lower_limit_in->text().toDouble();
 	params.stripe_upper_limit = stripe_upper_limit_in->text().toDouble();

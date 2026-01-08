@@ -129,7 +129,7 @@ void cc3DFin::do3DFinAction()
 	m_app->freezeUI(true);
 	connect(tdfDlg.compute_btn, &QPushButton::clicked, [this, &tdfDlg, logger]
 	        {
-				if(!tdfDlg.checkFieldValidity())
+				if(!tdfDlg.checkFieldsValidity())
 				    return;
 				const auto params    = tdfDlg.get3DFinParameters();
 				tdfDlg.setComputationMode(true);
