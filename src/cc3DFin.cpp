@@ -106,19 +106,19 @@ void cc3DFin::do3DFinAction()
 	}
 
 	// Cast to PC
-	m_current_cloud = dynamic_cast<ccPointCloud*>(ent);
+	m_currentCloud = dynamic_cast<ccPointCloud*>(ent);
 
 	// Get scalar field names for plugin UI
 	QStringList scalarFieldNames;
-	for (int i = 0; i < m_current_cloud->getNumberOfScalarFields(); ++i)
+	for (int i = 0; i < m_currentCloud->getNumberOfScalarFields(); ++i)
 	{
-		const CCCoreLib::ScalarField* scalarField = m_current_cloud->getScalarField(i);
+		const CCCoreLib::ScalarField* scalarField = m_currentCloud->getScalarField(i);
 		if (scalarField != nullptr)
 			scalarFieldNames.push_back(QString(scalarField->getName().c_str()));
 	}
 
-	m_current_cloud->setEnabled(false);
-	m_current_cloud->placeIteratorAtBeginning();
+	m_currentCloud->setEnabled(false);
+	m_currentCloud->placeIteratorAtBeginning();
 
 	cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
@@ -172,7 +172,7 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_desc
 
 	// Create a point cloud for circle points
 	ccPointCloud* circle_points_pc = new ccPointCloud(QString("Fitted sections"));
-	circle_points_pc->copyGlobalShiftAndScale(*m_current_cloud);
+	circle_points_pc->copyGlobalShiftAndScale(*m_currentCloud);
 
 	// Add scalar fields for circle properties
 	int tree_id_sf_id    = circle_points_pc->addScalarField("tree_ID");
@@ -263,8 +263,6 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_desc
 
 void cc3DFin::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
-	// TODO: go back to point cloud sampling since we need to visualize the tilt deviation scalar field
-	// Create a group to hold all axes as polylines
 	constexpr double step_size = 0.1; // TODO parameters
 
 	auto*  axis_points  = new ccPointCloud(QString("tree axes"));
@@ -297,7 +295,7 @@ void cc3DFin::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descrip
 void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
 	auto* tree_locations = new ccPointCloud("Tree Locations");
-	tree_locations->copyGlobalShiftAndScale(*m_current_cloud);
+	tree_locations->copyGlobalShiftAndScale(*m_currentCloud);
 
 	tree_locations->setPointSize(8);
 	int    id_dbh  = tree_locations->addScalarField("dbh");
@@ -333,7 +331,7 @@ void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree
 void cc3DFin::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
 	auto* tree_heights = new ccPointCloud("Highest points");
-	tree_heights->copyGlobalShiftAndScale(*m_current_cloud);
+	tree_heights->copyGlobalShiftAndScale(*m_currentCloud);
 	tree_heights->setPointSize(8);
 	int    id_z0       = tree_heights->addScalarField("z0");
 	auto*  z0_sf       = tree_heights->getScalarField(id_z0);
@@ -367,11 +365,11 @@ void cc3DFin::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_
 void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std::vector<double>& z0)
 {
 
-	auto enriched_cloud = std::make_unique<ccPointCloud>(m_current_cloud->getName());
+	auto enriched_cloud = std::make_unique<ccPointCloud>(m_currentCloud->getName());
 
-	enriched_cloud->copyGlobalShiftAndScale(*m_current_cloud);
+	enriched_cloud->copyGlobalShiftAndScale(*m_currentCloud);
 
-	if (!enriched_cloud->reserve(m_current_cloud->size()))
+	if (!enriched_cloud->reserve(m_currentCloud->size()))
 	{
 		ccLog::Error("[3DFin] Not enough memory!");
 		return;
@@ -397,9 +395,9 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 		return;
 	}
 
-	for (unsigned i = 0; i < m_current_cloud->size(); i++)
+	for (unsigned i = 0; i < m_currentCloud->size(); i++)
 	{
-		enriched_cloud->addPoint(*m_current_cloud->getPoint(i));
+		enriched_cloud->addPoint(*m_currentCloud->getPoint(i));
 		dist_axes_sf->addElement(tree_data.axis_distance(i));
 		tree_id_sf->addElement(tree_data.cluster_indicator(i));
 		z0_sf->addElement(z0[i]);
@@ -423,14 +421,14 @@ void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 {
 	auto stripe_cloud = std::make_unique<ccPointCloud>("Stems in stripe");
 
-	stripe_cloud->copyGlobalShiftAndScale(*m_current_cloud);
+	stripe_cloud->copyGlobalShiftAndScale(*m_currentCloud);
 	int   tree_id_id = stripe_cloud->addScalarField("tree_ID");
 	auto* tree_id_sf = stripe_cloud->getScalarField(tree_id_id);
 
 	unsigned count_valid = std::count_if(std::begin(stem_indicator), std::end(stem_indicator), [](int32_t stem_id)
 	                                     { return stem_id >= 0; });
 
-	if (!stripe_cloud->reserve(m_current_cloud->size()))
+	if (!stripe_cloud->reserve(m_currentCloud->size()))
 	{
 		ccLog::Error("[3DFin] Not enough memory!");
 		return;
@@ -451,7 +449,7 @@ void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 		auto stem_id = stem_indicator[i];
 		if (stem_id >= 0)
 		{
-			stripe_cloud->addPoint(*m_current_cloud->getPoint(i));
+			stripe_cloud->addPoint(*m_currentCloud->getPoint(i));
 			tree_id_sf->addElement(stem_id);
 		}
 	}
@@ -465,24 +463,26 @@ void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 
 void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlog::logger> logger, cc3DFinDlg& dialog)
 {
-	assert(m_current_cloud);
-	m_current_cloud->placeIteratorAtBeginning();
+	assert(m_currentCloud);
+	const QString cloudName     = m_currentCloud->getName();
+	auto          baseOutputDir = dialog.checkBaseOutputValidity(cloudName);
+	m_currentCloud->placeIteratorAtBeginning();
 
-	std::vector<double> z0_vec;
+	std::vector<double> z0Vec;
 
 	// TODO: encapsulation of the UI operations
 	if (dialog.compute_height_normalization_chk->checkState() == Qt::CheckState::Unchecked)
 	{
 		const auto z0_str = dialog.z0_name_cbx->currentText().toStdString();
-		const auto z0_id  = m_current_cloud->getScalarFieldIndexByName(z0_str);
+		const auto z0_id  = m_currentCloud->getScalarFieldIndexByName(z0_str);
 		if (z0_id != -1)
 		{
-			const auto* z0_sf = m_current_cloud->getScalarField(z0_id);
+			const auto* z0_sf = m_currentCloud->getScalarField(z0_id);
 
 			// try to allocate the sf array
 			try
 			{
-				z0_vec.reserve(z0_sf->size());
+				z0Vec.reserve(z0_sf->size());
 			}
 			catch (const std::bad_alloc&)
 			{
@@ -493,21 +493,20 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 			// copy the scalar_field to double
 			for (size_t svId = 0; svId < z0_sf->size(); ++svId)
 			{
-				z0_vec.push_back(z0_sf->getValue(svId));
+				z0Vec.push_back(z0_sf->getValue(svId));
 			}
 		}
 	}
 
-	// get the output path as a string
-	std::string                  output_path     = dialog.output_dir_in->text().toStdString();
-	QFuture<lib3dfin::TDFResult> TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_current_cloud->getNextPoint()->u[0]), z0_vec.data(), static_cast<size_t>(m_current_cloud->size()), params, logger, output_path);
+	QFuture<lib3dfin::TDFResult>
+	    TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_currentCloud->getNextPoint()->u[0]), z0Vec.data(), static_cast<size_t>(m_currentCloud->size()), params, logger, baseOutputDir);
 
 	// Create watcher to notify when its done
 	// will be cleaned by using QFutureWatcher::deleteLater()
 	auto* TdfComputationWatcher = new QFutureWatcher<lib3dfin::TDFResult>(this);
 
 	// we move z0_vec for memory clean up at the end of the computation
-	connect(TdfComputationWatcher, &QFutureWatcher<lib3dfin::TDFResult>::finished, this, [TdfComputationWatcher, this, &dialog, z0_vec = std::move(z0_vec)]()
+	connect(TdfComputationWatcher, &QFutureWatcher<lib3dfin::TDFResult>::finished, this, [TdfComputationWatcher, this, &dialog, z0_vec = std::move(z0Vec)]()
 	        {
 		// Retrieve result
 		lib3dfin::TDFResult result = TdfComputationWatcher->future().result();
@@ -518,7 +517,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 		auto& tree_data      = std::get<2>(result);
 
 		// TODO factorize the drawing
-		m_base_group = std::make_unique<ccHObject>(m_current_cloud->getName() + "_3DFin");
+		m_base_group = std::make_unique<ccHObject>(m_currentCloud->getName() + "_3DFin");
 		drawCircles(tree_data.tree_descriptors);
 		drawTreeLocators(tree_data.tree_descriptors);
 		drawTreeHeights(tree_data.tree_descriptors);

@@ -36,6 +36,8 @@
 
 // System
 #include <cassert>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
     : QDialog(parent, Qt::Dialog)
@@ -209,6 +211,23 @@ bool cc3DFinDlg::checkFieldsValidity()
 		return false;
 	}
 	return true;
+}
+
+std::optional<fs::path> cc3DFinDlg::checkBaseOutputValidity(const QString& baseName)
+{
+
+	// get the output_path
+	fs::path outPath = fs::path(output_dir_in->text().toStdString()) / fs::path(baseName.toStdString()).stem();
+
+	if (!fs::exists(fs::path(outPath.string() + ".xlsx")))
+		return outPath;
+
+	auto userchoice = QMessageBox::question(this, "", "Results of previous computations exists in " + output_dir_in->text() + " do you want to ovewrite?");
+
+	if (userchoice == QMessageBox::Yes)
+		return outPath;
+	else
+		return std::nullopt;
 }
 
 lib3dfin::Params cc3DFinDlg::get3DFinParameters()

@@ -63,6 +63,6 @@ class cc3DFin : public QObject
 	//! Default action
 	QAction*                   m_action;
 	std::unique_ptr<ccHObject> m_base_group{nullptr};
-	ccPointCloud*              m_current_cloud{nullptr};
+	ccPointCloud*              m_currentCloud{nullptr};
 	const QString              s_color_scale_uuid = "{25ec76a1-9b8d-4e4a-a129-21ae313ef8ba}";
 };

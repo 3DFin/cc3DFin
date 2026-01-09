@@ -29,7 +29,10 @@
 #include <QStringList>
 
 // system
+#include <filesystem>
 #include <unordered_map>
+
+namespace fs = std::filesystem;
 
 //! Dialog for cc3DFin plugin
 class cc3DFinDlg : public QDialog
@@ -43,9 +46,10 @@ class cc3DFinDlg : public QDialog
 
 	//! Destructor
 	~cc3DFinDlg() override = default;
-	lib3dfin::Params get3DFinParameters();
-	bool             checkFieldsValidity();
-	void             setComputationMode(bool);
+	lib3dfin::Params        get3DFinParameters();
+	bool                    checkFieldsValidity();
+	void                    setComputationMode(bool);
+	std::optional<fs::path> checkBaseOutputValidity(const QString& baseName);
 
   protected: // Methods
 	void populateFields();

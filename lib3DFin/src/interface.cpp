@@ -14,16 +14,12 @@
 
 // stdlib
 #include <chrono>
-#ifdef TDFIN_USES_OPENXLSX
-#include <filesystem>
-namespace fs = std::filesystem;
-#endif
 
 namespace lib3dfin
 {
 	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData>;
 
-	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger> logger, const std::string& output_dir)
+	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger> logger, const std::optional<fs::path>& output_basepath)
 	{
 
 		if (logger)
@@ -90,11 +86,15 @@ namespace lib3dfin
 
 		std::vector<double> z0_vector(z0.data(), z0.data() + z0.size());
 
-// TODO: use the future draw interface here.
+		// TODO: use the future draw interface here.
 
-// TODO catch xlsx exceptions
+		// TODO catch xlsx exceptions
+
 #ifdef TDFIN_USES_OPENXLSX
-		export_xlsx(tree_data, (fs::path(output_dir) / "3DFin.xlsx").string());
+		if (output_basepath.has_value())
+		{
+			export_xlsx(tree_data, output_basepath.value().string() + ".xlsx");
+		}
 #endif
 
 		const auto drawing    = std::chrono::high_resolution_clock::now();
