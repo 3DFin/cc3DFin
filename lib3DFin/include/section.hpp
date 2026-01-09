@@ -136,13 +136,13 @@ namespace lib3dfin
 			circle_data.circle          = LMCircleFit(section_cloud);
 			const Circle& circle_params = circle_data.circle;
 
-			if (circle_params.radius < params_.stem_section_maximum_diameter / 2)
+			if (circle_params.radius < params_.stem_section_minimum_diameter / 2.0)
 			{
 				circle_data.status = CircleData::Status::DIAMETER_TOO_SMALL;
 				return;
 			}
 
-			if (circle_params.radius > params_.stem_section_maximum_diameter / 2)
+			if (circle_params.radius > params_.stem_section_maximum_diameter / 2.0)
 			{
 				circle_data.status = CircleData::Status::DIAMETER_TOO_LARGE;
 				return;

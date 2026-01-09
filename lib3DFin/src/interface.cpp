@@ -70,8 +70,9 @@ namespace lib3dfin
 		auto               tree_data = tree_individualizer.individualize();
 
 		// minimum_height, maximum_height + section_width
-		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, params.stem_search_diameter / 2.0, params.stem_minimum_height, params.stem_maximum_height + params.stem_section_thickness);
+		// auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, params.stem_search_diameter / 2.0, params.stem_minimum_height, params.stem_maximum_height + params.stem_section_thickness);
 
+		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, 2.0 / 2, 0.3, 25 + 0.05);
 		// TODO: verticality could change at this point
 		// use params.verticality_scale_stem;
 		// and params.verticality_thresh_stem;
