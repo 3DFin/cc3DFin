@@ -45,7 +45,7 @@ namespace lib3dfin
 			{
 				spdlog::warn("Input height normalization is null, force computation of height normalization");
 			}
-			HeightNormalization height_normalizer(point_cloud, HeightNormalization::Parameters());
+			HeightNormalization height_normalizer(point_cloud, HeightNormalization::Parameters::FromGlobalConfig(params));
 			z0 = height_normalizer.normalize();
 		}
 		else
@@ -54,7 +54,7 @@ namespace lib3dfin
 			z0 = Eigen::Map<const Eigen::VectorXd>(z0_sf, num_points);
 		}
 
-		TreePeeler stripe_peeler(point_cloud, TreePeeler::Parameters());
+		TreePeeler stripe_peeler(point_cloud, TreePeeler::Parameters::StripeFromGlobalConfig(params));
 
 		Stripe stripe(params.stripe_lower_limit, params.stripe_upper_limit);
 		stripe.cluster_indicator = TreePeeler::filterInitialStripe(z0, params.stripe_lower_limit, params.stripe_upper_limit);
@@ -62,13 +62,14 @@ namespace lib3dfin
 		// Beware the side effect on indicator
 		stripe_peeler.peel(stripe.cluster_indicator);
 
-		TreeIndividualizer tree_individualizer(point_cloud, stripe, z0, TreeIndividualizer::Parameters());
+		TreeIndividualizer tree_individualizer(point_cloud, stripe, z0, TreeIndividualizer::Parameters::FromGlobalConfig(params));
 		auto               tree_data = tree_individualizer.individualize();
 
 		// minimum_height, maximum_height + section_width
 		// auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, params.stem_search_diameter / 2.0, params.stem_minimum_height, params.stem_maximum_height + params.stem_section_thickness);
 
 		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, 2.0 / 2, 0.3, 25 + 0.05);
+
 		// TODO: verticality could change at this point
 		// use params.verticality_scale_stem;
 		// and params.verticality_thresh_stem;
@@ -77,19 +78,15 @@ namespace lib3dfin
 		stripe_peeler.peel(stem_indicator);
 
 		ArrayClusterIndicator sections_indicator = (stem_indicator > -1).select(tree_data.cluster_indicator, -1);
-		SectionExtractor      section_extractor(point_cloud, sections_indicator, z0, tree_data, SectionExtractor::Parameters());
+		SectionExtractor      section_extractor(point_cloud, sections_indicator, z0, tree_data, SectionExtractor::Parameters::FromGlobalConfig(params));
 
 		// TODO: beware side effect on tree_data
 		section_extractor.extract();
-
 		std::vector<int32_t> stem_indicator_vector(stripe.cluster_indicator.data(), stripe.cluster_indicator.data() + stripe.cluster_indicator.size());
-
-		std::vector<double> z0_vector(z0.data(), z0.data() + z0.size());
+		std::vector<double>  z0_vector(z0.data(), z0.data() + z0.size());
 
 		// TODO: use the future draw interface here.
-
 		// TODO catch xlsx exceptions
-
 #ifdef TDFIN_USES_OPENXLSX
 		if (output_basepath.has_value())
 		{

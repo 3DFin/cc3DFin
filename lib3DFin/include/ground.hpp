@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
+#include "config.hpp"
 #include "types.hpp"
 
 namespace lib3dfin
@@ -17,6 +18,16 @@ namespace lib3dfin
 			double   denoise_resolution{0.15};
 			uint32_t denoise_minimum_points{2};
 			bool     clean_dtm{true}; // New, not mapped to any global config
+
+			static Parameters FromGlobalConfig(const Params& params)
+			{
+				return Parameters{
+				    params.cloth_resolution,
+				    params.denoise_point_cloud,
+				    params.denoise_resolution,
+				    params.denoise_minimum_points,
+				    true};
+			}
 		};
 
 	  public:

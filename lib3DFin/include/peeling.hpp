@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
+#include "config.hpp"
 #include "types.hpp"
 
+// StdLib
 #include <cstdint>
 
 namespace lib3dfin
@@ -20,6 +22,28 @@ namespace lib3dfin
 			double   resolution_xy{0.02};
 			double   resolution_z{0.02};
 			uint32_t num_iterations{2};
+
+			static Parameters StripeFromGlobalConfig(const Params& params)
+			{
+				return Parameters{
+				    params.verticality_radius_stripe,
+				    params.verticality_threshold_stripe,
+				    params.stripe_peeling_voxels_threshold,
+				    params.stripe_peeling_resolution_xy,
+				    params.stripe_peeling_resolution_z,
+				    params.stripe_peeling_num_iterations};
+			}
+
+			static Parameters StemFromGlobalConfig(const Params& params)
+			{
+				return Parameters{
+				    params.verticality_radius_stem,
+				    params.verticality_threshold_stem,
+				    params.stripe_peeling_voxels_threshold,
+				    params.stripe_peeling_resolution_xy,
+				    params.stripe_peeling_resolution_z,
+				    params.stripe_peeling_num_iterations};
+			}
 		};
 
 	  public: // static
