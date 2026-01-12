@@ -1,17 +1,20 @@
 #pragma once
 
+#include "types.hpp"
+
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 #include <OpenXLSX.hpp>
+#include <spdlog/spdlog.h>
 
 namespace lib3dfin
 {
-	void export_xlsx(const TreeData& tree_data, const std::string& filename)
+	void export_xlsx(const TreeData& tree_data, const std::string& filename, const ProjectMeta& meta)
 	{
 
 		if (tree_data.tree_descriptors.empty())
 		{
-			std::cout << "[3DFin] Nothing to write" << std::endl;
+			spdlog::error("[XLSX] Nothing to write");
 			return;
 		}
 
@@ -45,7 +48,7 @@ namespace lib3dfin
 		}
 		catch (const std::exception& e)
 		{
-			std::cerr << "[3DFin] Failed to create XLSX file: " << e.what() << '\n';
+			spdlog::error("[3DFin] Failed to create XLSX file: {}", e.what());
 			return;
 		}
 
@@ -66,13 +69,14 @@ namespace lib3dfin
 		sheet_1.cell(header_cell_ref) = sheet_descriptors[0].second;
 
 		// TODO interpolate string with true data.
-		sheet_1.cell("A2") = "This cloud has 61.100854 million points and its area is 3176 m2";
+		std::stringstream meta_description;
+		meta_description << "This cloud has " << meta.num_points / 1'000'000.0 << " million points and its area is " << meta.area_m2 << " m2";
+		sheet_1.cell("A2") = meta_description.str().c_str();
 
 		// Table Header
 		auto table_header       = sheet_1.range("C3:F3");
 		sheet_1.row(3).values() = std::vector<std::string>{"", "", "TH", "DBH", "X", "Y"};
 		table_header.setFormat(bold_format);
-
 		// other sheets
 		for (size_t worksheet_id = 1; worksheet_id < num_worksheets; ++worksheet_id)
 		{

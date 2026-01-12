@@ -8,6 +8,8 @@
 #include "peeling.hpp"
 #include "section.hpp"
 #include "types.hpp"
+#include "voxel.hpp"
+
 #ifdef TDFIN_USES_OPENXLSX
 #include "xlsx.hpp"
 #endif
@@ -22,6 +24,7 @@ namespace lib3dfin
 	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger> logger, const std::optional<fs::path>& output_basepath)
 	{
 
+		ProjectMeta project_meta;
 		if (logger)
 		{
 			spdlog::set_default_logger(logger);
@@ -38,13 +41,20 @@ namespace lib3dfin
 		}
 
 		Eigen::VectorXd z0;
-		// Compute normalization of needed
+
+		// Compute normalization if needed
 		if (params.compute_height_normalization || !z0_sf)
 		{
 			if (!params.compute_height_normalization && !z0_sf)
 			{
 				spdlog::warn("Input height normalization is null, force computation of height normalization");
 			}
+
+			auto [voxelated_ground, _] = voxelize(point_cloud, 1.0, 2000, true);
+			project_meta.num_points    = point_cloud.rows();
+			project_meta.area_m2       = voxelated_ground.rows();
+
+			spdlog::info("This cloud has {0:.2f} million points, its area is {1:}", project_meta.num_points / 1'000'000.0, project_meta.area_m2);
 			HeightNormalization height_normalizer(point_cloud, HeightNormalization::Parameters::FromGlobalConfig(params));
 			z0 = height_normalizer.normalize();
 		}
@@ -52,6 +62,26 @@ namespace lib3dfin
 		{
 			spdlog::info("Using provided height normalization");
 			z0 = Eigen::Map<const Eigen::VectorXd>(z0_sf, num_points);
+
+			ArrayMask pseudo_ground_mask = (z0.array() < 0.5);
+
+			auto        pseudo_ground_point_count = pseudo_ground_mask.count();
+			PointCloud3 pseudo_ground_cloud(pseudo_ground_point_count, 3);
+
+			Eigen::Index filtered_point_id = 0;
+			for (Eigen::Index point_id = 0; point_id < z0.size(); ++point_id)
+			{
+				if (pseudo_ground_mask(point_id))
+				{
+					pseudo_ground_cloud.row(filtered_point_id++) = point_cloud.row(point_id);
+				}
+			}
+
+			auto [voxelated_ground, _] = voxelize(pseudo_ground_cloud, 1.0, 2000, true);
+			project_meta.num_points    = point_cloud.rows();
+			project_meta.area_m2       = voxelated_ground.rows();
+
+			spdlog::info("This cloud has {0:.2f} million points, its area is {1:}", project_meta.num_points / 1'000'000.0, project_meta.area_m2);
 		}
 
 		TreePeeler stripe_peeler(point_cloud, TreePeeler::Parameters::StripeFromGlobalConfig(params));
@@ -66,9 +96,7 @@ namespace lib3dfin
 		auto               tree_data = tree_individualizer.individualize();
 
 		// minimum_height, maximum_height + section_width
-		// auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, params.stem_search_diameter / 2.0, params.stem_minimum_height, params.stem_maximum_height + params.stem_section_thickness);
-
-		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, 2.0 / 2, 0.3, 25 + 0.05);
+		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, params.stem_search_diameter / 2.0, params.stem_minimum_height, params.stem_maximum_height + params.stem_section_thickness);
 
 		// TODO: verticality could change at this point
 		// use params.verticality_scale_stem;
@@ -86,11 +114,12 @@ namespace lib3dfin
 		std::vector<double>  z0_vector(z0.data(), z0.data() + z0.size());
 
 		// TODO: use the future draw interface here.
+		// TODO:
 		// TODO catch xlsx exceptions
 #ifdef TDFIN_USES_OPENXLSX
 		if (output_basepath.has_value())
 		{
-			export_xlsx(tree_data, output_basepath.value().string() + ".xlsx");
+			export_xlsx(tree_data, output_basepath.value().string() + ".xlsx", project_meta);
 		}
 #endif
 

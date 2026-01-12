@@ -7,6 +7,7 @@
 #include "types.hpp"
 
 #include <spdlog/spdlog.h>
+
 // StdLib
 #include <cstddef>
 #include <filesystem>

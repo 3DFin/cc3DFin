@@ -36,6 +36,12 @@ namespace lib3dfin
 
 	inline constexpr int32_t NO_CLUSTER_ID = -1;
 
+	struct ProjectMeta
+	{
+		uint32_t num_points{0};
+		uint32_t area_m2{0};
+	};
+
 	struct Circle
 	{
 		Vec2   center{0.0, 0.0};
