@@ -303,11 +303,11 @@ namespace tdf
 	     int(1)}};
 
 	const std::vector<Field> miscFields = {
-	    {"compute_height_normalization ",
+	    {"compute_height_normalization",
 	     "Normalize point cloud",
 	     "If the point cloud is not height-normalized, a Digital Terrain "
 	     "Model (DTM) will be generated to compute normalized heights for all points.",
-	     false},
+	     true},
 	    {"denoise_point_cloud",
 	     "Clean noise on DTM",
 	     "If it is expected to be noise below ground level (or if you know "

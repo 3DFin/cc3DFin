@@ -118,12 +118,9 @@ void cc3DFinDlg::populateFields()
 	QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
 	output_dir_in->setText(homePath);
 
-	populateSfCombo();
-
 	for (const auto [fieldName, field] : m_fields)
 	{
 		QWidget* widget = nullptr;
-
 		// handle "corner cases" first
 		if ((widget = findChild<QWidget*>(fieldName + "_rb_1")))
 		{
@@ -135,12 +132,14 @@ void cc3DFinDlg::populateFields()
 				rb2->setChecked(!field.value.toBool());
 				rb1->setToolTip(field.description);
 				rb2->setToolTip(field.description);
-				export_txt_lbl->setText(field.value.toString());
+				export_txt_lbl->setText(field.label);
 				export_txt_lbl->setToolTip(field.description);
+				rb1->setDisabled(true);
+				rb2->setDisabled(true);
 			}
 			else
 			{
-				ccLog::Warning("[3DFin] fail to configure export field");
+				ccLog::PrintDebug("[3DFin] fail to configure export field");
 			}
 		}
 		else if ((widget = findChild<QWidget*>(fieldName + "_chk")) != nullptr)
@@ -152,7 +151,7 @@ void cc3DFinDlg::populateFields()
 			}
 			else
 			{
-				ccLog::Warning("[3DFin] fail to configure checkbox field :" + fieldName);
+				ccLog::PrintDebug("[3DFin] fail to configure checkbox field :" + fieldName);
 			}
 		}
 		else if ((widget = findChild<QWidget*>(fieldName + "_in")))
@@ -197,10 +196,12 @@ void cc3DFinDlg::populateFields()
 			}
 			else
 			{
-				ccLog::Warning("[3DFin] fail to configure lineEdit field: " + fieldName);
+				ccLog::PrintDebug("[3DFin] fail to configure lineEdit field: " + fieldName);
 			}
 		}
 	}
+
+	populateSfCombo();
 }
 
 bool cc3DFinDlg::checkFieldsValidity()
@@ -348,6 +349,13 @@ void cc3DFinDlg::showExpertDialog()
 void cc3DFinDlg::populateSfCombo()
 {
 	// populate scalar field list
+	if (m_scalarFields.empty())
+	{
+		compute_height_normalization_chk->setChecked(true);
+		compute_height_normalization_chk->setDisabled(true);
+		return;
+	}
+
 	z0_name_cbx->addItems(m_scalarFields);
 	const auto& sfComboField = m_fields["z0_name"];
 	int         z0index      = z0_name_cbx->findText("Z0");
@@ -357,7 +365,7 @@ void cc3DFinDlg::populateSfCombo()
 	}
 	else
 	{
-		m_fields["do_normalize"].value = true;
+		compute_height_normalization_chk->setChecked(true);
 	}
 	z0_name_lbl->setToolTip(sfComboField.description);
 	z0_name_cbx->setToolTip(sfComboField.description);
