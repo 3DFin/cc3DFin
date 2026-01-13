@@ -17,5 +17,13 @@ namespace lib3dfin
 {
 	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData>;
 
-	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger>, const std::optional<fs::path>& output_basepath);
+	struct GlobalShift
+	{
+		double x_shift{0.};
+		double y_shift{0.};
+		double z_shift{0.};
+		double scale{1.};
+	};
+
+	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger>, const std::optional<fs::path>& output_basepath, const std::optional<GlobalShift>& global_shift);
 } // namespace lib3dfin

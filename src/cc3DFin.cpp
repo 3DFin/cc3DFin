@@ -470,14 +470,21 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 
 	std::vector<double> z0Vec;
 
+	// Convert Cloud GS into lib3DFin "exchange" format
+	lib3dfin::GlobalShift tdfGlobalShift{
+	    m_currentCloud->getGlobalShift().x,
+	    m_currentCloud->getGlobalShift().y,
+	    m_currentCloud->getGlobalShift().z,
+	    m_currentCloud->getGlobalScale()};
+
 	// TODO: encapsulation of the UI operations
 	if (dialog.compute_height_normalization_chk->checkState() == Qt::CheckState::Unchecked)
 	{
-		const auto z0_str = dialog.z0_name_cbx->currentText().toStdString();
-		const auto z0_id  = m_currentCloud->getScalarFieldIndexByName(z0_str);
-		if (z0_id != -1)
+		const auto z0Name = dialog.z0_name_cbx->currentText().toStdString();
+		const auto z0Id   = m_currentCloud->getScalarFieldIndexByName(z0Name);
+		if (z0Id != -1)
 		{
-			const auto* z0_sf = m_currentCloud->getScalarField(z0_id);
+			const auto* z0_sf = m_currentCloud->getScalarField(z0Id);
 
 			// try to allocate the sf array
 			try
@@ -499,7 +506,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 	}
 
 	QFuture<lib3dfin::TDFResult>
-	    TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_currentCloud->getNextPoint()->u[0]), z0Vec.data(), static_cast<size_t>(m_currentCloud->size()), params, logger, baseOutputDir);
+	    TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_currentCloud->getNextPoint()->u[0]), z0Vec.data(), static_cast<size_t>(m_currentCloud->size()), params, logger, baseOutputDir, tdfGlobalShift);
 
 	// Create watcher to notify when its done
 	// will be cleaned by using QFutureWatcher::deleteLater()

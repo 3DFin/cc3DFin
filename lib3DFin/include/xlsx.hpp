@@ -68,7 +68,6 @@ namespace lib3dfin
 		sheet_1.setName(sheet_descriptors[0].first);
 		sheet_1.cell(header_cell_ref) = sheet_descriptors[0].second;
 
-		// TODO interpolate string with true data.
 		std::stringstream meta_description;
 		meta_description << "This cloud has " << meta.num_points / 1'000'000.0 << " million points and its area is " << meta.area_m2 << " m2";
 		sheet_1.cell("A2") = meta_description.str().c_str();
@@ -104,10 +103,13 @@ namespace lib3dfin
 
 			// special case for sheet_1 row_id is shifted by 1 because of the subheader
 			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 2)) = row_header;
-			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 3)) = tree.highest_z0;
-			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 4)) = tree.dbh;
-			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 5)) = tree.location.x();
-			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 6)) = tree.location.y();
+			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 3)) = tree.highest_z0 / meta.scale;
+			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 4)) = tree.dbh / meta.scale;
+
+			const Vec3 global_tree_location = (tree.location / meta.scale) - meta.shift;
+
+			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 5)) = global_tree_location.x();
+			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 6)) = global_tree_location.y();
 
 			uint32_t col_id = 3;
 			for (const auto& section : tree.circle_data)
@@ -117,7 +119,9 @@ namespace lib3dfin
 
 				if (section.status == CircleData::Status::SUCCESS)
 				{
-					worksheets[1].cell(section_ref) = section.circle.radius;
+					worksheets[1].cell(section_ref) = section.circle.radius / meta.scale;
+
+					const Vec2 global_circle_center = (section.circle.center / meta.scale) - meta.shift.head<2>();
 					worksheets[2].cell(section_ref) = section.circle.center.x();
 					worksheets[3].cell(section_ref) = section.circle.center.y();
 					worksheets[5].cell(section_ref) = 0;
@@ -161,7 +165,7 @@ namespace lib3dfin
 			}
 
 			worksheets[4].cell(OpenXLSX::XLCellReference(row_id, column_id))     = column_header;
-			worksheets[4].cell(OpenXLSX::XLCellReference(row_id + 1, column_id)) = circle.z0;
+			worksheets[4].cell(OpenXLSX::XLCellReference(row_id + 1, column_id)) = circle.z0 / meta.scale;
 			++column_id;
 		}
 

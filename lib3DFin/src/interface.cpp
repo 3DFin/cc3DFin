@@ -21,7 +21,7 @@ namespace lib3dfin
 {
 	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData>;
 
-	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger> logger, const std::optional<fs::path>& output_basepath)
+	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger> logger, const std::optional<fs::path>& output_basepath, const std::optional<GlobalShift>& global_shift)
 	{
 
 		ProjectMeta project_meta;
@@ -101,7 +101,6 @@ namespace lib3dfin
 		// TODO: verticality could change at this point
 		// use params.verticality_scale_stem;
 		// and params.verticality_thresh_stem;
-
 		// Beware the side effect on indicator
 		stripe_peeler.peel(stem_indicator);
 
@@ -114,11 +113,16 @@ namespace lib3dfin
 		std::vector<double>  z0_vector(z0.data(), z0.data() + z0.size());
 
 		// TODO: use the future draw interface here.
-		// TODO:
 		// TODO catch xlsx exceptions
 #ifdef TDFIN_USES_OPENXLSX
 		if (output_basepath.has_value())
 		{
+			if (global_shift)
+			{
+				// auto unwrapper_gs  = global_shift.value();
+				project_meta.shift = {global_shift->x_shift, global_shift->y_shift, global_shift->z_shift};
+				project_meta.scale = {global_shift->scale};
+			}
 			export_xlsx(tree_data, output_basepath.value().string() + ".xlsx", project_meta);
 		}
 #endif

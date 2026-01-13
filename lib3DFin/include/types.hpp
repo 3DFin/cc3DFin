@@ -40,6 +40,8 @@ namespace lib3dfin
 	{
 		uint32_t num_points{0};
 		uint32_t area_m2{0};
+		Vec3     shift{0.0, 0.0, 0.0};
+		double   scale{1.0};
 	};
 
 	struct Circle
