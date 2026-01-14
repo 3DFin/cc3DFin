@@ -25,7 +25,7 @@ namespace lib3dfin
 		Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es(cov);
 
 		// eigenvalues are sorted by increasing order so
-		// first eigen vector is the normal vector. its third component is the z component
+		// first eigen vector is the normal vector. Its third component is the z component.
 		const double normal_z_component = es.eigenvectors()(2, 0);
 		return 1.0 - std::abs(normal_z_component);
 	}

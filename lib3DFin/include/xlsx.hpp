@@ -18,11 +18,9 @@ namespace lib3dfin
 			return;
 		}
 
-		// TODO: global shift
 		using SheetDescriptor = std::pair<std::string, std::string>;
 
-		constexpr size_t num_worksheets = 9;
-		// TODO: global shift
+		constexpr size_t                                  num_worksheets    = 9;
 		const std::array<SheetDescriptor, num_worksheets> sheet_descriptors = {
 		    {{"Plot metrics", "Total height(TH) of each tree(T).\nDiameter at breast height(DBH) of each tree(T).\n(x, y)coordinates(X and Y) of each tree(T).)"},
 		     {"Diameters", "Diameter of every section (S) of every tree (T). Units are meters."},
@@ -52,7 +50,7 @@ namespace lib3dfin
 			return;
 		}
 
-		// define the style of the table header (column and rows)
+		// Define the style of the table header (column and rows)
 		OpenXLSX::XLCellFormats& formats = doc.styles().cellFormats();
 		OpenXLSX::XLFonts&       fonts   = doc.styles().fonts();
 
@@ -61,10 +59,8 @@ namespace lib3dfin
 		fonts[font_bold].setBold();
 		formats[bold_format].setFontIndex(font_bold);
 
-		// worksheet 1 is "special". it's already there and it needs some custom (table) headers
+		// worksheet 1 is "special". It's already there at workbook creation and it needs some custom (table) headers.
 		auto& sheet_1 = worksheets.emplace_back(doc.workbook().worksheet(1));
-
-		// sheet_1
 		sheet_1.setName(sheet_descriptors[0].first);
 		sheet_1.cell(header_cell_ref) = sheet_descriptors[0].second;
 
@@ -76,7 +72,8 @@ namespace lib3dfin
 		auto table_header       = sheet_1.range("C3:F3");
 		sheet_1.row(3).values() = std::vector<std::string>{"", "", "TH", "DBH", "X", "Y"};
 		table_header.setFormat(bold_format);
-		// other sheets
+
+		// Other sheets
 		for (size_t worksheet_id = 1; worksheet_id < num_worksheets; ++worksheet_id)
 		{
 			// sheet_2
@@ -101,7 +98,7 @@ namespace lib3dfin
 				}
 			}
 
-			// special case for sheet_1 row_id is shifted by 1 because of the subheader
+			// Special case for sheet_1 row_id is shifted by 1 because of the subheader
 			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 2)) = row_header;
 			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 3)) = tree.highest_z0 / meta.scale;
 			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 4)) = tree.dbh / meta.scale;

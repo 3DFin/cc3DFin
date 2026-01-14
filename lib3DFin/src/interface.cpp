@@ -33,16 +33,16 @@ namespace lib3dfin
 		const auto start_total = std::chrono::steady_clock::now();
 		spdlog::info("Starting 3DFin computation... ");
 
-		// Convert point cloud to our datastructure (it uses double precision)
+		// Convert the point cloud to our datastructure (it uses double precision)
 		PointCloud3 point_cloud(num_points, 3);
 		for (size_t i = 0; i < num_points; ++i)
 		{
 			point_cloud.row(i) = Vec3(cloud_data[i * 3], cloud_data[i * 3 + 1], cloud_data[i * 3 + 2]);
 		}
 
+		// We do the same with z0
 		Eigen::VectorXd z0;
-
-		// Compute normalization if needed
+		// We compute normalization if needed else we simply map the memory
 		if (params.compute_height_normalization || !z0_sf)
 		{
 			if (!params.compute_height_normalization && !z0_sf)
@@ -55,6 +55,7 @@ namespace lib3dfin
 			project_meta.area_m2       = voxelated_ground.rows();
 
 			spdlog::info("This cloud has {0:.2f} million points, its area is {1:}", project_meta.num_points / 1'000'000.0, project_meta.area_m2);
+
 			HeightNormalization height_normalizer(point_cloud, HeightNormalization::Parameters::FromGlobalConfig(params));
 			z0 = height_normalizer.normalize();
 		}
@@ -95,7 +96,6 @@ namespace lib3dfin
 		TreeIndividualizer tree_individualizer(point_cloud, stripe, z0, TreeIndividualizer::Parameters::FromGlobalConfig(params));
 		auto               tree_data = tree_individualizer.individualize();
 
-		// minimum_height, maximum_height + section_width
 		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, params.stem_search_diameter / 2.0, params.stem_minimum_height, params.stem_maximum_height + params.stem_section_thickness);
 
 		// TODO: verticality could change at this point

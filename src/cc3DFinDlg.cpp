@@ -200,7 +200,6 @@ void cc3DFinDlg::populateFields()
 			}
 		}
 	}
-
 	populateSfCombo();
 }
 
@@ -216,7 +215,6 @@ bool cc3DFinDlg::checkFieldsValidity()
 
 std::optional<fs::path> cc3DFinDlg::checkBaseOutputValidity(const QString& baseName)
 {
-
 	// get the output_path
 	fs::path outPath = fs::path(output_dir_in->text().toStdString()) / fs::path(baseName.toStdString()).stem();
 

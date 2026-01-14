@@ -266,7 +266,7 @@ namespace lib3dfin
 		}
 
 		// Filter points
-		// TODO parallelize, and does not allocate valid_indices?
+		// TODO: parallelize, and do not allocate valid_indices?
 		std::vector<Eigen::Index> valid_indices;
 		valid_indices.reserve(n_points); // this should not be too far...
 		for (Eigen::Index i = 0; i < n_points; ++i)
