@@ -153,7 +153,7 @@ namespace lib3dfin
 		}
 
 		auto start_post = std::chrono::high_resolution_clock::now();
-		spdlog::info("[Peeling] Clutesring done in {0:.2f} s", std::chrono::duration<double>(start_post - t_mid).count());
+		spdlog::info("[Peeling] Clustering done in {0:.2f} s", std::chrono::duration<double>(start_post - t_mid).count());
 		spdlog::info("[Peeling] -Extracting 'candidate' stems...");
 
 		// Find large clusters

@@ -28,7 +28,7 @@ namespace lib3dfin
 		const auto start_total = std::chrono::high_resolution_clock::now();
 
 		if (verbose)
-			spdlog::info("[Voxelization] Voxel resolution: {} x {} x {} m", res_xy, res_xy, res_z);
+			spdlog::info("[Voxelization] Grid size: {} x {} x {} m", res_xy, res_xy, res_z);
 
 		tf::Executor executor;
 		tf::Taskflow tf;
@@ -76,38 +76,6 @@ namespace lib3dfin
 		std::vector<Eigen::Index>::iterator first_it_indices = sorted_indices.begin();
 		std::vector<Eigen::Index>::iterator end_it_indices   = sorted_indices.end();
 		std::iota(first_it_indices, end_it_indices, 0);
-
-		// Timing variables and tasks
-		std::chrono::time_point<std::chrono::high_resolution_clock> start_hashing, stop_hashing, start_sorting,
-		    stop_sorting, start_grouping, stop_grouping, start_voxelization, stop_voxelization;
-
-		auto start_hashing_task =
-		    tf.emplace([&start_hashing]()
-		               { start_hashing = std::chrono::high_resolution_clock::now(); });
-		auto stop_hashing_task =
-		    tf.emplace([&stop_hashing]()
-		               { stop_hashing = std::chrono::high_resolution_clock::now(); });
-
-		auto start_sorting_task =
-		    tf.emplace([&start_sorting]()
-		               { start_sorting = std::chrono::high_resolution_clock::now(); });
-		auto stop_sorting_task =
-		    tf.emplace([&stop_sorting]()
-		               { stop_sorting = std::chrono::high_resolution_clock::now(); });
-
-		auto start_grouping_task =
-		    tf.emplace([&start_grouping]()
-		               { start_grouping = std::chrono::high_resolution_clock::now(); });
-		auto stop_grouping_task =
-		    tf.emplace([&stop_grouping]()
-		               { stop_grouping = std::chrono::high_resolution_clock::now(); });
-
-		auto start_voxelization_task =
-		    tf.emplace([&start_voxelization]()
-		               { start_voxelization = std::chrono::high_resolution_clock::now(); });
-		auto stop_voxelization_task =
-		    tf.emplace([&stop_voxelization]()
-		               { stop_voxelization = std::chrono::high_resolution_clock::now(); });
 
 		// Create hashes
 		auto hashing = tf.for_each(
@@ -172,17 +140,6 @@ namespace lib3dfin
 		                       .name("fill_vox_pc");
 
 		// Taskflow workflow
-		// Group timings task here
-		start_hashing_task.precede(hashing);
-		stop_hashing_task.succeed(hashing);
-		start_sorting_task.precede(sort_indices);
-		stop_sorting_task.succeed(sort_indices);
-		start_grouping_task.precede(unique);
-		stop_grouping_task.succeed(count_voxels);
-		start_voxelization_task.precede(allocate);
-		stop_voxelization_task.succeed(fill_vox_pc);
-
-		// Group tasks here
 		hashing.precede(sort_indices);
 		sort_indices.precede(unique);
 		unique.precede(count_voxels);
@@ -192,29 +149,22 @@ namespace lib3dfin
 		// Launch tasks
 		executor.run(tf).wait();
 
-		std::stringstream log;
-
-		log << "[Voxelization]\n"
-		    << "  Hashing in "
-		    << std::chrono::duration_cast<std::chrono::milliseconds>(stop_hashing - start_hashing).count() << " ms\n"
-		    << "  Sorting in "
-		    << std::chrono::duration_cast<std::chrono::milliseconds>(stop_sorting - start_sorting).count() << " ms\n"
-		    << "  Grouping in "
-		    << std::chrono::duration_cast<std::chrono::milliseconds>(stop_grouping - start_grouping).count() << " ms\n"
-		    << "  Voxelization in "
-		    << std::chrono::duration_cast<std::chrono::milliseconds>(stop_voxelization - start_voxelization).count()
-		    << " ms\n"
-		    << "  Total time "
-		    << std::chrono::duration_cast<std::chrono::milliseconds>(
-		           std::chrono::high_resolution_clock::now() - start_total)
-		           .count()
-		    << " ms\n"
-		    << std::setprecision(3) << std::fixed << "  " << num_points / 1.0e6 << " million points -> "
-		    << vox_pc.rows() / 1.0e6 << " millions voxels\n"
-		    << "  Voxels account for " << vox_pc.rows() * 100 / static_cast<double>(num_points) << "% of original points";
-
 		if (verbose)
+		{
+			std::stringstream log;
+
+			log << "[Voxelization] Total time: "
+			    << std::chrono::duration_cast<std::chrono::milliseconds>(
+			           std::chrono::high_resolution_clock::now() - start_total)
+			           .count()
+			    << " ms / "
+			    << std::setprecision(3) << std::fixed << " " << num_points / 1.0e6 << " M points -> "
+			    << vox_pc.rows() / 1.0e6 << " M voxels ("
+			    << std::setprecision(1)
+			    << vox_pc.rows() * 100 / static_cast<double>(num_points) << "%)";
+
 			spdlog::info(log.str());
+		}
 
 		return {vox_pc, cloud_to_vox_ind};
 	}
