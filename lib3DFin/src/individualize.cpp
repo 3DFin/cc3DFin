@@ -25,14 +25,14 @@ namespace lib3dfin
 		auto                          start               = std::chrono::high_resolution_clock::now();
 		auto                          voxelated_axes_data = computeAxesApproximate(voxelated_cloud);
 		auto                          stop                = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<double> elapsed             = start - stop;
+		std::chrono::duration<double> elapsed             = stop - start;
 
-		spdlog::info("[Individualize] compute_axes_approximate: {} seconds", elapsed.count());
+		spdlog::info("[Individualize] Compute axes (by approximation): {} seconds", elapsed.count());
 		start = std::chrono::high_resolution_clock::now();
 		compute_heights(voxelated_cloud, voxelated_axes_data);
 		stop    = std::chrono::high_resolution_clock::now();
-		elapsed = start - stop;
-		spdlog::info("[Individualize] compute_height: {} seconds", elapsed.count());
+		elapsed = stop - start;
+		spdlog::info("[Individualize] Compute tree heights: {} seconds", elapsed.count());
 
 		TreeData axes_data;
 		axes_data.tree_descriptors = std::move(voxelated_axes_data.tree_descriptors);

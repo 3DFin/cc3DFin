@@ -133,7 +133,7 @@ namespace lib3dfin
 		auto t_mid = std::chrono::high_resolution_clock::now();
 		spdlog::info("[Peeling] Verticality done in {0:.2f} s", std::chrono::duration<double>(t_mid - t_start).count());
 
-		spdlog::info("[Peeling] -Clustering...");
+		spdlog::info("[Peeling] Clustering...");
 
 		// TODO : this does not handle anisotropy in the voxelization...
 		// this is already the case in the original implementation...
@@ -154,7 +154,7 @@ namespace lib3dfin
 
 		auto start_post = std::chrono::high_resolution_clock::now();
 		spdlog::info("[Peeling] Clustering done in {0:.2f} s", std::chrono::duration<double>(start_post - t_mid).count());
-		spdlog::info("[Peeling] -Extracting 'candidate' stems...");
+		spdlog::info("[Peeling] Extracting 'candidate' stems...");
 
 		// Find large clusters
 		std::set<uint32_t> large_clusters;

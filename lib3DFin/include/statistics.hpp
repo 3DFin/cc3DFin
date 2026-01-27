@@ -10,13 +10,13 @@ namespace lib3dfin
 
 	namespace internal
 	{
-		std::array<double, 2> compute_quartiles(const Eigen::VectorXd& data_vector)
+		inline std::array<double, 2> compute_quartiles(const Eigen::VectorXd& data_vector)
 		{
 
 			constexpr std::array<double, 2> bounds = {0.25, 0.75};
 			if (data_vector.size() == 0)
 			{
-				return {0, 0};
+				return {0., 0.};
 			}
 			const size_t max_id       = std::ceil(data_vector.size() * bounds[1]);
 			const size_t num_elements = max_id + 1;
@@ -25,9 +25,9 @@ namespace lib3dfin
 			Eigen::VectorXd partial_data_sorted(num_elements);
 			std::partial_sort_copy(std::begin(data_vector), std::begin(data_vector) + num_elements, std::begin(partial_data_sorted), std::end(partial_data_sorted));
 
-			std::array<double, 2> result = {};
+			std::array<double, 2> result{0., 0.};
 
-			// compute with linear interpolation like the default in numpy
+			// compute with linear interpolation (it's the default in numpy)
 			for (size_t id_bound = 0; id_bound < 2; ++id_bound)
 			{
 				const double id_pos   = bounds[id_bound] * (data_vector.size() - 1);
@@ -47,8 +47,8 @@ namespace lib3dfin
 		}
 	} // namespace internal
 
-	Eigen::VectorX<bool> interquartile_range(const Eigen::VectorXd& data_vector,
-	                                         double                 n_range = 1.5)
+	inline Eigen::VectorX<bool> interquartile_range(const Eigen::VectorXd& data_vector,
+	                                                double                 n_range = 1.5)
 	{
 
 		const std::array<double, 2> quartiles = internal::compute_quartiles(data_vector);

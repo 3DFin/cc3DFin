@@ -37,7 +37,7 @@ namespace lib3dfin
 	// Main public function
 	Eigen::VectorXd HeightNormalization::normalize()
 	{
-		spdlog::info("Computing normalization with CSF algorithm...");
+		spdlog::info("[HeighNorm] Computing normalization with CSF algorithm...");
 		if (params_.denoise_point_cloud)
 		{
 			const PointCloud3 denoised_point_cloud_ = denoiseCloud();
@@ -106,7 +106,7 @@ namespace lib3dfin
 			    normalized_heights(i) = point_cloud_(i, 2) - weighted_z; },
 		    tf::StaticPartitioner()); // worker ID
 		executor.run(taskflow).get();
-		spdlog::info("End CSF computation...");
+		spdlog::info("[HeighNorm] End CSF computation...");
 		return normalized_heights;
 	}
 
@@ -205,7 +205,7 @@ namespace lib3dfin
 			throw std::runtime_error("Input DTM too small (less than 15 points).");
 
 		if (n_points == N_NEIGHBORS)
-			spdlog::warn("Input DTM has exactly 15 points.");
+			spdlog::warn("[HeighNorm] Input DTM has exactly 15 points.");
 
 		const size_t half_n_points = n_points / 2;
 

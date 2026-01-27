@@ -10,6 +10,9 @@
 #include "statistics.hpp"
 #include "types.hpp"
 
+// spdlog
+#include <spdlog/spdlog.h>
+
 // stdlib
 #include <cassert>
 
@@ -74,6 +77,7 @@ namespace lib3dfin
 
 		void extract()
 		{
+			spdlog::info("[SectionExtractor] Computing diameters along stems...");
 			// iterate over the trees
 			for (auto& tree : trees_.tree_descriptors)
 			{
@@ -149,6 +153,7 @@ namespace lib3dfin
 				auto tree_localization = treeLocator(tree);
 				tree.setLocation(tree_localization);
 			}
+			spdlog::info("[SectionExtractor] Computing diameters along stems done");
 		}
 
 	  private: // methods
@@ -406,7 +411,7 @@ namespace lib3dfin
 			return std::max(abs_deviations[0], abs_deviations[1]) < 3 * std::min(abs_deviations[0], abs_deviations[1]);
 		}
 
-		bool checkTwoRadiusCoherence(const CircleSections& circles, size_t idx1, size_t idx2, double factor) const
+		inline bool checkTwoRadiiConsistency(const CircleSections& circles, size_t idx1, size_t idx2, double factor) const
 		{
 			const double radius1    = circles[idx1].circle.radius;
 			const double radius2    = circles[idx2].circle.radius;
@@ -465,7 +470,7 @@ namespace lib3dfin
 				if (lower_d_section == 0)
 				{
 					// First section case - check coherence between two sections
-					if (checkTwoRadiusCoherence(tree_descriptor.circle_data, lower_d_section, lower_d_section + 1, 0.1))
+					if (checkTwoRadiiConsistency(tree_descriptor.circle_data, lower_d_section, lower_d_section + 1, 0.1))
 						return dbhLocation(tree_descriptor, dbh_section_id_, tree_descriptor.circle_data);
 					else
 						return axisLocation(tree_descriptor);
@@ -475,7 +480,7 @@ namespace lib3dfin
 				if (upper_d_section == static_cast<size_t>(num_sections_))
 				{
 					// Last section case
-					if (checkTwoRadiusCoherence(tree_descriptor.circle_data, upper_d_section - 2, upper_d_section - 1, 0.15))
+					if (checkTwoRadiiConsistency(tree_descriptor.circle_data, upper_d_section - 2, upper_d_section - 1, 0.15))
 						return dbhLocation(tree_descriptor, dbh_section_id_, tree_descriptor.circle_data);
 					else
 						return axisLocation(tree_descriptor);
@@ -490,7 +495,7 @@ namespace lib3dfin
 				return axisLocation(tree_descriptor);
 			}
 
-			// else we can take the average of the sections estimations and check coherence
+			// Else we can take the average of the sections estimations and check coherence
 			// if the coherence test fails, we fall back to axis estimation
 			if (checkRadiusCoherence(tree_descriptor.circle_data, lower_d_section, upper_d_section))
 				return dbhLocation(tree_descriptor, dbh_section_id_, tree_descriptor.circle_data);

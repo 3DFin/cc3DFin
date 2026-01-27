@@ -40,6 +40,7 @@ namespace lib3dfin
 			point_cloud.row(i) = Vec3(cloud_data[i * 3], cloud_data[i * 3 + 1], cloud_data[i * 3 + 2]);
 		}
 
+		spdlog::info("Analyzing cloud size...");
 		// We do the same with z0
 		Eigen::VectorXd z0;
 		// We compute normalization if needed else we simply map the memory
@@ -54,8 +55,7 @@ namespace lib3dfin
 			project_meta.num_points    = point_cloud.rows();
 			project_meta.area_m2       = voxelated_ground.rows();
 
-			spdlog::info("This cloud has {0:.2f} million points, its area is {1:}", project_meta.num_points / 1'000'000.0, project_meta.area_m2);
-
+			spdlog::info("This cloud has {0:.2f} million points, its area is {1:} m^2", project_meta.num_points / 1'000'000.0, project_meta.area_m2);
 			HeightNormalization height_normalizer(point_cloud, HeightNormalization::Parameters::FromGlobalConfig(params));
 			z0 = height_normalizer.normalize();
 		}
@@ -82,7 +82,7 @@ namespace lib3dfin
 			project_meta.num_points    = point_cloud.rows();
 			project_meta.area_m2       = voxelated_ground.rows();
 
-			spdlog::info("This cloud has {0:.2f} million points, its area is {1:}", project_meta.num_points / 1'000'000.0, project_meta.area_m2);
+			spdlog::info("This cloud has {0:.2f} million points, its area is {1:} m^2", project_meta.num_points / 1'000'000.0, project_meta.area_m2);
 		}
 
 		TreePeeler stripe_peeler(point_cloud, TreePeeler::Parameters::StripeFromGlobalConfig(params));
@@ -127,9 +127,8 @@ namespace lib3dfin
 		}
 #endif
 
-		const auto drawing    = std::chrono::high_resolution_clock::now();
 		const auto stop_total = std::chrono::steady_clock::now();
-		spdlog::info("End of 3DFin computation, total time: {0:.2f} s", std::chrono::duration_cast<std::chrono::milliseconds>(stop_total - start_total).count() / 1000.0);
+		spdlog::info("End of 3DFin computation. Found {0:} Trees. Total time: {1:.2f} s", tree_data.tree_descriptors.size(), std::chrono::duration_cast<std::chrono::milliseconds>(stop_total - start_total).count() / 1000.0);
 		return std::make_tuple(std::move(stem_indicator_vector), std::move(z0_vector), std::move(tree_data));
 	}
 
