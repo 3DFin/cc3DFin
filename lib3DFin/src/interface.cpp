@@ -57,7 +57,15 @@ namespace lib3dfin
 
 			spdlog::info("This cloud has {0:.2f} million points, its area is {1:} m^2", project_meta.num_points / 1'000'000.0, project_meta.area_m2);
 			HeightNormalization height_normalizer(point_cloud, HeightNormalization::Parameters::FromGlobalConfig(params));
-			z0 = height_normalizer.normalize();
+			z0                               = height_normalizer.normalize();
+			auto [warning, area_discrepancy] = HeightNormalization::checkHeightNormDiscrepancy(point_cloud, z0, project_meta.area_m2);
+			if (warning)
+			{
+				spdlog::warn("Warning: 3DFin has detected a potential error in the terrain modelling.\n"
+				             "  This usually happens when the \"cloth resolution\" parameter didn\'t fit well the terrain.\n"
+				             "  Learn more about this here https://github.com/3DFin/3DFin_Tutorial");
+			}
+			spdlog::info("[HeighNorm] Area discrepancy {0:.2f} m^2", area_discrepancy);
 		}
 		else
 		{

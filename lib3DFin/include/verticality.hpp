@@ -15,7 +15,7 @@
 
 namespace lib3dfin
 {
-	double adhoc_verticality(const PointCloud3& cloud)
+	inline double adhoc_verticality(const PointCloud3& cloud)
 	{
 		// Compute the (3, 3) covariance matrix
 		const PointCloud3     centered_cloud = cloud.rowwise() - cloud.colwise().mean();

@@ -116,7 +116,7 @@ namespace lib3dfin
 				TreeDescriptor tree_descriptor(stem_id);
 				// get min diff in scalar type unused in 3DFin
 				tree_descriptor.centroid_coordinates = coord_accumulator / stem_num_points;
-				tree_descriptor.height_difference    = static_cast<double>(tree_descriptor.centroid_coordinates.z() - (z0_accumulator / stem_num_points));
+				tree_descriptor.height_difference    = tree_descriptor.centroid_coordinates.z() - (z0_accumulator / stem_num_points);
 
 				// compute the (3, 3) covariance matrix
 				const PointCloud3     centered_cloud = stem_cloud.rowwise() - tree_descriptor.centroid_coordinates.transpose();
