@@ -61,7 +61,7 @@ namespace lib3dfin
 			auto [warning, area_discrepancy] = HeightNormalization::checkHeightNormDiscrepancy(point_cloud, z0, project_meta.area_m2);
 			if (warning)
 			{
-				spdlog::warn("Warning: 3DFin has detected a potential error in the terrain modelling.\n"
+				spdlog::warn("[HeighNorm] Warning: 3DFin has detected a potential error in the terrain modelling.\n"
 				             "  This usually happens when the \"cloth resolution\" parameter didn\'t fit well the terrain.\n"
 				             "  Learn more about this here https://github.com/3DFin/3DFin_Tutorial");
 			}
