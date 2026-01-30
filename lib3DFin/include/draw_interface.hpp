@@ -5,9 +5,9 @@
 
 namespace lib3DFin
 {
-    class DrawInterface
-    {
-    public:
-        virtual ~DrawInterface() = default;
-    };
-}
+	class DrawInterface
+	{
+	  public:
+		virtual ~DrawInterface() = default;
+	};
+} // namespace lib3DFin

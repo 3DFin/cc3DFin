@@ -118,12 +118,11 @@ void cc3DFin::do3DFinAction()
 	}
 
 	m_currentCloud->setEnabled(false);
-	m_currentCloud->placeIteratorAtBeginning();
 
 	cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
-	int  max_lines = 1000;
-	auto logger    = spdlog::qt_color_logger_mt("3DFin", tdfDlg.logTextEdit, max_lines);
+	int  maxLines = 1000;
+	auto logger   = spdlog::qt_color_logger_mt("3DFin", tdfDlg.logTextEdit, maxLines);
 	logger->set_pattern("[%T] %^[%L]%$ %v");
 
 	m_app->freezeUI(true);
@@ -198,7 +197,7 @@ void cc3DFin::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_desc
 			// Only draw successful circles
 			if (circle_data.status >= lib3dfin::CircleData::Status::SUCCESS
 			    && circle_data.status != lib3dfin::CircleData::Status::DIAMETER_TOO_LARGE
-			    && circle_data.status != lib3dfin::CircleData::Status::DIAMETER_TOO_SMALL) // Maybe we could display diameters too small, it wont hurt
+			    && circle_data.status != lib3dfin::CircleData::Status::DIAMETER_TOO_SMALL) // Maybe we could display diameters too small, it wont hurt the display scale/
 			{
 				const auto& circle = circle_data.circle;
 				// We need to shift the circle center to go from z0 coordinates to the actual coordinates
@@ -468,14 +467,14 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 	auto          baseOutputDir = dialog.checkBaseOutputValidity(cloudName);
 	m_currentCloud->placeIteratorAtBeginning();
 
-	std::vector<double> z0Vec;
-
 	// Convert Cloud GS into lib3DFin "exchange" format
 	lib3dfin::GlobalShift tdfGlobalShift{
 	    m_currentCloud->getGlobalShift().x,
 	    m_currentCloud->getGlobalShift().y,
 	    m_currentCloud->getGlobalShift().z,
 	    m_currentCloud->getGlobalScale()};
+
+	std::vector<double> z0Vec;
 
 	// TODO: encapsulation of the UI operations
 	if (dialog.compute_height_normalization_chk->checkState() == Qt::CheckState::Unchecked)
@@ -484,12 +483,12 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 		const auto z0Id   = m_currentCloud->getScalarFieldIndexByName(z0Name);
 		if (z0Id != -1)
 		{
-			const auto* z0_sf = m_currentCloud->getScalarField(z0Id);
+			const auto* z0Sf = m_currentCloud->getScalarField(z0Id);
 
 			// try to allocate the sf array
 			try
 			{
-				z0Vec.reserve(z0_sf->size());
+				z0Vec.reserve(z0Sf->size());
 			}
 			catch (const std::bad_alloc&)
 			{
@@ -498,9 +497,9 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 			}
 
 			// copy the scalar_field to double
-			for (size_t svId = 0; svId < z0_sf->size(); ++svId)
+			for (size_t svId = 0; svId < z0Sf->size(); ++svId)
 			{
-				z0Vec.push_back(z0_sf->getValue(svId));
+				z0Vec.push_back(z0Sf->getValue(svId));
 			}
 		}
 	}
@@ -519,18 +518,19 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 		lib3dfin::TDFResult result = TdfComputationWatcher->future().result();
 
 		// Get the results
-		auto& stem_indicator = std::get<0>(result);
-		auto& z0_out         = std::get<1>(result);
-		auto& tree_data      = std::get<2>(result);
+		auto& stemIndicator = std::get<0>(result);
+		auto& z0Out         = std::get<1>(result);
+		auto& treeData      = std::get<2>(result);
 
 		// TODO factorize the drawing
 		m_base_group = std::make_unique<ccHObject>(m_currentCloud->getName() + "_3DFin");
-		drawCircles(tree_data.tree_descriptors);
-		drawTreeLocators(tree_data.tree_descriptors);
-		drawTreeHeights(tree_data.tree_descriptors);
-		drawAxis(tree_data.tree_descriptors);
-		exportEnrichedCloud(tree_data, z0_out);
-		exportStripe(stem_indicator);
+
+		drawCircles(treeData.tree_descriptors);
+		drawTreeLocators(treeData.tree_descriptors);
+		drawTreeHeights(treeData.tree_descriptors);
+		drawAxis(treeData.tree_descriptors);
+		exportEnrichedCloud(treeData, z0Out);
+		exportStripe(stemIndicator);
 
 		dialog.setComputationMode(false);
 		m_app->addToDB(m_base_group.release());
@@ -538,6 +538,6 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 
 		TdfComputationWatcher->deleteLater(); });
 
-	// TODO: error and computation handling
+	// TODO: error and cancellation handling
 	TdfComputationWatcher->setFuture(TdfFutureResult);
 }

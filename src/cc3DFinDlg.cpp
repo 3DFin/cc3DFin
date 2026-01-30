@@ -46,6 +46,7 @@ cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
     , Ui::cc3DFinDlg()
 {
 	setupUi(this);
+
 	connect(output_dir_btn, &QPushButton::clicked, this, &cc3DFinDlg::askOutputPath);
 	connect(tutorial_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showTutorial);
 	connect(documentation_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showDocumentation);
