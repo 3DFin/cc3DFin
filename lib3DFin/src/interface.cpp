@@ -92,30 +92,22 @@ namespace lib3dfin
 
 			spdlog::info("This cloud has {0:.2f} million points, its area is {1:} m^2", project_meta.num_points / 1'000'000.0, project_meta.area_m2);
 		}
-
-		TreePeeler stripe_peeler(point_cloud, TreePeeler::Parameters::StripeFromGlobalConfig(params));
-
-		Stripe stripe(params.stripe_lower_limit, params.stripe_upper_limit);
-		stripe.cluster_indicator = TreePeeler::filterInitialStripe(z0, params.stripe_lower_limit, params.stripe_upper_limit);
-
-		// Beware the side effect on indicator
-		stripe_peeler.peel(stripe.cluster_indicator);
+		Stripe                           stripe(params.stripe_lower_limit, params.stripe_upper_limit);
+		std::unique_ptr<FilterPredicate> stripe_predicate(new StripeFilterPredicate(params.stripe_lower_limit, params.stripe_upper_limit));
+		TreePeeler                       stripe_peeler(point_cloud, z0, std::move(stripe_predicate), TreePeeler::Parameters::StripeFromGlobalConfig(params));
+		stripe.cluster_indicator = stripe_peeler.peel();
 
 		TreeIndividualizer tree_individualizer(point_cloud, stripe, z0, TreeIndividualizer::Parameters::FromGlobalConfig(params));
 		auto               tree_data = tree_individualizer.individualize();
 
-		auto stem_indicator = TreePeeler::filterInitialStripe(z0, tree_data.axis_distance, params.stem_search_diameter / 2.0, params.stem_minimum_height, params.stem_maximum_height + params.stem_section_thickness);
-
-		// TODO: verticality could change at this point
-		// use params.verticality_scale_stem;
-		// and params.verticality_thresh_stem;
-		// Beware the side effect on indicator
-		stripe_peeler.peel(stem_indicator);
+		std::unique_ptr<FilterPredicate> stem_predicate(new StemFilterPredicate(params.stem_minimum_height, params.stem_maximum_height + params.stem_section_thickness, params.stem_search_diameter / 2.0, tree_data.axis_distance));
+		TreePeeler                       stem_peeler(point_cloud, z0, std::move(stem_predicate), TreePeeler::Parameters::StemFromGlobalConfig(params));
+		auto                             stem_indicator = stem_peeler.peel();
 
 		ArrayClusterIndicator sections_indicator = (stem_indicator > -1).select(tree_data.cluster_indicator, -1);
 		SectionExtractor      section_extractor(point_cloud, sections_indicator, z0, tree_data, SectionExtractor::Parameters::FromGlobalConfig(params));
 
-		// TODO: beware side effect on tree_data
+		// TODO: try to eliminate side effect on tree_data
 		section_extractor.extract();
 		std::vector<int32_t> stem_indicator_vector(stripe.cluster_indicator.data(), stripe.cluster_indicator.data() + stripe.cluster_indicator.size());
 		std::vector<double>  z0_vector(z0.data(), z0.data() + z0.size());

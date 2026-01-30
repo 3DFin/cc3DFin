@@ -24,19 +24,32 @@ namespace lib3dfin
 {
 
 	TreePeeler::TreePeeler(
-	    const PointCloud3&     point_cloud,
-	    TreePeeler::Parameters params)
+	    const PointCloud3&               point_cloud,
+	    const Eigen::VectorXd&           z0,
+	    std::unique_ptr<FilterPredicate> initial_state,
+	    const TreePeeler::Parameters     params)
 	    : point_cloud_(point_cloud)
+	    , z0_(z0)
 	    , num_points_(point_cloud.rows())
-	    , params_(std::move(params))
+	    , params_(params)
 	{
+		if (initial_state == nullptr)
+		{
+			initial_state_.reset(new FilterPredicate);
+		}
+		else
+		{
+			initial_state_ = std::move(initial_state);
+		}
 	}
 
-	void TreePeeler::peel(ArrayClusterIndicator& stripe_indicator)
+	ArrayClusterIndicator TreePeeler::peel()
 	{
 		spdlog::info("[TreePeeler] Starting peeling process...");
 		// reset total time
 		total_time_ = 0.0;
+
+		ArrayClusterIndicator stripe_indicator = initial_state_->filter(point_cloud_, z0_);
 
 		// Perform verticality clustering
 		for (uint32_t iter = 0; iter < params_.num_iterations; ++iter)
@@ -45,32 +58,7 @@ namespace lib3dfin
 		}
 
 		spdlog::info("[TreePeeler] Total time: {0:.2f}", total_time_);
-	}
-
-	ArrayClusterIndicator TreePeeler::filterInitialStripe(const Eigen::VectorXd& z0, double stripe_lower_limit, double stripe_upper_limit)
-	{
-		ArrayClusterIndicator stripe_cluster_indicator(z0.size());
-		stripe_cluster_indicator.setConstant(NO_CLUSTER_ID);
-		stripe_cluster_indicator = (z0.array() > stripe_lower_limit && z0.array() < stripe_upper_limit).select(0, stripe_cluster_indicator);
-		return stripe_cluster_indicator;
-	}
-
-	ArrayClusterIndicator TreePeeler::filterInitialStripe(const Eigen::VectorXd& z0, const Eigen::VectorXd& axis_distance, double max_distance, double stripe_lower_limit, double stripe_upper_limit)
-	{
-		assert(z0.size() == axis_distance.size());
-		ArrayClusterIndicator stripe_cluster_indicator(z0.size());
-		for (Eigen::Index point_id = 0; point_id < z0.size(); ++point_id)
-		{
-			if (z0(point_id) > stripe_lower_limit && z0(point_id) < stripe_upper_limit && axis_distance(point_id) < max_distance)
-			{
-				stripe_cluster_indicator(point_id) = 0;
-			}
-			else
-			{
-				stripe_cluster_indicator(point_id) = NO_CLUSTER_ID;
-			}
-		}
-		return stripe_cluster_indicator;
+		return stripe_indicator;
 	}
 
 	PointCloud3 TreePeeler::extractStripe(const PointCloud3& point_cloud, const ArrayClusterIndicator& stripe_indicator)

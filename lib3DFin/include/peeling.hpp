@@ -11,8 +11,82 @@
 
 namespace lib3dfin
 {
+	class FilterPredicate
+	{
+	  public: // methods
+		FilterPredicate()          = default;
+		virtual ~FilterPredicate() = default;
+
+		//! Identity filtering
+		virtual ArrayClusterIndicator filter(const PointCloud3& point_cloud, const Eigen::VectorXd& z0)
+		{
+			return ArrayClusterIndicator::Zero(z0.size());
+		}
+	};
+
+	class StripeFilterPredicate : public FilterPredicate
+	{
+	  public: // methods
+		StripeFilterPredicate(double stripe_lower_limit, double stripe_upper_limit)
+		    : stripe_lower_limit_(stripe_lower_limit)
+		    , stripe_upper_limit_(stripe_upper_limit)
+		{
+		}
+
+		virtual ~StripeFilterPredicate() = default;
+		virtual ArrayClusterIndicator filter(const PointCloud3& point_cloud, const Eigen::VectorXd& z0)
+		{
+			ArrayClusterIndicator stripe_cluster_indicator(z0.size());
+			stripe_cluster_indicator.setConstant(NO_CLUSTER_ID);
+			stripe_cluster_indicator = (z0.array() > stripe_lower_limit_ && z0.array() < stripe_upper_limit_).select(0, stripe_cluster_indicator);
+			return stripe_cluster_indicator;
+		}
+
+	  private: // members
+		double stripe_lower_limit_{0.};
+		double stripe_upper_limit_{0.};
+	};
+
+	class StemFilterPredicate : public FilterPredicate
+	{
+	  public: // methods
+		StemFilterPredicate(double stripe_lower_limit, double stripe_upper_limit, double max_distance, const Eigen::VectorXd& axis_distance)
+		    : stripe_lower_limit_(stripe_lower_limit)
+		    , stripe_upper_limit_(stripe_upper_limit)
+		    , max_distance_(max_distance)
+		    , axis_distance_(axis_distance)
+		{
+		}
+
+		virtual ~StemFilterPredicate() = default;
+		virtual ArrayClusterIndicator filter(const PointCloud3& point_cloud, const Eigen::VectorXd& z0)
+		{
+			assert(z0.size() == axis_distance_.size());
+			ArrayClusterIndicator stripe_cluster_indicator(z0.size());
+			for (Eigen::Index point_id = 0; point_id < z0.size(); ++point_id)
+			{
+				if (z0(point_id) > stripe_lower_limit_ && z0(point_id) < stripe_upper_limit_ && axis_distance_(point_id) < max_distance_)
+				{
+					stripe_cluster_indicator(point_id) = 0;
+				}
+				else
+				{
+					stripe_cluster_indicator(point_id) = NO_CLUSTER_ID;
+				}
+			}
+			return stripe_cluster_indicator;
+		}
+
+	  private: // members
+		double                 max_distance_{0.};
+		double                 stripe_lower_limit_{0.};
+		double                 stripe_upper_limit_{0.};
+		const Eigen::VectorXd& axis_distance_;
+	};
+
 	class TreePeeler
 	{
+
 	  public: // struct
 		struct Parameters
 		{
@@ -47,22 +121,22 @@ namespace lib3dfin
 		};
 
 	  public: // static
-		static ArrayClusterIndicator filterInitialStripe(const Eigen::VectorXd& z0, double stripe_lower_limit, double stripe_upper_limit);
-		static ArrayClusterIndicator filterInitialStripe(const Eigen::VectorXd& z0, const Eigen::VectorXd& axis_distance, double max_distance, double stripe_lower_limit, double stripe_upper_limit);
-		static PointCloud3           extractStripe(const PointCloud3& point_cloud, const ArrayClusterIndicator& stripe_indicator);
+		static PointCloud3 extractStripe(const PointCloud3& point_cloud, const ArrayClusterIndicator& stripe_indicator);
 
-	  public:
-		explicit TreePeeler(const PointCloud3& point_cloud, TreePeeler::Parameters params);
-		void peel(ArrayClusterIndicator& stripe_indicator);
+	  public: // methods
+		explicit TreePeeler(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, std::unique_ptr<FilterPredicate> unitial_state, const TreePeeler::Parameters params);
+		ArrayClusterIndicator peel();
 
 	  private: // methods
 		ArrayClusterIndicator verticalityClustering(const ArrayClusterIndicator& stripe_indicator);
 
 	  private: // members
-		const PointCloud3& point_cloud_;
-		const Eigen::Index num_points_;
-		const Parameters   params_;
-		double             total_time_ = 0.0;
+		const PointCloud3&               point_cloud_;
+		const Eigen::VectorXd&           z0_;
+		const Eigen::Index               num_points_;
+		const Parameters                 params_;
+		std::unique_ptr<FilterPredicate> initial_state_;
+		double                           total_time_ = 0.0;
 	};
 
 } // namespace lib3dfin
