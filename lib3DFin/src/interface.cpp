@@ -21,14 +21,10 @@ namespace lib3dfin
 {
 	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData>;
 
-	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, std::shared_ptr<spdlog::logger> logger, const std::optional<fs::path>& output_basepath, const std::optional<GlobalShift>& global_shift)
+	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, const std::optional<fs::path>& output_basepath, const std::optional<GlobalShift>& global_shift)
 	{
 
 		ProjectMeta project_meta;
-		if (logger)
-		{
-			spdlog::set_default_logger(logger);
-		}
 
 		const auto start_total = std::chrono::steady_clock::now();
 		spdlog::info("Starting 3DFin computation... ");

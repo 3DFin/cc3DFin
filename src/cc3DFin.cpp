@@ -124,15 +124,16 @@ void cc3DFin::do3DFinAction()
 	int  maxLines = 1000;
 	auto logger   = spdlog::qt_color_logger_mt("3DFin", tdfDlg.logTextEdit, maxLines);
 	logger->set_pattern("[%T] %^[%L]%$ %v");
+	spdlog::set_default_logger(logger);
 
 	m_app->freezeUI(true);
-	connect(tdfDlg.compute_btn, &QPushButton::clicked, [this, &tdfDlg, logger]
+	connect(tdfDlg.compute_btn, &QPushButton::clicked, [this, &tdfDlg]
 	        {
 				if(!tdfDlg.checkFieldsValidity())
 				    return;
 				const auto params    = tdfDlg.get3DFinParameters();
 				tdfDlg.setComputationMode(true);
-		        compute3DFin(params, logger, tdfDlg); });
+		        compute3DFin(params, tdfDlg); });
 	// draw circles
 	tdfDlg.exec();
 
@@ -460,7 +461,7 @@ void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 	m_base_group->addChild(stripe_cloud.release());
 }
 
-void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlog::logger> logger, cc3DFinDlg& dialog)
+void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 {
 	assert(m_currentCloud);
 	const QString cloudName     = m_currentCloud->getName();
@@ -505,7 +506,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, std::shared_ptr<spdlo
 	}
 
 	QFuture<lib3dfin::TDFResult>
-	    TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_currentCloud->getNextPoint()->u[0]), z0Vec.data(), static_cast<size_t>(m_currentCloud->size()), params, logger, baseOutputDir, tdfGlobalShift);
+	    TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_currentCloud->getNextPoint()->u[0]), z0Vec.data(), static_cast<size_t>(m_currentCloud->size()), params, baseOutputDir, tdfGlobalShift);
 
 	// Create watcher to notify when its done
 	// will be cleaned by using QFutureWatcher::deleteLater()
