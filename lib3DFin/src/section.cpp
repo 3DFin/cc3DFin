@@ -46,7 +46,7 @@ namespace lib3dfin
 			{
 				if (tree_mask(point_id))
 				{
-					tree_cloud.row(output_id) << point_cloud_.row(point_id).template head<2>(), z0_(point_id);
+					tree_cloud.row(output_id) << point_cloud_.row(point_id).head<2>(), z0_(point_id);
 					output_id++;
 				}
 			}

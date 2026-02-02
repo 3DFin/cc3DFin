@@ -61,7 +61,7 @@ namespace lib3dfin
 
 		Eigen::VectorXd normalized_heights(n_points);
 		using kd_tree_t         = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2, 2, nanoflann::metric_L2_Simple>;
-		const PointCloud2& dtm2 = dtm_.template leftCols<2>();
+		const PointCloud2& dtm2 = dtm_.leftCols<2>();
 		kd_tree_t          kd_tree(2, dtm2, 10);
 		tf::Executor       executor;
 		tf::Taskflow       taskflow;
@@ -210,7 +210,7 @@ namespace lib3dfin
 		const size_t half_n_points = n_points / 2;
 
 		using kd_tree_t         = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2, 2, nanoflann::metric_L2_Simple>;
-		const PointCloud2& dtm2 = dtm_.template leftCols<2>();
+		const PointCloud2& dtm2 = dtm_.leftCols<2>();
 		kd_tree_t          kd_tree(2, dtm2, 10);
 
 		tf::Executor executor;
