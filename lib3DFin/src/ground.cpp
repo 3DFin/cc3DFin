@@ -217,7 +217,7 @@ namespace lib3dfin
 
 		tf::Taskflow taskflow;
 
-		std::vector<double> abs_devs(n_points);
+		Eigen::VectorXd abs_devs(n_points);
 		// Get number of workers and pre-allocate vectors for each worker
 		const size_t              num_workers = executor_.num_workers();
 		std::vector<Eigen::Index> neighbors_buffer(N_NEIGHBORS * num_workers);
@@ -246,13 +246,13 @@ namespace lib3dfin
 			    std::nth_element(heights, heights + HALF_N_NEIGHBORS, heights + N_NEIGHBORS);
 
 			    const double median_z = heights[HALF_N_NEIGHBORS];
-			    abs_devs[i] = std::abs(dtm_(i, 2) - median_z); },
+			    abs_devs(i) = std::abs(dtm_(i, 2) - median_z); },
 		    tf::StaticPartitioner()); // StaticPartitioner is important to have consistent worker's ID
 
 		executor_.run(taskflow).get();
 
 		// Compute MAD (median of absolute deviations)
-		std::vector<double> abs_devs_copy = abs_devs;
+		Eigen::VectorXd abs_devs_copy = abs_devs;
 
 		double mad = 0.0;
 		if (n_points % 2 != 0)
@@ -267,21 +267,16 @@ namespace lib3dfin
 		}
 
 		// Filter points
-		// TODO: parallelize, and do not allocate valid_indices?
-		std::vector<Eigen::Index> valid_indices;
-		valid_indices.reserve(n_points); // this should not be too far...
-		for (Eigen::Index i = 0; i < n_points; ++i)
-		{
-			if (abs_devs[i] < MAD_FACTOR * mad)
-			{
-				valid_indices.push_back(i);
-			}
-		}
+		const double mad_threshold    = MAD_FACTOR * mad;
+		const auto   clean_indicator  = abs_devs.array() < mad_threshold;
+		const auto   num_valid_points = clean_indicator.count();
 
-		PointCloud3 clean_points(valid_indices.size(), 3);
-		for (size_t i = 0; i < valid_indices.size(); ++i)
+		PointCloud3  clean_points(num_valid_points, 3);
+		Eigen::Index clean_id = 0;
+		for (Eigen::Index point_id = 0; point_id < dtm_.rows(); ++point_id)
 		{
-			clean_points.row(i) = dtm_.row(valid_indices[i]);
+			if (clean_indicator(point_id))
+				clean_points.row(clean_id++) = dtm_.row(point_id);
 		}
 
 		dtm_ = std::move(clean_points);
