@@ -99,6 +99,7 @@ void cc3DFin::do3DFinAction()
 	const ccHObject::Container& selectedEntities = m_app->getSelectedEntities();
 
 	ccHObject* ent = selectedEntities[0];
+	assert(ent);
 	if (!ent->isA(CC_TYPES::POINT_CLOUD))
 	{
 		m_app->dispToConsole("Select a cloud!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
@@ -114,7 +115,7 @@ void cc3DFin::do3DFinAction()
 	{
 		const CCCoreLib::ScalarField* scalarField = m_currentCloud->getScalarField(i);
 		if (scalarField != nullptr)
-			scalarFieldNames.push_back(QString(scalarField->getName().c_str()));
+			scalarFieldNames.push_back(QString::fromStdString(scalarField->getName()));
 	}
 
 	m_currentCloud->setEnabled(false);
@@ -134,7 +135,6 @@ void cc3DFin::do3DFinAction()
 				const auto params    = tdfDlg.get3DFinParameters();
 				tdfDlg.setComputationMode(true);
 		        compute3DFin(params, tdfDlg); });
-	// draw circles
 	tdfDlg.exec();
 
 	// Cleanup. Drop the logger and unfreeze ui
@@ -146,9 +146,9 @@ void cc3DFin::do3DFinAction()
 
 void cc3DFin::initCustomColorScale()
 {
-	auto maybe_colorscale = ccColorScalesManager::GetUniqueInstance()->getScale(s_color_scale_uuid);
+	auto maybeColorScale = ccColorScalesManager::GetUniqueInstance()->getScale(s_color_scale_uuid);
 
-	if (maybe_colorscale != nullptr)
+	if (maybeColorScale != nullptr)
 	{
 		ccLog::Print("Color Scale already exists");
 		return;
