@@ -272,11 +272,10 @@ void cc3DFin::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descrip
 
 	for (const auto& desc : tree_descriptors)
 	{
-		const Eigen::Vector3d axis_step      = step_size * desc.axis; // TODO parameters
-		const double          tilting_degree = desc.axis_vertical_deviation;
-		Eigen::Vector3d       bottom_point   = desc.bottom_point;
-		Eigen::Vector3d       top_point      = desc.top_point;
-		Eigen::Vector3d       curr_point     = bottom_point;
+		const Eigen::Vector3d  axis_step      = step_size * desc.axis; // TODO parameters
+		const double           tilting_degree = desc.axis_vertical_deviation;
+		const Eigen::Vector3d& top_point      = desc.top_point;
+		Eigen::Vector3d        curr_point     = desc.bottom_point;
 		while (curr_point.z() < top_point.z())
 		{
 			axis_points->addPoint(CCVector3(curr_point.x(), curr_point.y(), curr_point.z()));
@@ -306,7 +305,7 @@ void cc3DFin::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree
 	{
 		tree_locations->addPoint(CCVector3(desc.location.x(), desc.location.y(), desc.location.z()));
 		dbh_sf->addElement(desc.dbh);
-		auto* label = new cc2DLabel();
+		auto* label = new cc2DLabel;
 		label->addPickedPoint(tree_locations, tree_id);
 		if (desc.dbh < std::numeric_limits<float>::epsilon())
 		{
@@ -519,9 +518,9 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		lib3dfin::TDFResult result = TdfComputationWatcher->future().result();
 
 		// Get the results
-		auto& stemIndicator = std::get<0>(result);
-		auto& z0Out         = std::get<1>(result);
-		auto& treeData      = std::get<2>(result);
+		const auto& stemIndicator = std::get<0>(result);
+		const auto& z0Out         = std::get<1>(result);
+		const auto& treeData      = std::get<2>(result);
 
 		// TODO factorize the drawing
 		m_base_group = std::make_unique<ccHObject>(m_currentCloud->getName() + "_3DFin");
