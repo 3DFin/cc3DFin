@@ -9,6 +9,8 @@
 // StdLib
 #include <cstdint>
 
+// Taskflow
+#include <taskflow/taskflow.hpp>
 namespace lib3dfin
 {
 	class FilterPredicate
@@ -124,7 +126,7 @@ namespace lib3dfin
 		static PointCloud3 extractStripe(const PointCloud3& point_cloud, const ArrayClusterIndicator& stripe_indicator);
 
 	  public: // methods
-		explicit TreePeeler(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, std::unique_ptr<FilterPredicate> unitial_state, const TreePeeler::Parameters params);
+		explicit TreePeeler(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, std::unique_ptr<FilterPredicate> unitial_state, const TreePeeler::Parameters params, tf::Executor& executor);
 		ArrayClusterIndicator peel();
 
 	  private: // methods
@@ -135,6 +137,7 @@ namespace lib3dfin
 		const Eigen::VectorXd&           z0_;
 		const Eigen::Index               num_points_;
 		const Parameters                 params_;
+		tf::Executor&                    executor_;
 		std::unique_ptr<FilterPredicate> initial_state_;
 		double                           total_time_ = 0.0;
 	};

@@ -6,6 +6,9 @@
 #include "config.hpp"
 #include "types.hpp"
 
+// taskflow
+#include <taskflow/taskflow.hpp>
+
 // stdlib
 #include <cstdint>
 
@@ -41,11 +44,12 @@ namespace lib3dfin
 		};
 
 	  public: // methods
-		explicit TreeIndividualizer(const PointCloud3& point_cloud, const Stripe& stripe, const Eigen::VectorXd& z0, const Parameters params)
+		explicit TreeIndividualizer(const PointCloud3& point_cloud, const Stripe& stripe, const Eigen::VectorXd& z0, const Parameters params, tf::Executor& executor)
 		    : point_cloud_(point_cloud)
 		    , stripe_(stripe)
 		    , z0_(z0)
 		    , params_(params)
+		    , executor_(executor)
 		{
 		}
 
@@ -64,6 +68,7 @@ namespace lib3dfin
 		const Stripe&          stripe_;
 		const Eigen::VectorXd& z0_;
 		const Parameters       params_;
+		tf::Executor&          executor_;
 	};
 
 } // namespace lib3dfin

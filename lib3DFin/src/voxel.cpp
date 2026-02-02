@@ -17,6 +17,7 @@ namespace lib3dfin
 	    const PointCloud3& xyz,
 	    const double       res_xy,
 	    const double       res_z,
+	    tf::Executor&      executor,
 	    const bool         verbose)
 	{
 		// number of bit used to encode one dimension
@@ -30,7 +31,6 @@ namespace lib3dfin
 		if (verbose)
 			spdlog::info("[Voxelization] Grid size: {} x {} x {} m", res_xy, res_xy, res_z);
 
-		tf::Executor executor;
 		tf::Taskflow tf;
 
 		const Eigen::Index num_points = xyz.rows();

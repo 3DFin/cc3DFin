@@ -10,6 +10,8 @@
 #include "types.hpp"
 #include "voxel.hpp"
 
+#include <taskflow/taskflow.hpp>
+
 #ifdef TDFIN_USES_OPENXLSX
 #include "xlsx.hpp"
 #endif
@@ -25,6 +27,8 @@ namespace lib3dfin
 	{
 
 		ProjectMeta project_meta;
+
+		tf::Executor executor;
 
 		const auto start_total = std::chrono::steady_clock::now();
 		spdlog::info("Starting 3DFin computation... ");
@@ -47,14 +51,14 @@ namespace lib3dfin
 				spdlog::warn("Input height normalization is null, force computation of height normalization");
 			}
 
-			auto [voxelated_ground, _] = voxelize(point_cloud, 1.0, 2000, true);
+			auto [voxelated_ground, _] = voxelize(point_cloud, 1.0, 2000, executor, true);
 			project_meta.num_points    = point_cloud.rows();
 			project_meta.area_m2       = voxelated_ground.rows();
 
 			spdlog::info("This cloud has {0:.2f} million points, its area is {1:} m^2", project_meta.num_points / 1'000'000.0, project_meta.area_m2);
-			HeightNormalization height_normalizer(point_cloud, HeightNormalization::Parameters::FromGlobalConfig(params));
+			HeightNormalization height_normalizer(point_cloud, HeightNormalization::Parameters::FromGlobalConfig(params), executor);
 			z0                               = height_normalizer.normalize();
-			auto [warning, area_discrepancy] = HeightNormalization::checkHeightNormDiscrepancy(point_cloud, z0, project_meta.area_m2);
+			auto [warning, area_discrepancy] = HeightNormalization::checkHeightNormDiscrepancy(point_cloud, z0, project_meta.area_m2, executor);
 			if (warning)
 			{
 				spdlog::warn("[HeighNorm] Warning: 3DFin has detected a potential error in the terrain modelling.\n"
@@ -82,7 +86,7 @@ namespace lib3dfin
 				}
 			}
 
-			auto [voxelated_ground, _] = voxelize(pseudo_ground_cloud, 1.0, 2000, true);
+			auto [voxelated_ground, _] = voxelize(pseudo_ground_cloud, 1.0, 2000, executor, true);
 			project_meta.num_points    = point_cloud.rows();
 			project_meta.area_m2       = voxelated_ground.rows();
 
@@ -90,14 +94,14 @@ namespace lib3dfin
 		}
 		Stripe                           stripe(params.stripe_lower_limit, params.stripe_upper_limit);
 		std::unique_ptr<FilterPredicate> stripe_predicate(new StripeFilterPredicate(params.stripe_lower_limit, params.stripe_upper_limit));
-		TreePeeler                       stripe_peeler(point_cloud, z0, std::move(stripe_predicate), TreePeeler::Parameters::StripeFromGlobalConfig(params));
+		TreePeeler                       stripe_peeler(point_cloud, z0, std::move(stripe_predicate), TreePeeler::Parameters::StripeFromGlobalConfig(params), executor);
 		stripe.cluster_indicator = stripe_peeler.peel();
 
-		TreeIndividualizer tree_individualizer(point_cloud, stripe, z0, TreeIndividualizer::Parameters::FromGlobalConfig(params));
+		TreeIndividualizer tree_individualizer(point_cloud, stripe, z0, TreeIndividualizer::Parameters::FromGlobalConfig(params), executor);
 		auto               tree_data = tree_individualizer.individualize();
 
 		std::unique_ptr<FilterPredicate> stem_predicate(new StemFilterPredicate(params.stem_minimum_height, params.stem_maximum_height + params.stem_section_thickness, params.stem_search_diameter / 2.0, tree_data.axis_distance));
-		TreePeeler                       stem_peeler(point_cloud, z0, std::move(stem_predicate), TreePeeler::Parameters::StemFromGlobalConfig(params));
+		TreePeeler                       stem_peeler(point_cloud, z0, std::move(stem_predicate), TreePeeler::Parameters::StemFromGlobalConfig(params), executor);
 		auto                             stem_indicator = stem_peeler.peel();
 
 		ArrayClusterIndicator sections_indicator = (stem_indicator > -1).select(tree_data.cluster_indicator, -1);

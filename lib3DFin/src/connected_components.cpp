@@ -12,7 +12,7 @@
 namespace lib3dfin
 {
 
-	VecIndex<int32_t> connected_components(const PointCloud3& xyz, const double eps, const uint32_t min_samples)
+	VecIndex<int32_t> connected_components(const PointCloud3& xyz, const double eps, const uint32_t min_samples, tf::Executor& executor)
 	{
 		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud3, 3, nanoflann::metric_L2_Simple>;
 
@@ -23,7 +23,6 @@ namespace lib3dfin
 
 		const Eigen::Index n_points = xyz.rows();
 
-		tf::Executor                           executor;
 		tf::Taskflow                           taskflow;
 		std::vector<std::vector<Eigen::Index>> nn_cells(n_points);
 		std::vector<bool>                      is_core(n_points, false);

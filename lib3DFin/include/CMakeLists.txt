@@ -11,7 +11,6 @@ set(HEADERS
 	slink.hpp
 	statistics.hpp
 	types.hpp
-	verticality.hpp
 	voxel.hpp
 	xlsx.hpp
 )

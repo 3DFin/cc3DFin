@@ -34,6 +34,7 @@ namespace lib3dfin
 	void SectionExtractor::extract()
 	{
 		spdlog::info("[SectionExtractor] Computing diameters along stems...");
+
 		// iterate over the trees
 		for (auto& tree : trees_.tree_descriptors)
 		{
@@ -53,6 +54,7 @@ namespace lib3dfin
 
 			CircleSections circles(num_sections_);
 
+			// TODO: use taskflow
 			for (Eigen::Index section_id = 0; section_id < num_sections_; ++section_id)
 			{
 				const auto section_start = params_.stem_minimum_height + section_id * params_.stem_section_interval;

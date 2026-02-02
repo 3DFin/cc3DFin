@@ -7,6 +7,8 @@
 #include "types.hpp"
 #include "voxel.hpp"
 
+#include <taskflow/taskflow.hpp>
+
 namespace lib3dfin
 {
 	class HeightNormalization
@@ -32,10 +34,11 @@ namespace lib3dfin
 		};
 
 	  public:
-		explicit HeightNormalization(const PointCloud3& point_cloud, HeightNormalization::Parameters params);
+		explicit HeightNormalization(const PointCloud3& point_cloud, HeightNormalization::Parameters params, tf::Executor& executor);
+
 		Eigen::VectorXd normalize();
 
-		static std::pair<bool, double> checkHeightNormDiscrepancy(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, double original_area, double res_xy = 1.0, double z_min = -0.1, double z_max = 0.15, double threshold = 0.1)
+		static std::pair<bool, double> checkHeightNormDiscrepancy(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, double original_area, tf::Executor& executor, double res_xy = 1.0, double z_min = -0.1, double z_max = 0.15, double threshold = 0.1)
 		{
 			assert(z_min < z_max);
 			assert(original_area > 0);
@@ -59,7 +62,7 @@ namespace lib3dfin
 				}
 			}
 
-			const auto [voxel_cloud, _] = voxelize(pseudo_ground_cloud, res_xy, res_z, true);
+			const auto [voxel_cloud, _] = voxelize(pseudo_ground_cloud, res_xy, res_z, executor, false);
 
 			//   # Area of the voxelated ground slice (n of voxels * area of voxel base)
 			double slice_area = voxel_cloud.rows() * res_xy * res_xy;
@@ -89,6 +92,7 @@ namespace lib3dfin
 		const PointCloud3& point_cloud_;
 		const Parameters   params_;
 		PointCloud3        dtm_;
+		tf::Executor&      executor_;
 	};
 
 } // namespace lib3dfin

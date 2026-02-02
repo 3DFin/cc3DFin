@@ -28,9 +28,11 @@ namespace lib3dfin
 {
 
 	HeightNormalization::HeightNormalization(const PointCloud3& point_cloud,
-	                                         Parameters         params)
+	                                         Parameters         params,
+	                                         tf::Executor&      executor)
 	    : point_cloud_(point_cloud)
-	    , params_(std::move(params))
+	    , params_(params)
+	    , executor_(executor)
 	{
 	}
 
@@ -112,9 +114,9 @@ namespace lib3dfin
 
 	PointCloud3 HeightNormalization::denoiseCloud()
 	{
-		const auto [voxel_cloud, cloud_to_vox] = voxelize(point_cloud_, params_.denoise_resolution, params_.denoise_resolution, true);
+		const auto [voxel_cloud, cloud_to_vox] = voxelize(point_cloud_, params_.denoise_resolution, params_.denoise_resolution, executor_, true);
 
-		const auto cluster_labels = connected_components(voxel_cloud, params_.denoise_resolution * std::sqrt(3.0) + 1e-6, params_.denoise_minimum_points);
+		const auto cluster_labels = connected_components(voxel_cloud, params_.denoise_resolution * std::sqrt(3.0) + 1e-6, params_.denoise_minimum_points, executor_);
 
 		// Count occurrences of each cluster label
 		std::unordered_map<int32_t, uint32_t> label_counts;
@@ -213,12 +215,11 @@ namespace lib3dfin
 		const PointCloud2& dtm2 = dtm_.leftCols<2>();
 		kd_tree_t          kd_tree(2, dtm2, 10);
 
-		tf::Executor executor;
 		tf::Taskflow taskflow;
 
 		std::vector<double> abs_devs(n_points);
 		// Get number of workers and pre-allocate vectors for each worker
-		const size_t              num_workers = executor.num_workers();
+		const size_t              num_workers = executor_.num_workers();
 		std::vector<Eigen::Index> neighbors_buffer(N_NEIGHBORS * num_workers);
 		std::vector<double>       dists_buffer(N_NEIGHBORS * num_workers);
 		std::vector<double>       heights_buffer(N_NEIGHBORS * num_workers);
@@ -227,7 +228,7 @@ namespace lib3dfin
 		    size_t(0), n_points, size_t(1), [&](size_t i)
 		    {
 			    // Get current worker ID and calculate offset into pre-allocated vectors
-			    const int worker_id = executor.this_worker_id();
+			    const int worker_id = executor_.this_worker_id();
 			    const size_t offset = worker_id * N_NEIGHBORS;
 
 				// Thread local storage
@@ -248,7 +249,7 @@ namespace lib3dfin
 			    abs_devs[i] = std::abs(dtm_(i, 2) - median_z); },
 		    tf::StaticPartitioner()); // StaticPartitioner is important to have consistent worker's ID
 
-		executor.run(taskflow).get();
+		executor_.run(taskflow).get();
 
 		// Compute MAD (median of absolute deviations)
 		std::vector<double> abs_devs_copy = abs_devs;

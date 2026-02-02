@@ -21,7 +21,7 @@ namespace lib3dfin
 
 	TreeData TreeIndividualizer::individualize()
 	{
-		const auto [voxelated_cloud, cloud_to_vox]        = voxelize(point_cloud_, params_.resolution_xy, params_.resolution_z, true);
+		const auto [voxelated_cloud, cloud_to_vox]        = voxelize(point_cloud_, params_.resolution_xy, params_.resolution_z, executor_, true);
 		auto                          start               = std::chrono::high_resolution_clock::now();
 		auto                          voxelated_axes_data = computeAxesApproximate(voxelated_cloud);
 		auto                          stop                = std::chrono::high_resolution_clock::now();
@@ -202,9 +202,9 @@ namespace lib3dfin
 		// large voxel to avoid underpopulated cells
 		PointCloud3        large_voxels_cloud;
 		VecIndex<uint32_t> vox_to_large_vox;
-		std::tie(large_voxels_cloud, vox_to_large_vox) = voxelize(voxelated_cloud, params_.resolution_height, params_.resolution_height, true);
+		std::tie(large_voxels_cloud, vox_to_large_vox) = voxelize(voxelated_cloud, params_.resolution_height, params_.resolution_height, executor_, true);
 		const double      eps                          = (params_.resolution_height * std::sqrt(3)) + 1e-6;
-		VecIndex<int32_t> cluster_labels               = connected_components(large_voxels_cloud, eps, 2);
+		VecIndex<int32_t> cluster_labels               = connected_components(large_voxels_cloud, eps, 2, executor_);
 
 		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
