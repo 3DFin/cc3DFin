@@ -179,7 +179,7 @@ namespace lib3dfin
 
 		for (Eigen::Index point_id = 0; point_id < dtm_point_cloud_.rows(); ++point_id)
 		{
-			csf_pc[point_id] = {static_cast<double>(dtm_point_cloud_(point_id, 0)), static_cast<double>(-dtm_point_cloud_(point_id, 2)), static_cast<double>(dtm_point_cloud_(point_id, 1))};
+			csf_pc[point_id] = {dtm_point_cloud_(point_id, 0), -dtm_point_cloud_(point_id, 2), dtm_point_cloud_(point_id, 1)};
 		}
 
 		const auto  cloth     = csf.runClothSimulation();
