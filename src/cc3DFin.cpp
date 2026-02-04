@@ -154,7 +154,7 @@ void cc3DFin::initCustomColorScale()
 
 	if (maybeColorScale != nullptr)
 	{
-		ccLog::Print("Color Scale already exists");
+		ccLog::Print("[3DFin] Color Scale already exists");
 		return;
 	}
 
@@ -182,7 +182,7 @@ void cc3DFin::drawDTM(const std::pair<std::vector<size_t>, lib3dfin::PointCloud3
 	if (!vertices->reserve(dtm_cloud.size())
 	    /*|| !mesh->reserve(tri_ids.size() / 3)*/)
 	{
-		ccLog::Error("Unable to initialize DTM entity");
+		ccLog::Error("[3DFin] Unable to initialize DTM entity");
 
 		// delete mesh;
 		// mesh = nullptr;
@@ -403,7 +403,6 @@ void cc3DFin::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_
 
 void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std::vector<double>& z0)
 {
-
 	auto enriched_cloud = std::make_unique<ccPointCloud>(m_currentCloud->getName());
 
 	enriched_cloud->copyGlobalShiftAndScale(*m_currentCloud);
@@ -532,7 +531,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 			}
 			catch (const std::bad_alloc&)
 			{
-				ccLog::Error("[cc3DFin] Scalar field allocation failure");
+				ccLog::Error("[3DFin] Scalar field allocation failure");
 				return;
 			}
 

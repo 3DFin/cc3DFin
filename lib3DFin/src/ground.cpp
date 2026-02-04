@@ -188,7 +188,7 @@ namespace lib3dfin
 		auto [width, height] = cloth.getGridSize();
 		width_               = width;
 		height_              = height;
-		spdlog::warn("[HeighNorm] CSF grid size {}x{}", width_, height_);
+		spdlog::info("[HeighNorm] CSF grid size {}x{}", width_, height_);
 
 		dtm_ = PointCloud3(particles.size(), 3);
 		for (size_t particle_id = 0; particle_id < particles.size(); ++particle_id)

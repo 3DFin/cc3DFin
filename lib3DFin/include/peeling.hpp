@@ -139,7 +139,7 @@ namespace lib3dfin
 		const Parameters                 params_;
 		tf::Executor&                    executor_;
 		std::unique_ptr<FilterPredicate> initial_state_;
-		double                           total_time_ = 0.0;
+		double                           total_time_{0.0};
 	};
 
 } // namespace lib3dfin
