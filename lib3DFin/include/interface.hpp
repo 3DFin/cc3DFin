@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 
 namespace lib3dfin
 {
-	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData>;
+	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData, std::optional<std::pair<std::vector<size_t>, PointCloud3>>>;
 
 	struct GlobalShift
 	{

@@ -21,7 +21,7 @@
 
 namespace lib3dfin
 {
-	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData>;
+	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData, std::optional<std::pair<std::vector<size_t>, PointCloud3>>>;
 
 	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, const std::optional<fs::path>& output_basepath, const std::optional<GlobalShift>& global_shift)
 	{
@@ -43,6 +43,8 @@ namespace lib3dfin
 		spdlog::info("Analyzing cloud size...");
 		// We do the same with z0
 		Eigen::VectorXd z0;
+
+		std::optional<std::pair<std::vector<size_t>, PointCloud3>> maybe_dtm;
 		// We compute normalization if needed else we simply map the memory
 		if (params.compute_height_normalization || !z0_sf)
 		{
@@ -66,6 +68,7 @@ namespace lib3dfin
 				             "  Learn more about this here https://github.com/3DFin/3DFin_Tutorial");
 			}
 			spdlog::info("[HeighNorm] Area discrepancy {0:.2f} m^2", area_discrepancy);
+			maybe_dtm = height_normalizer.exportDTM();
 		}
 		else
 		{
@@ -129,7 +132,7 @@ namespace lib3dfin
 
 		const auto stop_total = std::chrono::steady_clock::now();
 		spdlog::info("End of 3DFin computation. Found {0:} Trees. Total time: {1:.2f} s", tree_data.tree_descriptors.size(), std::chrono::duration_cast<std::chrono::milliseconds>(stop_total - start_total).count() / 1000.0);
-		return std::make_tuple(std::move(stem_indicator_vector), std::move(z0_vector), std::move(tree_data));
+		return std::make_tuple(std::move(stem_indicator_vector), std::move(z0_vector), std::move(tree_data), maybe_dtm);
 	}
 
 } // namespace lib3dfin

@@ -3,10 +3,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
+// local
 #include "config.hpp"
 #include "types.hpp"
 #include "voxel.hpp"
 
+// taskflow
 #include <taskflow/taskflow.hpp>
 
 namespace lib3dfin
@@ -83,6 +85,8 @@ namespace lib3dfin
 			return {area_difference >= threshold_difference, (area_difference * 100 / original_area)};
 		}
 
+		std::pair<std::vector<size_t>, PointCloud3> exportDTM();
+
 	  private: // methods
 		PointCloud3 denoiseCloud();
 		void        generateDTM(const PointCloud3& dtm_point_cloud);
@@ -92,6 +96,8 @@ namespace lib3dfin
 		const PointCloud3& point_cloud_;
 		const Parameters   params_;
 		PointCloud3        dtm_;
+		size_t             width_{0};
+		size_t             height_{0};
 		tf::Executor&      executor_;
 	};
 

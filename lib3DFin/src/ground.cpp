@@ -184,7 +184,13 @@ namespace lib3dfin
 
 		const auto  cloth     = csf.runClothSimulation();
 		const auto& particles = cloth.getParticles();
-		dtm_                  = PointCloud3(particles.size(), 3);
+
+		auto [width, height] = cloth.getGridSize();
+		width_               = width;
+		height_              = height;
+		spdlog::warn("[HeighNorm] CSF grid size {}x{}", width_, height_);
+
+		dtm_ = PointCloud3(particles.size(), 3);
 		for (size_t particle_id = 0; particle_id < particles.size(); ++particle_id)
 		{
 			const auto& particle = particles[particle_id];
@@ -280,6 +286,38 @@ namespace lib3dfin
 		}
 
 		dtm_ = std::move(clean_points);
+	}
+
+	std::pair<std::vector<size_t>, PointCloud3> HeightNormalization::exportDTM()
+	{
+		std::vector<size_t> tri_indices;
+		const size_t        num_triangles = (width_ - 1) * (height_ - 1) * 2;
+		tri_indices.resize(num_triangles * 3, 0);
+
+		// mesh export code taken from CC.
+		// A---D
+		// | / |
+		// B---C
+		for (size_t x = 0; x < width_ - 1; ++x)
+		{
+			for (size_t y = 0; y < height_ - 1; ++y)
+			{
+				size_t A = y * width_ + x;
+				size_t B = A + 1;
+				size_t D = A + width_;
+				size_t C = D + 1;
+
+				size_t base_id           = 6 * (x + y * (width_ - 1));
+				tri_indices[base_id]     = A;
+				tri_indices[base_id + 1] = B;
+				tri_indices[base_id + 2] = D;
+				tri_indices[base_id + 3] = D;
+				tri_indices[base_id + 4] = B;
+				tri_indices[base_id + 5] = C;
+			}
+		}
+
+		return {std::move(tri_indices), dtm_};
 	}
 
 } // namespace lib3dfin

@@ -17,13 +17,17 @@
 
 #include "cc3DFin.h"
 
+// CCCore
 #include "CCGeom.h"
+
+// qCC
 #include "cc2DLabel.h"
 #include "cc3DFinDlg.h"
 #include "ccColorScalesManager.h"
 #include "ccHObject.h"
 #include "ccHObjectCaster.h"
 #include "ccLog.h"
+#include "ccMesh.h"
 #include "ccPointCloud.h"
 #include "ccPolyline.h"
 #include "ccScalarField.h"
@@ -166,6 +170,42 @@ void cc3DFin::initCustomColorScale()
 	ccColorScalesManager::GetUniqueInstance()->addScale(customColorScale);
 }
 
+void cc3DFin::drawDTM(const std::pair<std::vector<size_t>, lib3dfin::PointCloud3>& dtm)
+{
+	ccPointCloud* vertices = new ccPointCloud("DTM vertices");
+	//	ccMesh*       mesh      = new ccMesh(vertices);
+	//	auto&         tri_ids   = dtm.first;
+	auto& dtm_cloud = dtm.second;
+	// mesh->addChild(vertices);
+	//  TODO: global shift
+	vertices->setEnabled(false);
+	if (!vertices->reserve(dtm_cloud.size())
+	    /*|| !mesh->reserve(tri_ids.size() / 3)*/)
+	{
+		ccLog::Error("Unable to initialize DTM entity");
+
+		// delete mesh;
+		// mesh = nullptr;
+		delete vertices; // TODO remove this line when converting to mesh based DTM, as mesh takes ownership of the vertices
+		return;
+	}
+
+	for (const auto& point : dtm_cloud.rowwise())
+	{
+		vertices->addPoint({static_cast<PointCoordinateType>(point.x()),
+		                    static_cast<PointCoordinateType>(point.y()),
+		                    static_cast<PointCoordinateType>(point.z())});
+	}
+
+	// for (size_t tri_id = 0; tri_id < (tri_ids.size() / 3); ++tri_id)
+	// {
+	// 	size_t tri_start = tri_id * 3;
+	// 	mesh->addTriangle(tri_ids[tri_start], tri_ids[tri_start + 1], tri_ids[tri_start + 2]);
+	// }
+	// m_base_group->addChild(mesh);
+	m_base_group->addChild(vertices); // TODO: remove this line too
+}
+
 void cc3DFin::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
 	size_t tree_id = 0;
@@ -265,7 +305,7 @@ void cc3DFin::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descrip
 {
 	constexpr double step_size = 0.1; // TODO parameters
 
-	auto*  axis_points  = new ccPointCloud(QString("tree axes"));
+	auto*  axis_points  = new ccPointCloud(QString("Tree axes"));
 	int    axis_tilt_id = axis_points->addScalarField("tilting_degree");
 	auto*  axis_tilt_sf = axis_points->getScalarField(axis_tilt_id);
 	size_t tree_id      = 0;
@@ -521,10 +561,16 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		const auto& stemIndicator = std::get<0>(result);
 		const auto& z0Out         = std::get<1>(result);
 		const auto& treeData      = std::get<2>(result);
+		const auto& dtm = std::get<3>(result);
 
 		// TODO factorize the drawing
 		m_base_group = std::make_unique<ccHObject>(m_currentCloud->getName() + "_3DFin");
 
+		// DTM is optional. It depends if we compute heigh norm
+		if(dtm.has_value())
+		{
+			drawDTM(dtm.value());
+		}
 		drawCircles(treeData.tree_descriptors);
 		drawTreeLocators(treeData.tree_descriptors);
 		drawTreeHeights(treeData.tree_descriptors);
@@ -533,6 +579,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		exportStripe(stemIndicator);
 
 		dialog.setComputationMode(false);
+
 		m_app->addToDB(m_base_group.release());
 		m_app->redrawAll();
 
