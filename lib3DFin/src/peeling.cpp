@@ -116,7 +116,7 @@ namespace lib3dfin
 			stripe_indicator = verticalityClustering(stripe_indicator);
 		}
 
-		spdlog::info("[TreePeeler] Total time: {0:.2f}", total_time_);
+		spdlog::info("[TreePeeler] Total time: {0:.2f} s", total_time_);
 		return stripe_indicator;
 	}
 

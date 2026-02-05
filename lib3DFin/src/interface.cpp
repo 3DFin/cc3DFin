@@ -67,7 +67,7 @@ namespace lib3dfin
 				             "  This usually happens when the \"cloth resolution\" parameter didn\'t fit well the terrain.\n"
 				             "  Learn more about this here https://github.com/3DFin/3DFin_Tutorial");
 			}
-			spdlog::info("[HeighNorm] Area discrepancy {0:.2f} m^2", area_discrepancy);
+			spdlog::info("[HeighNorm] Area discrepancy {0:.2f} %", area_discrepancy);
 			maybe_dtm = height_normalizer.exportDTM();
 		}
 		else
