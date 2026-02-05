@@ -24,6 +24,8 @@
 // System
 #include <cstddef>
 
+// #define HN3DFIN_BARYCENTRIC_INTERPOLATION
+
 namespace lib3dfin
 {
 
@@ -52,7 +54,14 @@ namespace lib3dfin
 
 		if (params_.clean_dtm)
 		{
-			cleanDTM();
+
+#ifdef HN3DFIN_BARYCENTRIC_INTERPOLATION
+			smoothDTMmedian();
+
+#else
+			// cleanDTMmad();
+			smoothDTMmedian();
+#endif
 		}
 
 		constexpr size_t N_NEIGHBORS = 3;
@@ -74,22 +83,51 @@ namespace lib3dfin
 		std::vector<Eigen::Index> neighbors_buffer(N_NEIGHBORS * num_workers);
 		std::vector<double>       dists_buffer(N_NEIGHBORS * num_workers);
 		std::vector<double>       heights_buffer(N_NEIGHBORS * num_workers);
+#ifdef HN3DFIN_BARYCENTRIC_INTERPOLATION
+		spdlog::info("[HeighNorm] Normalization using barycentric interpolation")
+#else
+		spdlog::info("[HeighNorm] Normalization using IDW interpolation");
+#endif
 
-		taskflow.for_each_index(
-		    size_t(0), n_points, size_t(1), [&](size_t i)
-		    {
-			    const int worker_id = executor.this_worker_id();
-				const size_t offset = worker_id * N_NEIGHBORS;
+		    taskflow.for_each_index(
+		        size_t(0), n_points, size_t(1), [&](size_t i)
+		        {
+			const int    worker_id = executor.this_worker_id();
+			const size_t offset    = worker_id * N_NEIGHBORS;
 
-			    // Use this worker's dedicated storage
-			    Eigen::Index* indices = neighbors_buffer.data() + offset;
-			    double* dists = dists_buffer.data() + offset;
-			    double* weights = heights_buffer.data() + offset;
+			// Use the dedicated storage of the worker
+			Eigen::Index* indices = neighbors_buffer.data() + offset;
+			double*       dists   = dists_buffer.data() + offset;
+			double*       weights = heights_buffer.data() + offset;
 
-			    kd_tree.index_->knnSearch(point_cloud_.row(i).data(), N_NEIGHBORS, indices, dists);
+			kd_tree.index_->knnSearch(point_cloud_.row(i).data(), N_NEIGHBORS, indices, dists);
 
-			    // Convert squared distances to actual distances and compute weights
-			    double sum_weights = 0.0;
+#ifdef HN3DFIN_BARYCENTRIC_INTERPOLATION
+
+            // Barycentric Interpolation
+            // Assuming the DTM grid is regular and uniform, its triangulation is Delaunay.
+            // In this case, finding the 3 nearest neighbors (NN) of a query point in 2D
+            // is equivalent to identifying the 3 vertices of the Delaunay triangle
+            // that encloses the query point (due to the circumcircle property of Delaunay triangulation).
+            // Barycentric interpolation can then be computed using these 3 points.
+          	const Eigen::Vector2d& A = dtm2.row(indices[0]);
+           	const Eigen::Vector2d& B = dtm2.row(indices[1]);
+           	const Eigen::Vector2d& C = dtm2.row(indices[2]);
+           	const Eigen::Vector2d& P = point_cloud_.row(i).head<2>();
+
+           	Eigen::Matrix2d linear_system;
+           	linear_system << B(0) - A(0), C(0) - A(0),
+           	B(1) - A(1), C(1) - A(1);
+           	const Eigen::Vector2d b = P - A;
+           	const Eigen::Vector2d uv = linear_system.inverse() * b;
+           	double u = 1.0 - uv(0) - uv(1);
+           	double v = uv(0);
+           	double w = uv(1);
+           	double weighted_z = u * dtm_(indices[0], 2) + v * dtm_(indices[1], 2)  + w * dtm_(indices[2], 2);
+#else // 3DFIN_IDW_INTERPOLATION
+
+            // Convert squared distances to actual distances and compute weights
+		        double sum_weights = 0.0;
 			    for (size_t j = 0; j < N_NEIGHBORS; ++j)
 			    {
 				    weights[j] = std::sqrt(dists[j]); // nanoflann dist are squared
@@ -104,9 +142,10 @@ namespace lib3dfin
 				    const double normalized_weight = weights[j] * inv_sum_weights;
 				    weighted_z += normalized_weight * dtm_(indices[j], 2);
 			    }
+#endif
 
 			    normalized_heights(i) = point_cloud_(i, 2) - weighted_z; },
-		    tf::StaticPartitioner()); // worker ID
+		        tf::StaticPartitioner()); // worker ID
 		executor.run(taskflow).get();
 		spdlog::info("[HeighNorm] End CSF computation...");
 		return normalized_heights;
@@ -131,7 +170,7 @@ namespace lib3dfin
 		}
 
 		// Identify large clusters (label ≠ -1 and count > min_points)
-		// uint32_t because we
+		// uint32_t because we do not insert -1
 		std::set<uint32_t> large_clusters;
 		for (const auto& [label, count] : label_counts)
 		{
@@ -200,8 +239,34 @@ namespace lib3dfin
 		}
 	}
 
-	void HeightNormalization::cleanDTM()
+	void HeightNormalization::smoothDTMmedian()
 	{
+		spdlog::info("[HeighNorm] smooth DTM using 3x3 Median filter");
+		// Apply 3x3 median filter to inner cells
+		std::vector<double>                                                  window(9, 0.0);
+		Eigen::Map<Eigen::MatrixXd, Eigen::Unaligned, Eigen::InnerStride<3>> depth_map(dtm_.data() + 2, height_, width_);
+		for (int y = 1; y < height_ - 1; ++y)
+		{
+			for (int x = 1; x < width_ - 1; ++x)
+			{
+
+				size_t window_id = 0;
+				for (int dy = -1; dy <= 1; ++dy)
+				{
+					for (int dx = -1; dx <= 1; ++dx)
+					{
+						window[window_id++] = depth_map(y + dy, x + dx);
+					}
+				}
+				std::nth_element(window.begin(), window.begin() + 4, window.end());
+				depth_map(y, x) = window[4]; // median of 9 values
+			}
+		}
+	}
+
+	void HeightNormalization::cleanDTMmad()
+	{
+		spdlog::info("[HeighNorm] clean DTM using 2*MADs filter");
 		constexpr size_t N_NEIGHBORS      = 15;
 		constexpr size_t HALF_N_NEIGHBORS = N_NEIGHBORS / 2;
 		constexpr double MAD_FACTOR       = 2.0;
@@ -318,6 +383,51 @@ namespace lib3dfin
 		}
 
 		return {std::move(tri_indices), dtm_};
+	}
+
+	std::pair<bool, double> HeightNormalization::checkHeightNormDiscrepancy(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, double original_area, tf::Executor& executor, double res_xy, double z_min, double z_max, double threshold)
+	{
+		assert(z_min < z_max);
+		assert(original_area > 0);
+		assert(threshold > 0 && threshold < 1);
+
+		// Compute the z resolution as a function of z_max - z_min
+		const double res_z = (z_max - z_min) * 1.01;
+
+		const ArrayMask pseudo_ground_mask = ((z0.array() >= z_min) && (z0.array() <= z_max));
+
+		auto        pseudo_ground_point_count = pseudo_ground_mask.count();
+		PointCloud3 pseudo_ground_cloud(pseudo_ground_point_count, 3);
+
+		Eigen::Index filtered_point_id = 0;
+		for (Eigen::Index point_id = 0; point_id < z0.size(); ++point_id)
+		{
+			if (pseudo_ground_mask(point_id))
+			{
+				pseudo_ground_cloud.row(filtered_point_id).head<2>() = point_cloud.row(point_id).head<2>();
+				pseudo_ground_cloud.row(filtered_point_id++)(2)      = z0(point_id);
+			}
+		}
+
+		const auto [voxel_cloud, _] = voxelize(pseudo_ground_cloud, res_xy, res_z, executor, false);
+
+		//   # Area of the voxelated ground slice (n of voxels * area of voxel base)
+		double slice_area = voxel_cloud.rows() * res_xy * res_xy;
+
+		double threshold_difference = threshold * original_area;
+
+		double area_difference = std::abs(original_area - slice_area);
+
+		//  TODO: In very rare occasions, the slice area could be larger than the original
+		//  area. The function should account for that, and return a different kind of
+		//  warning for those situations (and its threshold could be different).
+		//  For instance, if the original area has been computed through a grid of voxels
+		//  (as this function does to compute slice_area) using a smaller voxel size,
+		//  this could happen. We haven't tested it yet as we do not have access
+		//  to any point clouds where this situation happens.
+
+		//  Check if the difference is greater than 10 % of the first number
+		return {area_difference >= threshold_difference, (area_difference * 100 / original_area)};
 	}
 
 } // namespace lib3dfin
