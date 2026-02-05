@@ -172,21 +172,22 @@ void cc3DFin::initCustomColorScale()
 
 void cc3DFin::drawDTM(const std::pair<std::vector<size_t>, lib3dfin::PointCloud3>& dtm)
 {
-	ccPointCloud* vertices = new ccPointCloud("DTM vertices");
-	//	ccMesh*       mesh      = new ccMesh(vertices);
-	//	auto&         tri_ids   = dtm.first;
-	auto& dtm_cloud = dtm.second;
-	// mesh->addChild(vertices);
-	//  TODO: global shift
+	ccPointCloud* vertices  = new ccPointCloud("DTM vertices");
+	ccMesh*       mesh      = new ccMesh(vertices);
+	auto&         tri_ids   = dtm.first;
+	auto&         dtm_cloud = dtm.second;
+	mesh->addChild(vertices);
+
+	mesh->copyGlobalShiftAndScale(*m_currentCloud);
+	vertices->copyGlobalShiftAndScale(*m_currentCloud);
 	vertices->setEnabled(false);
+
 	if (!vertices->reserve(dtm_cloud.size())
-	    /*|| !mesh->reserve(tri_ids.size() / 3)*/)
+	    || !mesh->reserve(tri_ids.size() / 3))
 	{
 		ccLog::Error("[3DFin] Unable to initialize DTM entity");
-
-		// delete mesh;
-		// mesh = nullptr;
-		delete vertices; // TODO remove this line when converting to mesh based DTM, as mesh takes ownership of the vertices
+		delete mesh;
+		mesh = nullptr;
 		return;
 	}
 
@@ -197,13 +198,15 @@ void cc3DFin::drawDTM(const std::pair<std::vector<size_t>, lib3dfin::PointCloud3
 		                    static_cast<PointCoordinateType>(point.z())});
 	}
 
-	// for (size_t tri_id = 0; tri_id < (tri_ids.size() / 3); ++tri_id)
-	// {
-	// 	size_t tri_start = tri_id * 3;
-	// 	mesh->addTriangle(tri_ids[tri_start], tri_ids[tri_start + 1], tri_ids[tri_start + 2]);
-	// }
-	// m_base_group->addChild(mesh);
-	m_base_group->addChild(vertices); // TODO: remove this line too
+	for (size_t tri_id = 0; tri_id < (tri_ids.size() / 3); ++tri_id)
+	{
+		size_t tri_start = tri_id * 3;
+		mesh->addTriangle(tri_ids[tri_start], tri_ids[tri_start + 1], tri_ids[tri_start + 2]);
+	}
+
+	mesh->computeNormals(false);
+	mesh->setEnabled(false);
+	m_base_group->addChild(mesh);
 }
 
 void cc3DFin::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
