@@ -23,7 +23,7 @@ namespace lib3dfin
 {
 	using TDFResult = std::tuple<std::vector<int32_t>, std::vector<double>, lib3dfin::TreeData, std::optional<std::pair<std::vector<size_t>, PointCloud3>>>;
 
-	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, const std::optional<fs::path>& output_basepath, const std::optional<GlobalShift>& global_shift)
+	TDFResult process(const double* cloud_data, const double* z0_sf, size_t num_points, const Params& params, const std::optional<fs::path>& output_basepath, const std::optional<GlobalShift>& global_shift)
 	{
 
 		ProjectMeta project_meta;
@@ -34,17 +34,14 @@ namespace lib3dfin
 		spdlog::info("Starting 3DFin computation... ");
 
 		// Convert the point cloud to our datastructure (it uses double precision)
-		PointCloud3 point_cloud(num_points, 3);
-		for (size_t i = 0; i < num_points; ++i)
-		{
-			point_cloud.row(i) = Vec3(cloud_data[i * 3], cloud_data[i * 3 + 1], cloud_data[i * 3 + 2]);
-		}
+		const PointCloud3 point_cloud = Eigen::Map<const PointCloud3>(cloud_data, num_points, 3);
 
 		spdlog::info("Analyzing cloud size...");
 		// We do the same with z0
 		Eigen::VectorXd z0;
 
 		std::optional<std::pair<std::vector<size_t>, PointCloud3>> maybe_dtm;
+
 		// We compute normalization if needed else we simply map the memory
 		if (params.compute_height_normalization || !z0_sf)
 		{

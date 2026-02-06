@@ -25,5 +25,5 @@ namespace lib3dfin
 		double scale{1.};
 	};
 
-	TDFResult process(const float* cloud_data, const double* z0_sf, size_t num_points, const Params& params, const std::optional<fs::path>& output_basepath, const std::optional<GlobalShift>& global_shift);
+	TDFResult process(const double* cloud_data, const double* z0_sf, size_t num_points, const Params& params, const std::optional<fs::path>& output_basepath, const std::optional<GlobalShift>& global_shift);
 } // namespace lib3dfin

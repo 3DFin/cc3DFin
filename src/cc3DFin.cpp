@@ -546,15 +546,35 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		}
 	}
 
+	std::vector<double> tdfPointCloud;
+	try
+	{
+		tdfPointCloud.reserve(m_currentCloud->size());
+	}
+	catch (const std::bad_alloc&)
+	{
+		ccLog::Error("[3DFin] Point cloud allocation failure");
+		return;
+	}
+
+	for (unsigned point_id = 0; point_id < m_currentCloud->size(); ++point_id)
+	{
+		const CCVector3* point = m_currentCloud->getPoint(point_id);
+		tdfPointCloud.push_back(static_cast<double>(point->x));
+		tdfPointCloud.push_back(static_cast<double>(point->y));
+		tdfPointCloud.push_back(static_cast<double>(point->z));
+	}
+
 	QFuture<lib3dfin::TDFResult>
-	    TdfFutureResult = QtConcurrent::run(lib3dfin::process, &(m_currentCloud->getNextPoint()->u[0]), z0Vec.data(), static_cast<size_t>(m_currentCloud->size()), params, baseOutputDir, tdfGlobalShift);
+	    TdfFutureResult = QtConcurrent::run(lib3dfin::process, tdfPointCloud.data(), z0Vec.data(), static_cast<size_t>(m_currentCloud->size()), params, baseOutputDir, tdfGlobalShift);
 
 	// Create watcher to notify when its done
 	// will be cleaned by using QFutureWatcher::deleteLater()
 	auto* TdfComputationWatcher = new QFutureWatcher<lib3dfin::TDFResult>(this);
 
-	// we move z0_vec for memory clean up at the end of the computation
-	connect(TdfComputationWatcher, &QFutureWatcher<lib3dfin::TDFResult>::finished, this, [TdfComputationWatcher, this, &dialog, z0_vec = std::move(z0Vec)]()
+	// we move z0vec and tdfPointCloud for memory clean up at the end of the computation
+
+	connect(TdfComputationWatcher, &QFutureWatcher<lib3dfin::TDFResult>::finished, this, [TdfComputationWatcher, this, &dialog, z0Vec = std::move(z0Vec), tdfCloud = std::move(tdfPointCloud)]()
 	        {
 		// Retrieve result
 		lib3dfin::TDFResult result = TdfComputationWatcher->future().result();
