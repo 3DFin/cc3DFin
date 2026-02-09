@@ -404,7 +404,7 @@ void cc3DFin::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_
 	m_base_group->addChild(tree_heights);
 }
 
-void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std::vector<double>& z0)
+void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const Eigen::VectorXd& z0)
 {
 	auto enriched_cloud = std::make_unique<ccPointCloud>(m_currentCloud->getName());
 
@@ -441,7 +441,7 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 		enriched_cloud->addPoint(*m_currentCloud->getPoint(i));
 		dist_axes_sf->addElement(tree_data.axis_distance(i));
 		tree_id_sf->addElement(tree_data.cluster_indicator(i));
-		z0_sf->addElement(z0[i]);
+		z0_sf->addElement(z0(i));
 	}
 
 	dist_axes_sf->computeMinAndMax();
@@ -458,7 +458,7 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std
 	m_base_group->addChild(enriched_cloud.release());
 }
 
-void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
+void cc3DFin::exportStripe(const lib3dfin::ArrayClusterIndicator& stem_indicator)
 {
 	auto stripe_cloud = std::make_unique<ccPointCloud>("Stems in stripe");
 
@@ -487,7 +487,7 @@ void cc3DFin::exportStripe(const std::vector<int32_t>& stem_indicator)
 
 	for (size_t i = 0; i < stem_indicator.size(); i++)
 	{
-		auto stem_id = stem_indicator[i];
+		auto stem_id = stem_indicator(i);
 		if (stem_id >= 0)
 		{
 			stripe_cloud->addPoint(*m_currentCloud->getPoint(i));
@@ -565,33 +565,37 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		tdfPointCloud.push_back(static_cast<double>(point->z));
 	}
 
-	QFuture<lib3dfin::TDFResult>
-	    TdfFutureResult = QtConcurrent::run(lib3dfin::process, tdfPointCloud.data(), z0Vec.data(), static_cast<size_t>(m_currentCloud->size()), params, baseOutputDir, tdfGlobalShift);
+	auto tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(tdfPointCloud.data(), static_cast<size_t>(m_currentCloud->size()));
+
+	tdfProcessing->setParams(params);
+	tdfProcessing->setGlobalShift(tdfGlobalShift);
+	tdfProcessing->setOutputPath(baseOutputDir.value());
+
+	auto TdfFutureResult = QtConcurrent::run([&]
+	                                         { tdfProcessing->process(); });
 
 	// Create watcher to notify when its done
 	// will be cleaned by using QFutureWatcher::deleteLater()
-	auto* TdfComputationWatcher = new QFutureWatcher<lib3dfin::TDFResult>(this);
+	auto* TdfComputationWatcher = new QFutureWatcher<void>(this);
 
-	// we move z0vec and tdfPointCloud for memory clean up at the end of the computation
-
-	connect(TdfComputationWatcher, &QFutureWatcher<lib3dfin::TDFResult>::finished, this, [TdfComputationWatcher, this, &dialog, z0Vec = std::move(z0Vec), tdfCloud = std::move(tdfPointCloud)]()
+	// we move z0vec and tdfPointCloud for memory clean up at the end of the computationé
+	connect(TdfComputationWatcher, &QFutureWatcher<void>::finished, this, [TdfComputationWatcher, this, &dialog, tdfProcessing = std::move(tdfProcessing), z0Vec = std::move(z0Vec), tdfCloud = std::move(tdfPointCloud)]()
 	        {
-		// Retrieve result
-		lib3dfin::TDFResult result = TdfComputationWatcher->future().result();
-
-		// Get the results
-		const auto& stemIndicator = std::get<0>(result);
-		const auto& z0Out         = std::get<1>(result);
-		const auto& treeData      = std::get<2>(result);
-		const auto& dtm = std::get<3>(result);
-
 		// TODO factorize the drawing
 		m_base_group = std::make_unique<ccHObject>(m_currentCloud->getName() + "_3DFin");
 
-		// DTM is optional. It depends if we compute heigh norm
-		if(dtm.has_value())
+		tdfProcessing->exportTabularData();
+
+		// Get the results
+		const auto& stemIndicator = tdfProcessing->getStemIndicator();
+		const auto& z0Out         = tdfProcessing->getZ0();
+		const auto& treeData      = tdfProcessing->getTreeData();
+		const auto& dtm           = tdfProcessing->getDTM();
+
+		// DTM is optional. It depends if we compute heigh normalization
+		if (!dtm.first.empty())
 		{
-			drawDTM(dtm.value());
+			drawDTM(dtm);
 		}
 		drawCircles(treeData.tree_descriptors);
 		drawTreeLocators(treeData.tree_descriptors);

@@ -59,7 +59,7 @@ namespace lib3dfin
 			smoothDTMmedian();
 
 #else
-			// cleanDTMmad();
+			// cleanDTMmad(); old behavior... can't use exported mesh
 			smoothDTMmedian();
 #endif
 		}

@@ -51,8 +51,8 @@ class cc3DFin : public QObject
 	void drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 	void drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 	void drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
-	void exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const std::vector<double>& z0);
-	void exportStripe(const std::vector<int32_t>& stem_indicator);
+	void exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const Eigen::VectorXd& z0);
+	void exportStripe(const lib3dfin::ArrayClusterIndicator& stem_indicator);
 	void compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog);
 
   private:

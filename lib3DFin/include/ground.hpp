@@ -6,7 +6,6 @@
 // local
 #include "config.hpp"
 #include "types.hpp"
-#include "voxel.hpp"
 
 // taskflow
 #include <taskflow/taskflow.hpp>
