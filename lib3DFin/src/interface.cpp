@@ -34,18 +34,20 @@ namespace lib3dfin
 
 	bool TDFProcessing::process()
 	{
+		// Create the "Global" taskflow executor
 		tf::Executor executor;
-
-		const auto start_total = std::chrono::steady_clock::now();
-		spdlog::info("Starting 3DFin computation... ");
+		const auto   start_total = std::chrono::steady_clock::now();
+		spdlog::info("Starting 3DFin computation...");
 
 		spdlog::info("Analyzing cloud size...");
 		// We compute normalization if needed else we simply map the memory
+
 		if (params_.compute_height_normalization || z0_.size() == 0)
 		{
 			if (!params_.compute_height_normalization && z0_.size() == 0)
 			{
-				spdlog::warn("Input height normalization is null, force computation of height normalization");
+
+				spdlog::warn("Input height normalization is empty, force computation of height normalization");
 			}
 
 			auto [voxelated_ground, _] = voxelize(point_cloud_, 1.0, 2000, executor, true);

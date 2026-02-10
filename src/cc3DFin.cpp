@@ -46,6 +46,7 @@
 #include <QtConcurrent>
 #include <QtGui>
 #include <ScalarField.h>
+#include <iostream>
 
 cc3DFin::cc3DFin(QObject* parent)
     : QObject(parent)
@@ -549,7 +550,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 	std::vector<double> tdfPointCloud;
 	try
 	{
-		tdfPointCloud.reserve(m_currentCloud->size());
+		tdfPointCloud.reserve(m_currentCloud->size() * 3);
 	}
 	catch (const std::bad_alloc&)
 	{
@@ -565,14 +566,25 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		tdfPointCloud.push_back(static_cast<double>(point->z));
 	}
 
-	auto tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(tdfPointCloud.data(), static_cast<size_t>(m_currentCloud->size()));
+	if (z0Vec.empty())
+	{
+	}
+	std::unique_ptr<lib3dfin::TDFProcessing> tdfProcessing;
+
+	if (z0Vec.empty())
+		tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(tdfPointCloud.data(), static_cast<size_t>(m_currentCloud->size()));
+	else
+		tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(tdfPointCloud.data(), z0Vec.data(), static_cast<size_t>(m_currentCloud->size()));
 
 	tdfProcessing->setParams(params);
 	tdfProcessing->setGlobalShift(tdfGlobalShift);
 	tdfProcessing->setOutputPath(baseOutputDir.value());
 
-	auto TdfFutureResult = QtConcurrent::run([&]
-	                                         { tdfProcessing->process(); });
+	auto TdfFutureResult = QtConcurrent::run(
+	    [tdf = tdfProcessing.get()]
+	    {
+		    tdf->process();
+	    });
 
 	// Create watcher to notify when its done
 	// will be cleaned by using QFutureWatcher::deleteLater()
