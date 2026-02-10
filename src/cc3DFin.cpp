@@ -173,10 +173,11 @@ void cc3DFin::initCustomColorScale()
 
 void cc3DFin::drawDTM(const std::pair<std::vector<size_t>, lib3dfin::PointCloud3>& dtm)
 {
-	ccPointCloud* vertices  = new ccPointCloud("DTM vertices");
-	ccMesh*       mesh      = new ccMesh(vertices);
-	auto&         tri_ids   = dtm.first;
-	auto&         dtm_cloud = dtm.second;
+	ccPointCloud* vertices = new ccPointCloud("DTM vertices");
+	ccMesh*       mesh     = new ccMesh(vertices);
+	mesh->setName("DTM mesh");
+	auto& tri_ids   = dtm.first;
+	auto& dtm_cloud = dtm.second;
 	mesh->addChild(vertices);
 
 	mesh->copyGlobalShiftAndScale(*m_currentCloud);
@@ -572,9 +573,13 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 	std::unique_ptr<lib3dfin::TDFProcessing> tdfProcessing;
 
 	if (z0Vec.empty())
+	{
 		tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(tdfPointCloud.data(), static_cast<size_t>(m_currentCloud->size()));
+	}
 	else
+	{
 		tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(tdfPointCloud.data(), z0Vec.data(), static_cast<size_t>(m_currentCloud->size()));
+	}
 
 	tdfProcessing->setParams(params);
 	tdfProcessing->setGlobalShift(tdfGlobalShift);

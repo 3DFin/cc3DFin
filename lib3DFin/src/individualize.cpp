@@ -171,7 +171,6 @@ namespace lib3dfin
 		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<const PointCloud3, 3, nanoflann::metric_L2_Simple>;
 		kd_tree_t kd_tree(3, concat_axis_point_cloud, 10, 0);
 
-		tf::Executor executor;
 		tf::Taskflow taskflow;
 		// for point in voxelated-cloud, query
 		const double sq_dmax = params_.maximum_dist_axis * params_.maximum_dist_axis;
@@ -190,7 +189,7 @@ namespace lib3dfin
 					    result.cluster_indicator(voxel_id) =  axis_indicator(index);
 						result.axis_distance(voxel_id) = std::sqrt(sq_distance);
 					} });
-		executor.run(taskflow).get();
+		executor_.run(taskflow).get();
 
 		return result;
 	}
@@ -203,8 +202,8 @@ namespace lib3dfin
 		PointCloud3        large_voxels_cloud;
 		VecIndex<uint32_t> vox_to_large_vox;
 		std::tie(large_voxels_cloud, vox_to_large_vox) = voxelize(voxelated_cloud, params_.resolution_height, params_.resolution_height, executor_, true);
-		const double      eps                          = (params_.resolution_height * std::sqrt(3)) + 1e-6;
-		VecIndex<int32_t> cluster_labels               = connected_components(large_voxels_cloud, eps, 2, executor_);
+		const double            eps                    = (params_.resolution_height * std::sqrt(3)) + 1e-6;
+		const VecIndex<int32_t> cluster_labels         = connected_components(large_voxels_cloud, eps, 2, executor_);
 
 		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
@@ -224,7 +223,6 @@ namespace lib3dfin
 		}
 
 		// Eliminating all points that belong to clusters with less than 4 points (large voxels), and which dist_axis < d and in not valid_tree_id set
-		tf::Executor executor;
 		tf::Taskflow taskflow;
 		taskflow.for_each(std::begin(axis_data.tree_descriptors), std::end(axis_data.tree_descriptors), [&](TreeDescriptor& tree_descriptor)
 		                  {
@@ -250,7 +248,7 @@ namespace lib3dfin
 			}
 			tree_descriptor.setHeighestPoint(voxelated_cloud.row(max_z_id)); });
 
-		executor.run(taskflow).get();
+		executor_.run(taskflow).get();
 	}
 
 } // namespace lib3dfin

@@ -74,10 +74,9 @@ namespace lib3dfin
 		using kd_tree_t         = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2, 2, nanoflann::metric_L2_Simple>;
 		const PointCloud2& dtm2 = dtm_.leftCols<2>();
 		kd_tree_t          kd_tree(2, dtm2, 10);
-		tf::Executor       executor;
 		tf::Taskflow       taskflow;
 
-		const size_t num_workers = executor.num_workers();
+		const size_t num_workers = executor_.num_workers();
 
 		// Pre-allocate worker local storage to avoid allocations in loop
 		std::vector<Eigen::Index> neighbors_buffer(N_NEIGHBORS * num_workers);
@@ -92,7 +91,7 @@ namespace lib3dfin
 		    taskflow.for_each_index(
 		        size_t(0), n_points, size_t(1), [&](size_t i)
 		        {
-			const int    worker_id = executor.this_worker_id();
+			const int    worker_id = executor_.this_worker_id();
 			const size_t offset    = worker_id * N_NEIGHBORS;
 
 			// Use the dedicated storage of the worker
@@ -146,7 +145,7 @@ namespace lib3dfin
 
 			    normalized_heights(i) = point_cloud_(i, 2) - weighted_z; },
 		        tf::StaticPartitioner()); // worker ID
-		executor.run(taskflow).get();
+		executor_.run(taskflow).get();
 		spdlog::info("[HeighNorm] End CSF computation...");
 		return normalized_heights;
 	}

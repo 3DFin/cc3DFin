@@ -37,7 +37,7 @@ namespace lib3dfin
 		return 1.0 - std::abs(normal_z_component);
 	}
 
-	Eigen::VectorXd compute_verticality_feature(const PointCloud3& stripe, double scale)
+	Eigen::VectorXd compute_verticality_feature(const PointCloud3& stripe, double scale, tf::Executor& executor)
 	{
 		using kd_tree_t            = nanoflann::KDTreeEigenMatrixAdaptor<const PointCloud3, 3, nanoflann::metric_L2_Simple>;
 		const size_t       max_knn = 50000;
@@ -48,7 +48,6 @@ namespace lib3dfin
 		Eigen::VectorXd verticality(n_points);
 		verticality.setZero();
 
-		tf::Executor executor;
 		tf::Taskflow taskflow;
 
 		taskflow.for_each_index(
@@ -151,9 +150,9 @@ namespace lib3dfin
 		const auto num_voxels                              = voxelated_stripe.rows();
 
 		// Compute verticality feature
-		Eigen::VectorXd vert_values      = compute_verticality_feature(voxelated_stripe, params_.verticality_nn_scale);
-		ArrayMask       valid_vox_mask   = vert_values.array() > params_.verticality_threshold;
-		auto            num_valid_voxels = valid_vox_mask.count();
+		const Eigen::VectorXd vert_values      = compute_verticality_feature(voxelated_stripe, params_.verticality_nn_scale, executor_);
+		const ArrayMask       valid_vox_mask   = vert_values.array() > params_.verticality_threshold;
+		auto                  num_valid_voxels = valid_vox_mask.count();
 
 		if (!num_valid_voxels)
 		{
@@ -184,8 +183,8 @@ namespace lib3dfin
 
 		// TODO : this does not handle anisotropy in the voxelization...
 		// this is already the case in the original implementation...
-		const double      eps            = params_.resolution_xy * std::sqrt(3.0) + 1e-6;
-		VecIndex<int32_t> cluster_labels = connected_components(vox_filtered_stripe, eps, 2, executor_);
+		const double            eps            = params_.resolution_xy * std::sqrt(3.0) + 1e-6;
+		const VecIndex<int32_t> cluster_labels = connected_components(vox_filtered_stripe, eps, 2, executor_);
 
 		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
