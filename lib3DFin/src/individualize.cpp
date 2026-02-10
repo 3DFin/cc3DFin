@@ -7,6 +7,7 @@
 #include "connected_components.hpp"
 #include "voxel.hpp"
 
+// spdlog
 #include <spdlog/spdlog.h>
 
 // nanoflann
