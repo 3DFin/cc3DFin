@@ -46,7 +46,6 @@
 #include <QtConcurrent>
 #include <QtGui>
 #include <ScalarField.h>
-#include <iostream>
 
 cc3DFin::cc3DFin(QObject* parent)
     : QObject(parent)

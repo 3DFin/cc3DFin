@@ -29,6 +29,10 @@
 namespace lib3dfin
 {
 
+	using CSFGrid               = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+	using CSFGridMapping        = Eigen::Map<CSFGrid>;
+	using CSFGridMappingStride3 = Eigen::Map<CSFGrid, Eigen::Unaligned, Eigen::InnerStride<3>>;
+
 	HeightNormalization::HeightNormalization(const PointCloud3& point_cloud,
 	                                         Parameters         params,
 	                                         tf::Executor&      executor)
@@ -60,7 +64,8 @@ namespace lib3dfin
 
 #else
 			// cleanDTMmad(); old behavior... can't use exported mesh
-			smoothDTMmedian();
+			smoothDTMLaplacian();
+			// smoothDTMmedian();
 #endif
 		}
 
@@ -242,11 +247,11 @@ namespace lib3dfin
 	{
 		spdlog::info("[HeighNorm] smooth DTM using 3x3 Median filter");
 		// Apply 3x3 median filter to inner cells
-		std::vector<double>                                                  window(9, 0.0);
-		Eigen::Map<Eigen::MatrixXd, Eigen::Unaligned, Eigen::InnerStride<3>> depth_map(dtm_.data() + 2, height_, width_);
-		for (int y = 1; y < height_ - 1; ++y)
+		std::vector<double>   window(9, 0.0);
+		CSFGridMappingStride3 depth_map(dtm_.data() + 2, height_, width_);
+		for (Eigen::Index y = 1; y < height_ - 1; ++y)
 		{
-			for (int x = 1; x < width_ - 1; ++x)
+			for (Eigen::Index x = 1; x < width_ - 1; ++x)
 			{
 
 				size_t window_id = 0;
@@ -261,6 +266,46 @@ namespace lib3dfin
 				depth_map(y, x) = window[4]; // median of 9 values
 			}
 		}
+	}
+
+	void HeightNormalization::smoothDTMLaplacian()
+	{
+		spdlog::info("[HeighNorm] smooth DTM using Laplacian filter");
+
+		constexpr double cardinality  = 8.0;
+		constexpr double lambda       = 0.1 / cardinality; // Umbrella laplacian scaling -> 1 / cardinality
+		constexpr size_t max_num_iter = 20;
+
+		Eigen::VectorXd depth_map = dtm_.col(2);
+		assert(depth_map.size() == height_ * width_);
+
+		Eigen::VectorXd depth_map_result = depth_map;
+		CSFGridMapping  cur_mat(depth_map.data(), height_, width_);
+		CSFGridMapping  result_mat(depth_map_result.data(), height_, width_);
+		for (size_t num_iter = 0; num_iter < max_num_iter; ++num_iter)
+		{
+			for (Eigen::Index y = 1; y < height_ - 1; ++y) // Keep boundary constent (Dirichlet)
+			{
+				for (Eigen::Index x = 1; x < width_ - 1; ++x)
+				{
+
+					double lscore = 0.0;
+					for (int dy = -1; dy <= 1; ++dy)
+					{
+						for (int dx = -1; dx <= 1; ++dx)
+						{
+							if (dy == 0 && dx == 0)
+								continue;
+							lscore += cur_mat(y + dy, x + dx);
+						}
+					}
+					lscore -= cardinality * cur_mat(y, x);
+					result_mat(y, x) = cur_mat(y, x) + lambda * lscore;
+				}
+			}
+			depth_map = depth_map_result;
+		}
+		dtm_.col(2) = depth_map;
 	}
 
 	void HeightNormalization::cleanDTMmad()

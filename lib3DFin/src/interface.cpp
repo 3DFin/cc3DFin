@@ -108,7 +108,7 @@ namespace lib3dfin
 		const ArrayClusterIndicator sections_indicator = (stem_indicator > -1).select(tree_data_.cluster_indicator, -1);
 		SectionExtractor            section_extractor(point_cloud_, sections_indicator, z0_, tree_data_, SectionExtractor::Parameters::FromGlobalConfig(params_));
 
-		// TODO: try to eliminate side effect on tree_data
+		// TODO: try to eliminate the  side effect on tree_data
 		section_extractor.extract();
 
 		const auto stop_total = std::chrono::steady_clock::now();

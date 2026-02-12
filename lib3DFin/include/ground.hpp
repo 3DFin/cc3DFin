@@ -48,6 +48,7 @@ namespace lib3dfin
 		void        generateDTM(const PointCloud3& dtm_point_cloud);
 		void        cleanDTMmad();
 		void        smoothDTMmedian();
+		void        smoothDTMLaplacian();
 		void        normalizeGrid();
 
 	  private: // members
