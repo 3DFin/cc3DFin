@@ -46,7 +46,7 @@ class cc3DFin : public QObject
   private:
 	void initCustomColorScale();
 	void do3DFinAction();
-	void drawDTM(const std::pair<std::vector<size_t>, lib3dfin::PointCloud3>& dtm);
+	void drawDTM(const lib3dfin::DTMData& dtm);
 	void drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 	void drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
 	void drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);

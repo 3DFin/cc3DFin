@@ -43,7 +43,7 @@ namespace lib3dfin
 
 		static std::pair<bool, double> checkHeightNormDiscrepancy(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, double original_area, tf::Executor& executor, double res_xy = 1.0, double z_min = -0.1, double z_max = 0.15, double threshold = 0.1);
 
-		std::pair<std::vector<size_t>, PointCloud3> exportDTM();
+		const DTMData exportDTM() const;
 
 	  private: // methods
 		PointCloud3 denoiseCloud();
@@ -57,6 +57,7 @@ namespace lib3dfin
 		const PointCloud3& point_cloud_;
 		const Parameters   params_;
 		PointCloud3        dtm_;
+		std::vector<bool>  mask_;
 		size_t             width_{0};
 		size_t             height_{0};
 		tf::Executor&      executor_;

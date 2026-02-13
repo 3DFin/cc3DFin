@@ -170,13 +170,19 @@ void cc3DFin::initCustomColorScale()
 	ccColorScalesManager::GetUniqueInstance()->addScale(customColorScale);
 }
 
-void cc3DFin::drawDTM(const std::pair<std::vector<size_t>, lib3dfin::PointCloud3>& dtm)
+void cc3DFin::drawDTM(const lib3dfin::DTMData& dtm)
 {
 	ccPointCloud* vertices = new ccPointCloud("DTM vertices");
-	ccMesh*       mesh     = new ccMesh(vertices);
+
+	int maskSfId = vertices->addScalarField("Invalid ground");
+
+	auto* maskSf = vertices->getScalarField(maskSfId);
+
+	ccMesh* mesh = new ccMesh(vertices);
 	mesh->setName("DTM mesh");
-	auto& tri_ids   = dtm.first;
-	auto& dtm_cloud = dtm.second;
+	auto& tri_ids   = dtm.tri_ids;
+	auto& dtm_mask  = dtm.dtm_mask;
+	auto& dtm_cloud = dtm.dtm;
 	mesh->addChild(vertices);
 
 	mesh->copyGlobalShiftAndScale(*m_currentCloud);
@@ -192,11 +198,13 @@ void cc3DFin::drawDTM(const std::pair<std::vector<size_t>, lib3dfin::PointCloud3
 		return;
 	}
 
+	size_t point_id = 0;
 	for (const auto& point : dtm_cloud.rowwise())
 	{
 		vertices->addPoint({static_cast<PointCoordinateType>(point.x()),
 		                    static_cast<PointCoordinateType>(point.y()),
 		                    static_cast<PointCoordinateType>(point.z())});
+		maskSf->addElement(static_cast<double>(!dtm_mask[point_id++]));
 	}
 
 	for (size_t tri_id = 0; tri_id < (tri_ids.size() / 3); ++tri_id)
@@ -207,6 +215,11 @@ void cc3DFin::drawDTM(const std::pair<std::vector<size_t>, lib3dfin::PointCloud3
 
 	mesh->computeNormals(false);
 	mesh->setEnabled(false);
+	maskSf->computeMinAndMax();
+	vertices->setCurrentDisplayedScalarField(maskSfId);
+	mesh->toggleSF();
+	vertices->toggleSF();
+
 	m_base_group->addChild(mesh);
 }
 
@@ -615,7 +628,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		const auto& dtm           = tdfProcessing->getDTM();
 
 		// DTM is optional. It depends if we compute heigh normalization
-		if (!dtm.first.empty())
+		if (!dtm.tri_ids.empty())
 		{
 			drawDTM(dtm);
 		}

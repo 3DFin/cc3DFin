@@ -36,6 +36,13 @@ namespace lib3dfin
 
 	inline constexpr int32_t NO_CLUSTER_ID = -1;
 
+	struct DTMData
+	{
+		PointCloud3         dtm;
+		std::vector<size_t> tri_ids;
+		std::vector<bool>   dtm_mask;
+	};
+
 	struct ProjectMeta
 	{
 		uint32_t num_points{0};

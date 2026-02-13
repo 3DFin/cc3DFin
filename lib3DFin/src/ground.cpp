@@ -234,12 +234,14 @@ namespace lib3dfin
 		spdlog::info("[HeighNorm] CSF grid size {}x{}", width_, height_);
 
 		dtm_ = PointCloud3(particles.size(), 3);
+		mask_.reserve(particles.size());
 		for (size_t particle_id = 0; particle_id < particles.size(); ++particle_id)
 		{
 			const auto& particle = particles[particle_id];
 			dtm_(particle_id, 0) = particle.initial_pos.f[0];
 			dtm_(particle_id, 1) = particle.initial_pos.f[2];
 			dtm_(particle_id, 2) = -particles[particle_id].height;
+			mask_.push_back(particles[particle_id].is_initial);
 		}
 	}
 
@@ -397,7 +399,7 @@ namespace lib3dfin
 		dtm_ = std::move(clean_points);
 	}
 
-	std::pair<std::vector<size_t>, PointCloud3> HeightNormalization::exportDTM()
+	const DTMData HeightNormalization::exportDTM() const
 	{
 		std::vector<size_t> tri_indices;
 		const size_t        num_triangles = (width_ - 1) * (height_ - 1) * 2;
@@ -426,7 +428,11 @@ namespace lib3dfin
 			}
 		}
 
-		return {std::move(tri_indices), dtm_};
+		return {
+		    dtm_,
+		    std::move(tri_indices),
+		    mask_,
+		};
 	}
 
 	std::pair<bool, double> HeightNormalization::checkHeightNormDiscrepancy(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, double original_area, tf::Executor& executor, double res_xy, double z_min, double z_max, double threshold)

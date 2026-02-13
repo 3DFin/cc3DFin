@@ -60,17 +60,12 @@ namespace lib3dfin
 			return z0_;
 		}
 
-		const std::pair<std::vector<size_t>, PointCloud3>& getDTM() const
-		{
-			return dtm_;
-		}
-
 		const ArrayClusterIndicator& getStemIndicator() const
 		{
 			return stripe_.cluster_indicator;
 		}
 
-		std::pair<std::vector<size_t>, PointCloud3> getDTM()
+		const DTMData& getDTM() const
 		{
 			return dtm_;
 		}
@@ -80,14 +75,14 @@ namespace lib3dfin
 		void exportTabularData() const;
 
 	  private:
-		fs::path                                    output_basepath_{fs::current_path() / "3DFin"};
-		Params                                      params_;
-		ProjectMeta                                 project_meta_;
-		PointCloud3                                 point_cloud_;
-		Eigen::VectorXd                             z0_;
-		Stripe                                      stripe_;
-		std::pair<std::vector<size_t>, PointCloud3> dtm_;
-		TreeData                                    tree_data_;
+		fs::path        output_basepath_{fs::current_path() / "3DFin"};
+		Params          params_;
+		ProjectMeta     project_meta_;
+		PointCloud3     point_cloud_;
+		Eigen::VectorXd z0_;
+		Stripe          stripe_;
+		DTMData         dtm_;
+		TreeData        tree_data_;
 	};
 
 } // namespace lib3dfin
