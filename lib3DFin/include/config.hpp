@@ -21,6 +21,7 @@ namespace lib3dfin
 		bool     denoise_point_cloud{false};
 		double   denoise_resolution{0.15};
 		uint32_t denoise_minimum_points{2};
+		double   dtm_smooth_laplacian_lambda{0.125};
 		// bool     clean_dtm{true}; Not mapped yet
 
 		// Stripe Peeling

@@ -21,6 +21,7 @@ namespace lib3dfin
 			bool     denoise_point_cloud{false};
 			double   denoise_resolution{0.15};
 			uint32_t denoise_minimum_points{2};
+			double   smooth_laplacian_lambda{0.125};
 			bool     clean_dtm{true}; // New, not mapped to any global config
 
 			static Parameters FromGlobalConfig(const Params& params)
@@ -30,6 +31,7 @@ namespace lib3dfin
 				    params.denoise_point_cloud,
 				    params.denoise_resolution,
 				    params.denoise_minimum_points,
+				    params.dtm_smooth_laplacian_lambda,
 				    true};
 			}
 		};

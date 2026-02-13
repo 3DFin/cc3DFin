@@ -300,7 +300,14 @@ namespace tdf
 	     "Clusters with size smaller than this value will be regarded as noise and thus eliminated.",
 	     2,
 	     "",
-	     int(1)}};
+	     int(1)},
+	    {"dtm_smooth_laplacian_lambda",
+	     "DTM smoothing strenght",
+	     "lambda parameter of laplacian smoothing applied to the DTM, should be approx. [0.1;0.2]",
+	     0.125,
+	     "",
+	     0.0 + std::numeric_limits<double>::epsilon(),
+	     1.0}};
 
 	const std::vector<Field> miscFields = {
 	    {"compute_height_normalization",

@@ -241,9 +241,10 @@ lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 
 	params.cloth_resolution = cloth_resolution_in->text().toDouble();
 
-	params.denoise_point_cloud    = denoise_point_cloud_chk->isChecked();
-	params.denoise_resolution     = denoise_resolution_in->text().toDouble();
-	params.denoise_minimum_points = denoise_minimum_points_in->text().toUInt();
+	params.denoise_point_cloud         = denoise_point_cloud_chk->isChecked();
+	params.denoise_resolution          = denoise_resolution_in->text().toDouble();
+	params.denoise_minimum_points      = denoise_minimum_points_in->text().toUInt();
+	params.dtm_smooth_laplacian_lambda = dtm_smooth_laplacian_lambda_in->text().toDouble();
 
 	params.stripe_lower_limit = stripe_lower_limit_in->text().toDouble();
 	params.stripe_upper_limit = stripe_upper_limit_in->text().toDouble();
