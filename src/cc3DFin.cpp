@@ -29,7 +29,6 @@
 #include "ccLog.h"
 #include "ccMesh.h"
 #include "ccPointCloud.h"
-#include "ccPolyline.h"
 #include "ccScalarField.h"
 
 // lib3DFin
@@ -172,55 +171,86 @@ void cc3DFin::initCustomColorScale()
 
 void cc3DFin::drawDTM(const lib3dfin::DTMData& dtm)
 {
-	ccPointCloud* vertices = new ccPointCloud("DTM vertices");
 
-	int maskSfId = vertices->addScalarField("Invalid ground");
+	auto& triIds   = dtm.tri_ids;
+	auto& dtmMask  = dtm.dtm_mask;
+	auto& dtmCloud = dtm.dtm;
 
-	auto* maskSf = vertices->getScalarField(maskSfId);
+	ccPointCloud* fullVertices     = new ccPointCloud("DTM vertices");
+	ccPointCloud* filteredVertices = new ccPointCloud("DTM vertices");
 
-	ccMesh* mesh = new ccMesh(vertices);
-	mesh->setName("DTM mesh");
-	auto& tri_ids   = dtm.tri_ids;
-	auto& dtm_mask  = dtm.dtm_mask;
-	auto& dtm_cloud = dtm.dtm;
-	mesh->addChild(vertices);
+	int   maskSfId = fullVertices->addScalarField("Invalid ground");
+	auto* maskSf   = fullVertices->getScalarField(maskSfId);
 
-	mesh->copyGlobalShiftAndScale(*m_currentCloud);
-	vertices->copyGlobalShiftAndScale(*m_currentCloud);
-	vertices->setEnabled(false);
+	ccMesh* fullMesh = new ccMesh(fullVertices);
+	fullMesh->setName("DTM mesh");
+	fullMesh->addChild(fullVertices);
 
-	if (!vertices->reserve(dtm_cloud.size())
-	    || !mesh->reserve(tri_ids.size() / 3))
+	ccMesh* filteredMesh = new ccMesh(filteredVertices);
+	filteredMesh->setName("DTM mesh (filtered)");
+	filteredMesh->addChild(filteredVertices);
+
+	fullMesh->copyGlobalShiftAndScale(*m_currentCloud);
+	fullVertices->copyGlobalShiftAndScale(*m_currentCloud);
+	fullVertices->setEnabled(false);
+
+	if (!fullVertices->reserve(dtmCloud.size()) || !filteredVertices->reserve(dtmCloud.size())
+	    || !fullMesh->reserve(triIds.size() / 3) || !filteredMesh->reserve(triIds.size() / 3))
 	{
 		ccLog::Error("[3DFin] Unable to initialize DTM entity");
-		delete mesh;
-		mesh = nullptr;
+		delete filteredMesh;
+		filteredMesh = nullptr;
+		delete fullMesh;
+		fullMesh = nullptr;
 		return;
 	}
 
-	size_t point_id = 0;
-	for (const auto& point : dtm_cloud.rowwise())
+	std::map<size_t, size_t> point_remapping;
+
+	size_t valid_point_id = 0;
+	for (size_t point_id = 0; point_id < dtmCloud.rows(); point_id++)
 	{
-		vertices->addPoint({static_cast<PointCoordinateType>(point.x()),
-		                    static_cast<PointCoordinateType>(point.y()),
-		                    static_cast<PointCoordinateType>(point.z())});
-		maskSf->addElement(static_cast<double>(!dtm_mask[point_id++]));
+		const auto& point = dtmCloud.row(point_id);
+		fullVertices->addPoint({static_cast<PointCoordinateType>(point.x()),
+		                        static_cast<PointCoordinateType>(point.y()),
+		                        static_cast<PointCoordinateType>(point.z())});
+		maskSf->addElement(static_cast<double>(!dtmMask[point_id]));
+
+		if (dtmMask[point_id])
+		{
+			filteredVertices->addPoint({static_cast<PointCoordinateType>(point.x()),
+			                            static_cast<PointCoordinateType>(point.y()),
+			                            static_cast<PointCoordinateType>(point.z())});
+			point_remapping[point_id] = valid_point_id++;
+		}
 	}
 
-	for (size_t tri_id = 0; tri_id < (tri_ids.size() / 3); ++tri_id)
+	for (size_t tri_id = 0; tri_id < (triIds.size() / 3); ++tri_id)
 	{
-		size_t tri_start = tri_id * 3;
-		mesh->addTriangle(tri_ids[tri_start], tri_ids[tri_start + 1], tri_ids[tri_start + 2]);
+		size_t triStart = tri_id * 3;
+		size_t a        = triIds[triStart];
+		size_t b        = triIds[triStart + 1];
+		size_t c        = triIds[triStart + 2];
+		fullMesh->addTriangle(a, b, c);
+		if (dtmMask[a] && dtmMask[b] && dtmMask[c])
+		{
+			filteredMesh->addTriangle(point_remapping[a], point_remapping[b], point_remapping[c]);
+		}
 	}
 
-	mesh->computeNormals(false);
-	mesh->setEnabled(false);
+	fullMesh->computeNormals(false);
+	fullMesh->setEnabled(false);
+	filteredMesh->showWired(true);
+	filteredMesh->setEnabled(false);
 	maskSf->computeMinAndMax();
-	vertices->setCurrentDisplayedScalarField(maskSfId);
-	mesh->toggleSF();
-	vertices->toggleSF();
+	fullVertices->setCurrentDisplayedScalarField(maskSfId);
+	fullMesh->toggleSF();
+	fullVertices->toggleSF();
+	filteredMesh->shrinkToFit();
+	filteredVertices->shrinkToFit();
 
-	m_base_group->addChild(mesh);
+	m_base_group->addChild(filteredMesh);
+	m_base_group->addChild(fullMesh);
 }
 
 void cc3DFin::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
