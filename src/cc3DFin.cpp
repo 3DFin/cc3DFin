@@ -205,23 +205,20 @@ void cc3DFin::drawDTM(const lib3dfin::DTMData& dtm)
 		return;
 	}
 
-	std::map<size_t, size_t> point_remapping;
+	std::map<size_t, size_t> pointRemapping;
 
 	size_t valid_point_id = 0;
 	for (size_t point_id = 0; point_id < dtmCloud.rows(); point_id++)
 	{
 		const auto& point = dtmCloud.row(point_id);
-		fullVertices->addPoint({static_cast<PointCoordinateType>(point.x()),
-		                        static_cast<PointCoordinateType>(point.y()),
-		                        static_cast<PointCoordinateType>(point.z())});
+		CCVector3   ccPoint(point.x(), point.y(), point.z());
+		fullVertices->addPoint(ccPoint);
 		maskSf->addElement(static_cast<double>(!dtmMask[point_id]));
 
 		if (dtmMask[point_id])
 		{
-			filteredVertices->addPoint({static_cast<PointCoordinateType>(point.x()),
-			                            static_cast<PointCoordinateType>(point.y()),
-			                            static_cast<PointCoordinateType>(point.z())});
-			point_remapping[point_id] = valid_point_id++;
+			filteredVertices->addPoint(ccPoint);
+			pointRemapping[point_id] = valid_point_id++;
 		}
 	}
 
@@ -234,7 +231,7 @@ void cc3DFin::drawDTM(const lib3dfin::DTMData& dtm)
 		fullMesh->addTriangle(a, b, c);
 		if (dtmMask[a] && dtmMask[b] && dtmMask[c])
 		{
-			filteredMesh->addTriangle(point_remapping[a], point_remapping[b], point_remapping[c]);
+			filteredMesh->addTriangle(pointRemapping[a], pointRemapping[b], pointRemapping[c]);
 		}
 	}
 
