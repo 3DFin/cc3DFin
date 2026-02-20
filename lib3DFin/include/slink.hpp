@@ -7,16 +7,14 @@
 #include "../third_party/dset/dset.h"
 #include "types.hpp"
 
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <numeric>
 #include <unordered_map>
 
 namespace lib3dfin
 {
 
-	PointCloud2 extract_largest_cluster(const PointCloud2& xy, const std::vector<uint32_t>& labels)
+	inline PointCloud2 extract_largest_cluster(const PointCloud2& xy, const std::vector<uint32_t>& labels)
 	{
 		std::unordered_map<uint32_t, uint32_t> cluster_count;
 		uint32_t                               best_cl_id   = 0;
@@ -26,7 +24,7 @@ namespace lib3dfin
 		{
 			cluster_count[cl_id]++;
 		}
-		// Find cluster with maximum count
+		// Find cluster with maximum count of vertices
 		for (const auto& [cl_id, count] : cluster_count)
 		{
 			if (count > max_cl_count)
@@ -36,7 +34,7 @@ namespace lib3dfin
 			}
 		}
 
-		// extract only points in the largest cluster
+		// Extract only points from the largest cluster
 		PointCloud2  cl_points(max_cl_count, 2);
 		Eigen::Index new_id = 0;
 		for (size_t i = 0; i < labels.size(); ++i)
@@ -49,78 +47,27 @@ namespace lib3dfin
 		return cl_points;
 	}
 
-	std::pair<std::vector<size_t>, std::vector<double>> slink_euclidean_2D(const PointCloud2& xy)
+	PointCloud2 fcluster_naive(const PointCloud2& xy, double threshold)
 	{
-		const size_t num_points = xy.rows();
-		// Best candidate index for point j’s cluster parent (best id)
-		std::vector<size_t> pi(num_points);
-		// each point begin in its own cluster
-		std::iota(std::begin(pi), std::end(pi), 0);
-
-		// The distance at which i merges into the tree (best distance)
-		std::vector<double> lambda(num_points, std::numeric_limits<double>::max());
-		std::vector<double> dist(num_points, 0);
-
-		for (size_t i = 1; i < num_points; ++i)
-		{
-			// Compute euclidean distances d(i, j) for any j < i
-			for (size_t j = 0; j < i; ++j)
-			{
-				dist[j] = std::hypot(xy(i, 0) - xy(j, 0), xy(i, 1) - xy(j, 1)); // TODO: sq_dist
-			}
-
-			// Update stage
-			for (size_t j = 0; j < i; ++j)
-			{
-				// if the d(i, j) is < to the current merge distance
-				if (dist[j] < lambda[j])
-				{
-					// we try to update the distance of the cluster of j with the current merge distance
-					dist[pi[j]] = std::min(dist[pi[j]], lambda[j]);
-					// we update the merge distance of j
-					lambda[j] = dist[j];
-					// we update the id of the cluster
-					pi[j] = i;
-				}
-				else
-				{
-					// else we try to update the merge distance of the cluster with the d(i,j)
-					dist[pi[j]] = std::min(dist[pi[j]], dist[j]);
-				}
-			}
-
-			// Finalize, reoganize cluster
-			for (size_t j = 0; j < i; ++j)
-			{
-				if (lambda[pi[j]] < lambda[j])
-				{
-					pi[j] = i;
-				}
-			}
-		}
-
-		// Output pi and lambda
-		return {pi, lambda};
-	}
-
-	// Extract flat clusters from slink results
-	std::vector<uint32_t> extract_clusters_slink(
-	    const std::vector<size_t>& pi,
-	    const std::vector<double>& lambda,
-	    double                     threshold)
-	{
-		const size_t num_points = pi.size();
+		double       sq_threshold = threshold * threshold;
+		const size_t num_points   = xy.rows();
 		DisjointSets uf(num_points);
 
 		for (size_t i = 0; i < num_points; ++i)
 		{
-			if (lambda[i] <= threshold && i != pi[i])
+			for (size_t j = i + 1; j < num_points; ++j)
 			{
-				uf.unite(i, pi[i]);
+				const double deltax = xy(i, 0) - xy(j, 0);
+				const double deltay = xy(i, 1) - xy(j, 1);
+
+				if (deltax * deltax + deltay * deltay <= sq_threshold)
+				{
+					uf.unite(i, j);
+				}
 			}
 		}
 
-		// Assign cluster labels based on root parents
+		// Assign cluster labels based on root parent
 		std::vector<uint32_t>              labels(num_points);
 		std::unordered_map<size_t, size_t> cluster_id;
 		size_t                             current_label = 0;
@@ -131,42 +78,6 @@ namespace lib3dfin
 			if (cluster_id.count(root) == 0)
 				cluster_id[root] = current_label++;
 			labels[i] = cluster_id[root];
-		}
-		return labels;
-	}
-
-	PointCloud2 fcluster_slink(const PointCloud2& xy, double threshold)
-	{
-		const auto [pi, lambda] = slink_euclidean_2D(xy);
-		const auto labels       = extract_clusters_slink(pi, lambda, threshold);
-
-		return extract_largest_cluster(xy, labels);
-	}
-
-	PointCloud2 fcluster_naive(const PointCloud2& xy, double threshold)
-	{
-		const size_t          num_points = xy.rows();
-		std::vector<uint32_t> labels(num_points);
-		// initialize each point in its own cluster
-		std::iota(std::begin(labels), std::end(labels), 0);
-
-		for (size_t i = 0; i < num_points; ++i)
-		{
-			for (size_t j = i + 1; j < num_points; ++j)
-			{
-				if (std::hypot(xy(i, 0) - xy(j, 0), xy(i, 1) - xy(j, 1)) <= threshold) // TODO: sq_threshold
-				{
-					const uint32_t ci = labels[i];
-					const uint32_t cj = labels[j];
-					if (ci != cj)
-					{
-						// look for cj cluster and remap them to ci
-						for (size_t k = 0; k < num_points; ++k)
-							if (labels[k] == cj)
-								labels[k] = ci;
-					}
-				}
-			}
 		}
 
 		return extract_largest_cluster(xy, labels);

@@ -88,9 +88,9 @@ namespace lib3dfin
 				// if the fitting failed, we cluster the cloud with single linkage algorithm and try fitting again
 				if (cur_circle.status != CircleData::Status::SUCCESS)
 				{
-					// cluster the cloud with single linkage algorithm
-					// rerun the algorithm on the clustered cloud
-					const auto max_cc_section = fcluster_slink(section_cloud, params_.stem_section_clustering_distance);
+					// Exctract the largest CC.
+					// rerun the circle fitting algorithm on this clustered cloud
+					const auto max_cc_section = fcluster_naive(section_cloud, params_.stem_section_clustering_distance);
 
 					// no luck with single linkage clustering, we pass this section
 					if (max_cc_section.size() < params_.stem_section_min_points)
