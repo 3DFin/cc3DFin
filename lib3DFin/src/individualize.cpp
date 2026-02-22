@@ -203,14 +203,14 @@ namespace lib3dfin
 		PointCloud3        large_voxels_cloud;
 		VecIndex<uint32_t> vox_to_large_vox;
 		std::tie(large_voxels_cloud, vox_to_large_vox) = voxelize(voxelated_cloud, params_.resolution_height, params_.resolution_height, executor_, true);
-		const double            eps                    = (params_.resolution_height * std::sqrt(3)) + 1e-6;
-		const VecIndex<int32_t> cluster_labels         = connected_components(large_voxels_cloud, eps, 2, executor_);
+		const double eps                               = (params_.resolution_height * std::sqrt(3)) + 1e-6;
+		const auto   cluster_labels                    = connected_components(large_voxels_cloud, eps, 2, executor_);
 
 		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
 		for (size_t voxel_id = 0; voxel_id < cluster_labels.size(); ++voxel_id)
 		{
-			++label_counts[cluster_labels(voxel_id)];
+			++label_counts[cluster_labels[voxel_id]];
 		}
 
 		// Find large clusters

@@ -165,10 +165,10 @@ namespace lib3dfin
 		std::unordered_map<int32_t, uint32_t> label_counts;
 		for (const auto id_vox : cloud_to_vox)
 		{
-			++label_counts[cluster_labels(id_vox)];
+			++label_counts[cluster_labels[id_vox]];
 		}
 
-		if (label_counts.size() == 1 && label_counts.count(-1))
+		if (label_counts.size() == 1 && label_counts.count(NO_CLUSTER_ID))
 		{
 			throw std::runtime_error("No valid clusters found.");
 		}
@@ -178,7 +178,7 @@ namespace lib3dfin
 		std::set<uint32_t> large_clusters;
 		for (const auto& [label, count] : label_counts)
 		{
-			if (label > -1 && count > params_.denoise_minimum_points)
+			if (label > NO_CLUSTER_ID && count > params_.denoise_minimum_points)
 			{
 				large_clusters.insert(label);
 			}

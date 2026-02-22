@@ -12,7 +12,7 @@
 namespace lib3dfin
 {
 
-	VecIndex<int32_t> connected_components(const PointCloud3& xyz, const double eps, const uint32_t min_samples, tf::Executor& executor)
+	std::vector<int32_t> connected_components(const PointCloud3& xyz, const double eps, const uint32_t min_samples, tf::Executor& executor)
 	{
 		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud3, 3, nanoflann::metric_L2_Simple>;
 
@@ -23,11 +23,11 @@ namespace lib3dfin
 
 		const Eigen::Index n_points = xyz.rows();
 
-		tf::Taskflow                           taskflow;
+		tf::Taskflow taskflow;
+
 		std::vector<std::vector<Eigen::Index>> nn_cells(n_points);
 		std::vector<bool>                      is_core(n_points, false);
-		VecIndex<int32_t>                      cluster_id(n_points);
-		cluster_id.fill(-1);
+		std::vector<int32_t>                   cluster_id(n_points, NO_CLUSTER_ID);
 
 		taskflow.for_each_index(
 		    Eigen::Index(0), n_points, Eigen::Index(1), [&](Eigen::Index point_id)
@@ -37,15 +37,6 @@ namespace lib3dfin
             nanoflann::RadiusResultSet<double, Eigen::Index> radius_result_set(sq_search_radius, result_set);
             const auto                                       num_found =
                 kd_tree.index_->radiusSearchCustomCallback(xyz.row(point_id).data(), radius_result_set);
-
-            if (num_found > 28)
-            {
-                // TODO: throw as it's too much, we only expect 27 NN + the base point
-                throw std::invalid_argument(
-                    "it seems that your radius is too big, CC extraction is only meant to be used in "
-                    "27-connectivity "
-                    "context on regular voxels grids");
-            }
 
             is_core[point_id] = num_found >= min_samples;  // we include the core sample itself
             std::vector<Eigen::Index> nn_ids;
@@ -69,7 +60,7 @@ namespace lib3dfin
 				continue;
 			for (const auto nn_id : nn_cells[curr_id])
 			{
-				if (is_core[nn_id] && curr_id > nn_id && uf.find(curr_id) != uf.find(nn_id))
+				if (is_core[nn_id] && curr_id > nn_id)
 				{
 					uf.unite(curr_id, nn_id);
 				}

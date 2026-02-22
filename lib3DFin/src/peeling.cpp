@@ -183,14 +183,14 @@ namespace lib3dfin
 
 		// TODO : this does not handle anisotropy in the voxelization...
 		// this is already the case in the original implementation...
-		const double            eps            = params_.resolution_xy * std::sqrt(3.0) + 1e-6;
-		const VecIndex<int32_t> cluster_labels = connected_components(vox_filtered_stripe, eps, 2, executor_);
+		const double eps            = params_.resolution_xy * std::sqrt(3.0) + 1e-6;
+		const auto   cluster_labels = connected_components(vox_filtered_stripe, eps, 2, executor_);
 
 		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
 		for (Eigen::Index filtered_voxel_id = 0; filtered_voxel_id < num_valid_voxels; ++filtered_voxel_id)
 		{
-			++label_counts[cluster_labels(filtered_voxel_id)];
+			++label_counts[cluster_labels[filtered_voxel_id]];
 		}
 
 		if (label_counts.size() == 1 && label_counts.count(NO_CLUSTER_ID))
@@ -232,7 +232,7 @@ namespace lib3dfin
 				continue;
 
 			auto filtered_voxel_id = vox_to_filtered_vox(voxel_id);
-			auto cluster_id        = cluster_labels(filtered_voxel_id);
+			auto cluster_id        = cluster_labels[filtered_voxel_id];
 
 			if (large_clusters.count(cluster_id))
 				new_stripe_indicator(base_id) = cluster_id;

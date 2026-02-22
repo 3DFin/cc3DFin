@@ -49,7 +49,7 @@ namespace lib3dfin
 
 	PointCloud2 fcluster_naive(const PointCloud2& xy, double threshold)
 	{
-		double       sq_threshold = threshold * threshold;
+		const double sq_threshold = threshold * threshold;
 		const size_t num_points   = xy.rows();
 		DisjointSets uf(num_points);
 
