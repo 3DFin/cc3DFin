@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
 
+// local
 #include "connected_components.hpp"
 
+// Union-Find
 #include "../third_party/dset/dset.h"
 
+// nanoflann
 #include <nanoflann.hpp>
+
+// taskflow
 #include <taskflow/algorithm/for_each.hpp>
 #include <taskflow/taskflow.hpp>
 
@@ -52,7 +57,7 @@ namespace lib3dfin
 		executor.run(taskflow).get();
 
 		// Link core with disjoint set
-		// no parallel since it does not seems to lower the runtime
+		// not parallel since it does not seems to lower the runtime
 		DisjointSets uf(n_points);
 		for (size_t curr_id = 0; curr_id < n_points; ++curr_id)
 		{

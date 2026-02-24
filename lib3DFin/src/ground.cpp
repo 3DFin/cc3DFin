@@ -255,7 +255,6 @@ namespace lib3dfin
 		{
 			for (Eigen::Index x = 1; x < width_ - 1; ++x)
 			{
-
 				size_t window_id = 0;
 				for (int dy = -1; dy <= 1; ++dy)
 				{

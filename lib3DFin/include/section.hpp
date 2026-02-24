@@ -7,6 +7,9 @@
 #include "config.hpp"
 #include "types.hpp"
 
+// taskflow
+#include <taskflow/taskflow.hpp>
+
 namespace lib3dfin
 {
 	class SectionExtractor
@@ -53,7 +56,7 @@ namespace lib3dfin
 		};
 
 	  public: // methods
-		explicit SectionExtractor(const PointCloud3& point_cloud, const ArrayClusterIndicator& sections_indicator, const Eigen::VectorXd& z0, TreeData& trees, const Parameters params);
+		explicit SectionExtractor(const PointCloud3& point_cloud, const ArrayClusterIndicator& sections_indicator, const Eigen::VectorXd& z0, TreeData& trees, const Parameters params, tf::Executor& executor);
 		void extract();
 
 	  private: // methods
@@ -84,6 +87,7 @@ namespace lib3dfin
 		const Parameters             params_;
 		const Eigen::Index           num_sections_;
 		size_t                       dbh_section_id_{0};
+		tf::Executor&                executor_;
 	};
 
 } // namespace lib3dfin

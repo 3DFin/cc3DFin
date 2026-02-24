@@ -9,6 +9,10 @@
 #include "statistics.hpp"
 #include "types.hpp"
 
+// taskflow
+#include <taskflow/algorithm/for_each.hpp>
+#include <taskflow/taskflow.hpp>
+
 // spdlog
 #include <spdlog/spdlog.h>
 
@@ -18,7 +22,7 @@
 namespace lib3dfin
 {
 
-	SectionExtractor::SectionExtractor(const PointCloud3& point_cloud, const ArrayClusterIndicator& sections_indicator, const Eigen::VectorXd& z0, TreeData& trees, const Parameters params)
+	SectionExtractor::SectionExtractor(const PointCloud3& point_cloud, const ArrayClusterIndicator& sections_indicator, const Eigen::VectorXd& z0, TreeData& trees, const Parameters params, tf::Executor& executor)
 	    : point_cloud_(point_cloud)
 	    , section_indicator_(sections_indicator)
 	    , num_points_(point_cloud.rows())
@@ -26,6 +30,7 @@ namespace lib3dfin
 	    , trees_(trees)
 	    , num_sections_(static_cast<Eigen::Index>(std::floor((params_.stem_maximum_height - params_.stem_minimum_height) / params_.stem_section_interval)))
 	    , params_(params)
+	    , executor_(executor)
 	{
 		// Iinitialize DBH
 		computeDBHSectionID();
@@ -35,6 +40,7 @@ namespace lib3dfin
 	{
 		spdlog::info("[SectionExtractor] Computing diameters along stems...");
 
+		std::vector<CircleSections> result;
 		// iterate over the trees
 		for (auto& tree : trees_.tree_descriptors)
 		{
@@ -54,9 +60,9 @@ namespace lib3dfin
 
 			CircleSections circles(num_sections_);
 
-			// TODO: use taskflow
-			for (Eigen::Index section_id = 0; section_id < num_sections_; ++section_id)
-			{
+			tf::Taskflow taskflow;
+			auto         compute_section = taskflow.for_each_index(Eigen::Index(0), num_sections_, Eigen::Index(1), [&](Eigen::Index section_id)
+                                                           {
 				const auto section_start = params_.stem_minimum_height + section_id * params_.stem_section_interval;
 				const auto section_end   = section_start + params_.stem_section_thickness;
 				auto&      cur_circle    = circles[section_id];
@@ -68,7 +74,7 @@ namespace lib3dfin
 				if (num_section_points < params_.stem_section_min_points)
 				{
 					cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
-					continue;
+					return;
 				}
 				PointCloud2 section_cloud(num_section_points, 2);
 
@@ -96,17 +102,17 @@ namespace lib3dfin
 					if (max_cc_section.size() < params_.stem_section_min_points)
 					{
 						cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
-						continue;
+						return;
 					}
 
 					fitCircle(max_cc_section, cur_circle);
-				}
-			}
+				} });
 
+			executor_.run(taskflow).get();
 			// detect tilt outliers on the fitted sections
 			tiltDetection(circles);
-
 			tree.circle_data = std::move(circles);
+
 			// run tree localization on the fitted sections
 			auto tree_localization = treeLocator(tree);
 			tree.setLocation(tree_localization);
@@ -197,7 +203,7 @@ namespace lib3dfin
 		return num_occupied_sectors;
 	}
 
-	// tilt dection for all sections of a given stem
+	// tilt detection for all sections of a given stem
 	void SectionExtractor::tiltDetection(CircleSections& circles,
 	                                     const double    abs_weight_factor,
 	                                     const double    rel_weight_factor)

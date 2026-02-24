@@ -106,7 +106,7 @@ namespace lib3dfin
 		auto                             stem_indicator = stem_peeler.peel();
 
 		const ArrayClusterIndicator sections_indicator = (stem_indicator > -1).select(tree_data_.cluster_indicator, -1);
-		SectionExtractor            section_extractor(point_cloud_, sections_indicator, z0_, tree_data_, SectionExtractor::Parameters::FromGlobalConfig(params_));
+		SectionExtractor            section_extractor(point_cloud_, sections_indicator, z0_, tree_data_, SectionExtractor::Parameters::FromGlobalConfig(params_), executor);
 
 		// TODO: try to eliminate the  side effect on tree_data
 		section_extractor.extract();
