@@ -1,7 +1,7 @@
 #pragma once
 
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
+// Copyright 2023-2026 Carlos Cabo <carloscabo@uniovi.es>
 
 // local
 #include "../third_party/dset/dset.h"

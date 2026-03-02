@@ -1,7 +1,7 @@
 #pragma once
 
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es
+// Copyright 2023-2026 Carlos Cabo <carloscabo@uniovi.es
 
 #include "types.hpp"
 
@@ -107,7 +107,7 @@ namespace lib3dfin
 
 		// Compute Z = X^2 + Y^2
 		const Eigen::VectorXd Z      = ZXY.col(1).array().square() + ZXY.col(2).array().square();
-		const double                 Z_mean = Z.mean();
+		const double          Z_mean = Z.mean();
 
 		// Normalize Z
 		ZXY.col(0) = (Z.array() - Z_mean) / (2.0 * sqrt(Z_mean));

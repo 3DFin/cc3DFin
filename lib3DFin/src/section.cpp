@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright 2023-2025 Carlos Cabo <carloscabo@uniovi.es>
+// Copyright 2023-2026 Carlos Cabo <carloscabo@uniovi.es>
 
 // local
 #include "section.hpp"
@@ -108,7 +108,7 @@ namespace lib3dfin
 					fitCircle(max_cc_section, cur_circle);
 				} });
 
-			executor_.run(taskflow).get();
+			executor_.run(taskflow).wait();
 			// detect tilt outliers on the fitted sections
 			tiltDetection(circles);
 			tree.circle_data = std::move(circles);

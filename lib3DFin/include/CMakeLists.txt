@@ -6,6 +6,7 @@ set(HEADERS
 	ground.hpp
 	individualize.hpp
 	interface.hpp
+	localization.hpp
 	peeling.hpp
 	section.hpp
 	slink.hpp

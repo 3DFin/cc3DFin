@@ -7,6 +7,7 @@ target_sources(${PROJECT_NAME}
 		ground.cpp
 		peeling.cpp
 		section.cpp
+		localization.cpp
 		individualize.cpp
 		interface.cpp
 )
