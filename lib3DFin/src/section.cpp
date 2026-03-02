@@ -76,6 +76,7 @@ namespace lib3dfin
 					cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
 					return;
 				}
+
 				PointCloud2 section_cloud(num_section_points, 2);
 
 				Eigen::Index section_output_id = 0;
@@ -83,28 +84,26 @@ namespace lib3dfin
 				{
 					if (section_mask(point_id))
 					{
-						section_cloud(section_output_id, 0) = tree_cloud(point_id, 0);
-						section_cloud(section_output_id, 1) = tree_cloud(point_id, 1);
-						section_output_id++;
+	                    section_cloud.row(section_output_id++) = tree_cloud.row(point_id).head<2>();
 					}
 				}
 
-				// fit_circle
+				// fit circle
 				fitCircle(section_cloud, cur_circle);
 				// if the fitting failed, we cluster the cloud with single linkage algorithm and try fitting again
 				if (cur_circle.status != CircleData::Status::SUCCESS)
 				{
 					// Exctract the largest CC.
-					// rerun the circle fitting algorithm on this clustered cloud
 					const auto max_cc_section = fcluster_naive(section_cloud, params_.stem_section_clustering_distance);
 
-					// no luck with single linkage clustering, we pass this section
+					// No luck with single linkage clustering, we pass this section
 					if (max_cc_section.size() < params_.stem_section_min_points)
 					{
 						cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
 						return;
 					}
 
+					// Else  rerun the circle fitting algorithm on the clustered cloud
 					fitCircle(max_cc_section, cur_circle);
 				} });
 
@@ -114,7 +113,7 @@ namespace lib3dfin
 			tree.circle_data = std::move(circles);
 
 			// run tree localization on the fitted sections
-			auto tree_localization = treeLocator(tree);
+			const auto tree_localization = treeLocator(tree);
 			tree.setLocation(tree_localization);
 		}
 		spdlog::info("[SectionExtractor] Computing diameters along stems done");
@@ -190,7 +189,7 @@ namespace lib3dfin
 				angle += 2.0 * M_PI;
 
 			const uint32_t sector         = static_cast<uint32_t>(std::floor(angle * inv_sector_size));
-			const uint32_t clamped_sector = std::min(sector, params_.stem_section_sector_count - 1); // be sure we don't exceed the maximum sector index //TODO clamp angle instead
+			const uint32_t clamped_sector = std::min(sector, params_.stem_section_sector_count - 1); // be sure we don't exceed the maximum sector index
 
 			sector_occupancy_indicator[clamped_sector] = true;
 		}
@@ -199,7 +198,7 @@ namespace lib3dfin
 		const uint32_t num_occupied_sectors = std::count(std::cbegin(sector_occupancy_indicator),
 		                                                 std::cend(sector_occupancy_indicator),
 		                                                 true);
-		// percentage of occupied sectors
+		// number of occupied sectors
 		return num_occupied_sectors;
 	}
 
