@@ -32,7 +32,6 @@ namespace lib3dfin
 			uint32_t stem_section_sector_count{16};
 			uint32_t stem_section_min_occupied_sectors{9};
 			double   outlier_probability_threshold{0.3}; // TODO: new, not mapped to in the GUI
-			double   DBH{1.3};                           // TODO: new, not mapped to in the GUI
 
 			static Parameters FromGlobalConfig(const Params& params)
 			{
@@ -68,24 +67,14 @@ namespace lib3dfin
 		                   const double    abs_weight_factor = 3.0,
 		                   const double    rel_weight_factor = 1.0);
 
-	  private: // tree locations // methods
-		void                               computeDBHSectionID();
-		std::tuple<size_t, size_t, size_t> getDBHRange() const;
-		std::pair<size_t, size_t>          countValidSections(const CircleSections& circles, size_t lower, size_t upper) const;
-		bool                               checkRadiiConsistency(const CircleSections& circles, size_t lower, size_t upper) const;
-		bool                               checkTwoRadiiConsistency(const CircleSections& circles, size_t idx1, size_t idx2, double factor) const;
-		TreeLocatorResult                  axisLocation(const TreeDescriptor& tree_descriptor) const;
-		TreeLocatorResult                  dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles) const;
-		TreeLocatorResult                  treeLocator(const TreeDescriptor& tree_descriptor) const;
-
 	  private: // members
 		const PointCloud3&           point_cloud_;
 		const ArrayClusterIndicator& section_indicator_;
 		const Eigen::VectorXd&       z0_;
 		TreeData&                    trees_;
-		const Eigen::Index           num_points_;
+		const Eigen::Index           num_points_{0};
 		const Parameters             params_;
-		const Eigen::Index           num_sections_;
+		const Eigen::Index           num_sections_{0};
 		size_t                       dbh_section_id_{0};
 		tf::Executor&                executor_;
 	};

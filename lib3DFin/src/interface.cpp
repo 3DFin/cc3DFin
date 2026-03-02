@@ -5,6 +5,7 @@
 
 #include "ground.hpp"
 #include "individualize.hpp"
+#include "localization.hpp"
 #include "peeling.hpp"
 #include "section.hpp"
 #include "types.hpp"
@@ -110,6 +111,10 @@ namespace lib3dfin
 
 		// TODO: try to eliminate the  side effect on tree_data
 		section_extractor.extract();
+
+		// TODO: try to eliminate the  side effect on tree_data
+		LocalizationExtractor localization_extractor(tree_data_, LocalizationExtractor::Parameters::FromGlobalConfig(params_), executor);
+		localization_extractor.extract();
 
 		const auto stop_total = std::chrono::steady_clock::now();
 		spdlog::info("End of 3DFin computation. Found {0:} Trees. Total time: {1:.2f} s", tree_data_.tree_descriptors.size(), std::chrono::duration_cast<std::chrono::milliseconds>(stop_total - start_total).count() / 1000.0);
