@@ -487,7 +487,7 @@ void cc3DFin::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const Eig
 	{
 		enriched_cloud->addPoint(*m_currentCloud->getPoint(i));
 		dist_axes_sf->addElement(tree_data.axis_distance(i));
-		tree_id_sf->addElement(tree_data.cluster_indicator(i));
+		tree_id_sf->addElement(tree_data.tree_cluster_indicator(i));
 		z0_sf->addElement(z0(i));
 	}
 
