@@ -116,7 +116,7 @@ namespace lib3dfin
 
 				if (section.status == CircleData::Status::SUCCESS)
 				{
-					worksheets[1].cell(section_ref) = section.circle.radius / meta.scale;
+					worksheets[1].cell(section_ref) = (section.circle.radius * 2.0) / meta.scale;
 
 					const Vec2 global_circle_center = (section.circle.center / meta.scale) - meta.shift.head<2>();
 					worksheets[2].cell(section_ref) = section.circle.center.x();
