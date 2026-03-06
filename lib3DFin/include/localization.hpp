@@ -58,16 +58,18 @@ namespace lib3dfin
 		explicit LocalizationExtractor(TreeData& trees, const Parameters params, tf::Executor& executor);
 		void extract();
 
+	  private: // static methods
+		static bool                      checkRadiiConsistency(const CircleSections& circles, size_t lower, size_t upper, double factor);
+		static bool                      checkRadiiConsistencyMADS(const CircleSections& circles, size_t lower, size_t upper);
+		static bool                      checkTwoRadiiConsistency(const CircleSections& circles, size_t lower, size_t upper, double factor);
+		static std::pair<size_t, size_t> countValidSections(const CircleSections& circles, size_t lower, size_t upper);
+
 	  private: // methods
-	  private: // tree locations // methods
-		void                      computeDBHSectionID();
-		void                      computeDBHRangeIDs();
-		std::pair<size_t, size_t> countValidSections(const CircleSections& circles, size_t lower, size_t upper) const;
-		bool                      checkRadiiConsistency(const CircleSections& circles, size_t lower, size_t upper) const;
-		bool                      checkTwoRadiiConsistency(const CircleSections& circles, size_t idx1, size_t idx2, double factor) const;
-		TreeLocatorResult         axisLocation(const TreeDescriptor& tree_descriptor) const;
-		TreeLocatorResult         dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles) const;
-		TreeLocatorResult         treeLocator(const TreeDescriptor& tree_descriptor) const;
+		void              computeDBHSectionID();
+		void              computeDBHRangeIDs();
+		TreeLocatorResult axisLocation(const TreeDescriptor& tree_descriptor) const;
+		TreeLocatorResult dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles) const;
+		TreeLocatorResult treeLocator(const TreeDescriptor& tree_descriptor);
 
 	  private: // members
 		TreeData&        trees_;
@@ -77,6 +79,7 @@ namespace lib3dfin
 		size_t           lower_d_section_{0};
 		size_t           upper_d_section_{0};
 		size_t           total_sections_{0};
+		uint32_t         num_pass_test_{0};
 		tf::Executor&    executor_;
 	};
 } // namespace lib3dfin
