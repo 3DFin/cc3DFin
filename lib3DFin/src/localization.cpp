@@ -18,6 +18,7 @@ namespace lib3dfin
 		assert(!trees_.tree_descriptors.empty());
 		num_sections_ = trees_.tree_descriptors[0].circle_data.size();
 		computeDBHSectionID();
+		computeDBHRangeIDs();
 	}
 
 	void LocalizationExtractor::computeDBHSectionID()
@@ -50,12 +51,11 @@ namespace lib3dfin
 		spdlog::info("[LocalizationExtractor] Computing tree DBH and localization in {} us", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
 	}
 
-	std::tuple<size_t, size_t, size_t> LocalizationExtractor::getDBHRange() const
+	void LocalizationExtractor::computeDBHRangeIDs()
 	{
-		const size_t lower_d_section = std::max(dbh_section_id_ - size_t(1), size_t(0));
-		const size_t upper_d_section = std::min(static_cast<size_t>(num_sections_), dbh_section_id_ + 2);
-		const size_t total_sections  = upper_d_section - lower_d_section;
-		return {lower_d_section, upper_d_section, total_sections};
+		lower_d_section_ = std::max(dbh_section_id_ - size_t(1), size_t(0));
+		upper_d_section_ = std::min(static_cast<size_t>(num_sections_ - 1), dbh_section_id_ + size_t(2));
+		total_sections_  = upper_d_section_ - lower_d_section_;
 	}
 
 	std::pair<size_t, size_t> LocalizationExtractor::countValidSections(const CircleSections& circles, size_t lower, size_t upper) const
@@ -76,22 +76,23 @@ namespace lib3dfin
 	bool LocalizationExtractor::checkRadiiConsistency(const CircleSections& circles, size_t lower, size_t upper) const
 	{
 		assert(upper - lower == 3);
-		std::array<double, 3> valid_radius;
+		std::array<double, 3> valid_radii;
 		size_t                i = 0;
 		for (size_t j = lower; j < upper; ++j, ++i)
 		{
-			valid_radius[i] = circles[j].circle.radius;
+			valid_radii[i] = circles[j].circle.radius;
 		}
 
 		// Compute median
-		std::array<double, 3> sorted_radius = valid_radius;
-		std::sort(std::begin(sorted_radius), std::end(sorted_radius));
-		const double median_radius = sorted_radius[1];
+		std::array<double, 3> sorted_radii = valid_radii;
+		std::sort(std::begin(sorted_radii), std::end(sorted_radii));
+		const double median_radius = sorted_radii[1];
 
 		// Compute median absolute deviation for the two extremas
+		// median absolute deviation for the median is... 0
 		std::array<double, 2> abs_deviations = {
-		    std::abs(sorted_radius[0] - median_radius),
-		    std::abs(sorted_radius[2] - median_radius)};
+		    std::abs(sorted_radii[0] - median_radius),
+		    std::abs(sorted_radii[2] - median_radius)};
 
 		// 3 MADS
 		return std::max(abs_deviations[0], abs_deviations[1]) < 3 * std::min(abs_deviations[0], abs_deviations[1]);
@@ -133,60 +134,52 @@ namespace lib3dfin
 		// Early return if DBH is not included in the range of admissible stem sizes
 		if (params_.stem_minimum_height >= params_.DBH || params_.stem_maximum_height <= params_.DBH)
 			return axisLocation(tree_descriptor); // Find the closest section to the DBH and its neighborhood
-		const auto [lower_d_section, upper_d_section, total_sections] = getDBHRange();
+
+		if (total_sections_ < 2)
+			return axisLocation(tree_descriptor);
 
 		// Check section validity of the DBH neighborhood
-		const auto [num_valid_circles, num_enough_sector_coverage] = countValidSections(tree_descriptor.circle_data, lower_d_section, upper_d_section);
+		const auto [num_valid_circles, num_enough_sector_coverage] = countValidSections(tree_descriptor.circle_data, lower_d_section_, upper_d_section_);
 
-		if (num_valid_circles < total_sections || num_valid_circles < 2)
+		if (num_valid_circles < 2)
 		{
 			return axisLocation(tree_descriptor);
 		}
 
-		const bool all_sections_valids = (num_valid_circles == total_sections) && (num_enough_sector_coverage == total_sections);
-
+		const bool all_sections_valids = (num_valid_circles == total_sections_) && (num_enough_sector_coverage == total_sections_);
 		// Handle edge cases first
-		// all sections are valid but there is only two valid circles dbh_section_id == 0 or dbh_section_id == total_sections - 1
+		// Case where there are only two sections and both are valid
+		// dbh_section_id == 0 or dbh_section_id == total_sections - 1
+
 		if (num_valid_circles == 2 && all_sections_valids)
 		{
-
+			double cur_threshold{0.0};
 			// case that arise if dbh_section_id == 0
-			if (lower_d_section == 0)
-			{
-				// First section case - check coherence between two sections
-				if (checkTwoRadiiConsistency(tree_descriptor.circle_data, lower_d_section, lower_d_section + 1, 0.1))
-					return dbhLocation(tree_descriptor, dbh_section_id_, tree_descriptor.circle_data);
-				else
-					return axisLocation(tree_descriptor);
-			}
+			if (lower_d_section_ == 0)
+				cur_threshold = 0.1;
+			// case that arise if dbh_section_id == num_sections - 1
+			else if (upper_d_section_ == static_cast<size_t>(num_sections_ - 1))
+				cur_threshold = 0.15;
 
-			// case that arise if dbh_section_id == total_sections - 1
-			if (upper_d_section == static_cast<size_t>(num_sections_))
-			{
-				// Last section case
-				if (checkTwoRadiiConsistency(tree_descriptor.circle_data, upper_d_section - 2, upper_d_section - 1, 0.15))
-					return dbhLocation(tree_descriptor, dbh_section_id_, tree_descriptor.circle_data);
-				else
-					return axisLocation(tree_descriptor);
-			}
+			// check coherence between two sections
+			if (checkTwoRadiiConsistency(tree_descriptor.circle_data, lower_d_section_, upper_d_section_, cur_threshold))
+				return dbhLocation(tree_descriptor, dbh_section_id_, tree_descriptor.circle_data);
+			else
+				return axisLocation(tree_descriptor);
 		}
+
+		// if there are at least 3 valid cicles but some of them have a low coverage
+		if (num_enough_sector_coverage < 3)
+			return axisLocation(tree_descriptor);
 
 		// General case with 3 sections
-		// if there are at least 3 valid cicles but some of them have a low coverage
-		assert(num_valid_circles == 3);
-		if (num_enough_sector_coverage < 3)
-		{
-			return axisLocation(tree_descriptor);
-		}
-
+		assert(total_sections_ == 3);
 		// Else we can take the average of the sections estimations and check coherence
 		// if the coherence test fails, we fall back to axis estimation
-		if (checkRadiiConsistency(tree_descriptor.circle_data, lower_d_section, upper_d_section))
+		if (checkRadiiConsistency(tree_descriptor.circle_data, lower_d_section_, upper_d_section_))
 			return dbhLocation(tree_descriptor, dbh_section_id_, tree_descriptor.circle_data);
 		else
-		{
 			return axisLocation(tree_descriptor);
-		}
 	}
 
 } // namespace lib3dfin
