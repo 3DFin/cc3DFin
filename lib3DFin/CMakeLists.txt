@@ -84,8 +84,6 @@ if(3DFin_EXPORT_XLSX)
 	target_link_libraries(${PROJECT_NAME} PRIVATE OpenXLSX::OpenXLSX)
 endif()
 
-get_property(all_targets GLOBAL PROPERTY TARGETS)
-message(STATUS "All targets: ${all_targets}")
 
 # Install directories
 include(GNUInstallDirs)

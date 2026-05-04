@@ -67,6 +67,7 @@ namespace lib3dfin
 	  private: // methods
 		void              computeDBHSectionID();
 		void              computeDBHRangeIDs();
+		bool              checkRadiiConsistencyProgressive(const CircleSections& circles, size_t lower, size_t upper);
 		TreeLocatorResult axisLocation(const TreeDescriptor& tree_descriptor) const;
 		TreeLocatorResult dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles) const;
 		TreeLocatorResult treeLocator(const TreeDescriptor& tree_descriptor);
@@ -80,6 +81,7 @@ namespace lib3dfin
 		size_t           upper_d_section_{0};
 		size_t           total_sections_{0};
 		uint32_t         num_pass_test_{0};
+		uint32_t         total_pass_test_{0};
 		tf::Executor&    executor_;
 	};
 } // namespace lib3dfin

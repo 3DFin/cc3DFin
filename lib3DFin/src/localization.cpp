@@ -48,7 +48,7 @@ namespace lib3dfin
 			tree.setLocation(tree_localization);
 		}
 		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		spdlog::info("num_pass_test_: {}", num_pass_test_);
+		spdlog::info("num_pass_test_: {} / total_pass_test_: {}", num_pass_test_, total_pass_test_);
 		spdlog::info("[LocalizationExtractor] Computing tree DBH and localization in {} us", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
 	}
 
@@ -77,16 +77,61 @@ namespace lib3dfin
 	bool LocalizationExtractor::checkRadiiConsistency(const CircleSections& circles, size_t lower, size_t upper, double factor)
 	{
 		assert(upper - lower == 3);
-		std::array<double, 3> valid_radii;
-		size_t                i = 0;
-		for (size_t j = lower; j < upper; ++j, ++i)
+		double rmax = circles[lower].circle.radius;
+		double rmin = circles[lower].circle.radius;
+
+		for (size_t j = lower + 1; j < upper; j++)
 		{
-			valid_radii[i] = circles[j].circle.radius;
+			double cur_radius = circles[j].circle.radius;
+			if (cur_radius > rmax)
+				rmax = cur_radius;
+			if (cur_radius < rmin)
+				rmin = cur_radius;
 		}
 
-		std::array<double, 3> sorted_radii = valid_radii;
-		std::sort(std::begin(sorted_radii), std::end(sorted_radii));
-		return sorted_radii[2] / sorted_radii[0] <= factor;
+		double min_max = rmax / rmin;
+		return min_max <= factor;
+	}
+
+	bool LocalizationExtractor::checkRadiiConsistencyProgressive(const CircleSections& circles, size_t lower, size_t upper)
+	{
+		assert(upper - lower == 3);
+		double rmax = circles[lower].circle.radius;
+		double rmin = circles[lower].circle.radius;
+
+		for (size_t j = lower + 1; j < upper; j++)
+		{
+			double cur_radius = circles[j].circle.radius;
+			if (cur_radius > rmax)
+				rmax = cur_radius;
+			if (cur_radius < rmin)
+				rmin = cur_radius;
+		}
+
+		double min_max = rmax / rmin;
+		if (min_max <= 1.05)
+			return true;
+		if (min_max > 1.10)
+			return true;
+
+		// expension
+		lower = std::min(size_t(0), lower - 1);
+		upper = std::max(upper + 1, static_cast<size_t>(num_sections_ - 1));
+
+		double cur_radius = circles[lower].circle.radius;
+		if (cur_radius > rmax)
+			rmax = cur_radius;
+		if (cur_radius < rmin)
+			rmin = cur_radius;
+
+		cur_radius = circles[upper].circle.radius;
+		if (cur_radius > rmax)
+			rmax = cur_radius;
+		if (cur_radius < rmin)
+			rmin = cur_radius;
+		min_max = rmax / rmin;
+
+		return min_max <= 1.10;
 	}
 
 	bool LocalizationExtractor::checkRadiiConsistencyMADS(const CircleSections& circles, size_t lower, size_t upper)
@@ -192,10 +237,10 @@ namespace lib3dfin
 		assert(total_sections_ == 3);
 		// Else we can take the average of the sections estimations and check coherence
 		// if the coherence test fails, we fall back to axis estimation
-		// plot_3_split / factor 1.10 : 66 / factor 1.05 : 23 / 3xMADs: 49
-		if (checkRadiiConsistencyMADS(tree_descriptor.circle_data, lower_d_section_, upper_d_section_))
+		total_pass_test_++;
+		if (checkRadiiConsistency(tree_descriptor.circle_data, lower_d_section_, upper_d_section_, 1.05))
 		{
-			num_pass_test_++;
+			++num_pass_test_;
 			return dbhLocation(tree_descriptor, dbh_section_id_, tree_descriptor.circle_data);
 		}
 		else
