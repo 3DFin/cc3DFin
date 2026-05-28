@@ -69,14 +69,14 @@ namespace lib3dfin
 		void              computeDBHRangeIDs();
 		bool              checkRadiiConsistencyProgressive(const CircleSections& circles, size_t lower, size_t upper);
 		TreeLocatorResult axisLocation(const TreeDescriptor& tree_descriptor) const;
-		TreeLocatorResult dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles) const;
+		TreeLocatorResult dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles, const DBHSource& dbh_source) const;
 		TreeLocatorResult treeLocator(const TreeDescriptor& tree_descriptor);
 
 	  private: // members
 		TreeData&        trees_;
 		const Parameters params_;
 		Eigen::Index     num_sections_{0};
-		size_t           dbh_section_id_{0};
+		size_t           bh_section_id_{0};
 		size_t           lower_d_section_{0};
 		size_t           upper_d_section_{0};
 		size_t           total_sections_{0};
