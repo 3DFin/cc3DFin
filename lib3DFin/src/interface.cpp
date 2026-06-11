@@ -33,7 +33,7 @@ namespace lib3dfin
 		point_cloud_ = Eigen::Map<const PointCloud3>(cloud_data, num_points, 3);
 	}
 
-	bool TDFProcessing::process()
+	Status TDFProcessing::process()
 	{
 		// Create the "Global" taskflow executor
 		tf::Executor executor;
@@ -57,7 +57,17 @@ namespace lib3dfin
 
 			spdlog::info("This cloud has {0:.2f} million points, its area is {1:} m^2", project_meta_.num_points / 1'000'000.0, project_meta_.area_m2);
 			HeightNormalization height_normalizer(point_cloud_, HeightNormalization::Parameters::FromGlobalConfig(params_), executor);
-			z0_                              = height_normalizer.normalize();
+
+			try
+			{
+				z0_ = height_normalizer.normalize();
+			}
+			catch (std::exception& e)
+			{
+				spdlog::error("Error in normalize: {}", e.what());
+				return Status::DTMTooSmall;
+			}
+
 			auto [warning, area_discrepancy] = HeightNormalization::checkHeightNormDiscrepancy(point_cloud_, z0_, project_meta_.area_m2, executor);
 			if (warning)
 			{
@@ -97,7 +107,16 @@ namespace lib3dfin
 		stripe_ = Stripe(params_.stripe_lower_limit, params_.stripe_upper_limit);
 		std::unique_ptr<FilterPredicate> stripe_predicate(new StripeFilterPredicate(params_.stripe_lower_limit, params_.stripe_upper_limit));
 		TreePeeler                       stripe_peeler(point_cloud_, z0_, std::move(stripe_predicate), TreePeeler::Parameters::StripeFromGlobalConfig(params_), executor);
-		stripe_.cluster_indicator = stripe_peeler.peel();
+
+		try
+		{
+			stripe_.cluster_indicator = stripe_peeler.peel();
+		}
+		catch (std::exception& e)
+		{
+			spdlog::error("Error in peeling: {}", e.what());
+			return Status::NoValidClusters;
+		}
 
 		TreeIndividualizer tree_individualizer(point_cloud_, stripe_, z0_, TreeIndividualizer::Parameters::FromGlobalConfig(params_), executor);
 		tree_data_ = tree_individualizer.individualize();
@@ -118,7 +137,7 @@ namespace lib3dfin
 
 		const auto stop_total = std::chrono::steady_clock::now();
 		spdlog::info("End of 3DFin computation. Found {0:} Trees. Total time: {1:.2f} s", tree_data_.tree_descriptors.size(), std::chrono::duration_cast<std::chrono::milliseconds>(stop_total - start_total).count() / 1000.0);
-		return true;
+		return Status::Success;
 	}
 
 	void TDFProcessing::exportTabularData() const

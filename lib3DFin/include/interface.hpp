@@ -15,6 +15,16 @@ namespace fs = std::filesystem;
 
 namespace lib3dfin
 {
+
+	enum class Status
+	{
+		Success = 0,
+		InvalidInput,
+		DTMTooSmall,
+		NoValidClusters,
+		Error,
+	};
+
 	struct GlobalShift
 	{
 		double x_shift{0.};
@@ -48,7 +58,7 @@ namespace lib3dfin
 			output_basepath_ = output_basepath;
 		}
 
-		bool process();
+		Status process();
 
 		const TreeData& getTreeData() const
 		{

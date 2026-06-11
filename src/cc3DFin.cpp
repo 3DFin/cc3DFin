@@ -633,16 +633,24 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 	auto TdfFutureResult = QtConcurrent::run(
 	    [tdf = tdfProcessing.get()]
 	    {
-		    tdf->process();
+		    return tdf->process();
 	    });
 
 	// Create watcher to notify when its done
 	// will be cleaned by using QFutureWatcher::deleteLater()
-	auto* TdfComputationWatcher = new QFutureWatcher<void>(this);
+	auto* tdfComputationWatcher = new QFutureWatcher<lib3dfin::Status>(this);
 
-	// we move z0vec and tdfPointCloud for memory clean up at the end of the computationé
-	connect(TdfComputationWatcher, &QFutureWatcher<void>::finished, this, [TdfComputationWatcher, this, &dialog, tdfProcessing = std::move(tdfProcessing), z0Vec = std::move(z0Vec), tdfCloud = std::move(tdfPointCloud)]()
+	// we move z0vec and tdfPointCloud for memory clean up at the end of the computation.
+	connect(tdfComputationWatcher, &QFutureWatcher<lib3dfin::Status>::finished, this, [tdfComputationWatcher, this, &dialog, tdfProcessing = std::move(tdfProcessing), z0Vec = std::move(z0Vec), tdfCloud = std::move(tdfPointCloud)]()
 	        {
+
+
+		if(tdfComputationWatcher->result() != lib3dfin::Status::Success)
+		{
+		    dialog.setComputationMode(false);
+            tdfComputationWatcher->deleteLater();
+		    return;
+		}
 		// TODO factorize the drawing
 		m_base_group = std::make_unique<ccHObject>(m_currentCloud->getName() + "_3DFin");
 
@@ -654,7 +662,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		const auto& treeData      = tdfProcessing->getTreeData();
 		const auto& dtm           = tdfProcessing->getDTM();
 
-		// DTM is optional. It depends if we compute heigh normalization
+		// DTM is optional. It depends if we compute heigh normalization in the process.
 		if (!dtm.tri_ids.empty())
 		{
 			drawDTM(dtm);
@@ -671,8 +679,8 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		m_app->addToDB(m_base_group.release());
 		m_app->redrawAll();
 
-		TdfComputationWatcher->deleteLater(); });
+		tdfComputationWatcher->deleteLater(); });
 
 	// TODO: error and cancellation handling
-	TdfComputationWatcher->setFuture(TdfFutureResult);
+	tdfComputationWatcher->setFuture(TdfFutureResult);
 }
