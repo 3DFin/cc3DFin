@@ -1,5 +1,3 @@
-#pragma once
-
 // ##########################################################################
 // #                                                                        #
 // #                CLOUDCOMPARE PLUGIN: 3DFin                              #
@@ -17,44 +15,37 @@
 // #                                                                        #
 // ##########################################################################
 
-#include "ccStdPluginInterface.h"
+#pragma once
 
-#include <lib3DFin/config.hpp>
+// CloudCompare
+#include "ccPointCloud.h"
+
+// lib3DFin
+#include <lib3DFin/interface.hpp>
 #include <lib3DFin/types.hpp>
 
-class cc3DFinDlg;
-class cc3DFinDrawer;
+class ccHObject;
 
-;
-inline const QString COLOR_SCALE_UUID = "{25ec76a1-9b8d-4e4a-a129-21ae313ef8ba}";
+#include "cc3DFin.h"
 
-//! 3DFin qCC plugin
-class cc3DFin : public QObject
-    , public ccStdPluginInterface
+#include <QString>
+#include <memory>
+
+class cc3DFinDrawer
 {
-	Q_OBJECT
-	Q_INTERFACES(ccPluginInterface ccStdPluginInterface)
-
-	// The info.json file provides information about the plugin to the loading system and
-	// it is displayed in the plugin information dialog.
-	Q_PLUGIN_METADATA(IID "uniovi.cloudcompare.plugin.cc3DFin" FILE "../info.json")
-
   public:
-	explicit cc3DFin(QObject* parent = nullptr);
-	~cc3DFin() override = default;
-
-	// Inherited from ccStdPluginInterface
-	void            onNewSelection(const ccHObject::Container& selectedEntities) override;
-	QList<QAction*> getActions() override;
+	cc3DFinDrawer(ccPointCloud* sourceCloud);
+	std::unique_ptr<ccHObject> drawAll(const lib3dfin::TDFProcessing& result);
 
   private:
-	void initCustomColorScale();
-	void do3DFinAction();
-	void compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog);
+	void drawDTM(const lib3dfin::DTMData& dtm);
+	void drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
+	void drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
+	void drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
+	void drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors);
+	void exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const Eigen::VectorXd& z0);
+	void exportStripe(const lib3dfin::ArrayClusterIndicator& stem_indicator);
 
-  private:
-	//! Default action
-	QAction*                   m_action;
-	std::unique_ptr<ccHObject> m_base_group{nullptr};
-	ccPointCloud*              m_currentCloud{nullptr};
+	ccPointCloud*              m_source;
+	std::unique_ptr<ccHObject> m_group;
 };

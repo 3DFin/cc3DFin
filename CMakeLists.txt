@@ -15,6 +15,7 @@ if (PLUGIN_STANDARD_3DFIN)
 			${CMAKE_CURRENT_SOURCE_DIR}/include/cc3DFinDlg.h
 			${CMAKE_CURRENT_SOURCE_DIR}/include/cc3DFinExpertDlg.h
 			${CMAKE_CURRENT_SOURCE_DIR}/include/cc3DFinConfig.h
+			${CMAKE_CURRENT_SOURCE_DIR}/include/cc3DFinDrawer.h
 	)
 
 	target_sources(${PROJECT_NAME}
@@ -22,6 +23,7 @@ if (PLUGIN_STANDARD_3DFIN)
 			${CMAKE_CURRENT_SOURCE_DIR}/src/cc3DFin.cpp
 			${CMAKE_CURRENT_SOURCE_DIR}/src/cc3DFinDlg.cpp
 			${CMAKE_CURRENT_SOURCE_DIR}/src/cc3DFinConfig.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/src/cc3DFinDrawer.cpp
 	)
 
 	target_sources(${PROJECT_NAME}
