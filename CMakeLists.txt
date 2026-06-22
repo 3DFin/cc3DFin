@@ -9,9 +9,34 @@ if (PLUGIN_STANDARD_3DFIN)
 	AddPlugin(NAME ${PROJECT_NAME})
 	set_property(TARGET ${PROJECT_NAME} PROPERTY AUTORCC ON)
 
-	add_subdirectory(ui)
-	add_subdirectory(include)
-	add_subdirectory(src)
+	target_sources(${PROJECT_NAME}
+		PRIVATE
+			${CMAKE_CURRENT_SOURCE_DIR}/include/cc3DFin.h
+			${CMAKE_CURRENT_SOURCE_DIR}/include/cc3DFinDlg.h
+			${CMAKE_CURRENT_SOURCE_DIR}/include/cc3DFinExpertDlg.h
+			${CMAKE_CURRENT_SOURCE_DIR}/include/cc3DFinConfig.h
+	)
+
+	target_sources(${PROJECT_NAME}
+		PRIVATE
+			${CMAKE_CURRENT_SOURCE_DIR}/src/cc3DFin.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/src/cc3DFinDlg.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/src/cc3DFinConfig.cpp
+	)
+
+	target_sources(${PROJECT_NAME}
+		PRIVATE
+			${CMAKE_CURRENT_SOURCE_DIR}/ui/gui_ressources.qrc
+			${CMAKE_CURRENT_SOURCE_DIR}/ui/cc3DFinDlg.ui
+			${CMAKE_CURRENT_SOURCE_DIR}/ui/cc3DFinExpertDlg.ui
+	)
+
+	target_include_directories(${PROJECT_NAME}
+		PRIVATE
+			${CMAKE_CURRENT_SOURCE_DIR}/include
+	)
+
+	set_target_properties(${PROJECT_NAME} PROPERTIES AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/ui)
 
 	add_subdirectory(lib3DFin)
 
