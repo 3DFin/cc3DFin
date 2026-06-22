@@ -56,7 +56,7 @@ namespace lib3dfin
 			project_meta_.area_m2      = voxelated_ground.rows();
 
 			spdlog::info("This cloud has {0:.2f} million points, its area is {1:} m^2", project_meta_.num_points / 1'000'000.0, project_meta_.area_m2);
-			HeightNormalization height_normalizer(point_cloud_, HeightNormalization::Parameters::FromGlobalConfig(params_), executor);
+			HeightNormalization height_normalizer(point_cloud_, params_.ground, executor);
 
 			try
 			{
@@ -104,12 +104,12 @@ namespace lib3dfin
 			spdlog::info("This cloud has {0:.2f} million points, its area is {1:} m^2", project_meta_.num_points / 1'000'000.0, project_meta_.area_m2);
 		}
 
-		stripe_ = Stripe(params_.stripe_lower_limit, params_.stripe_upper_limit);
-		std::unique_ptr<FilterPredicate> stripe_predicate(new StripeFilterPredicate(params_.stripe_lower_limit, params_.stripe_upper_limit));
-		TreePeeler                       stripe_peeler(point_cloud_, z0_, std::move(stripe_predicate), TreePeeler::Parameters::StripeFromGlobalConfig(params_), executor);
+		std::unique_ptr<FilterPredicate> stripe_predicate(new StripeFilterPredicate(params_.stripe_peeling.stripe_lower_limit, params_.stripe_peeling.stripe_upper_limit));
+		TreePeeler                       stripe_peeler(point_cloud_, z0_, std::move(stripe_predicate), params_.stripe_peeling, executor);
 
 		try
 		{
+			stripe_                   = Stripe(params_.stripe_peeling.stripe_lower_limit, params_.stripe_peeling.stripe_upper_limit);
 			stripe_.cluster_indicator = stripe_peeler.peel();
 		}
 		catch (std::exception& e)
@@ -118,21 +118,26 @@ namespace lib3dfin
 			return Status::NoValidClusters;
 		}
 
-		TreeIndividualizer tree_individualizer(point_cloud_, stripe_, z0_, TreeIndividualizer::Parameters::FromGlobalConfig(params_), executor);
+		TreeIndividualizer tree_individualizer(point_cloud_, stripe_, z0_, params_.tree, executor);
 		tree_data_ = tree_individualizer.individualize();
 
-		std::unique_ptr<FilterPredicate> stem_predicate(new StemFilterPredicate(params_.stem_minimum_height, params_.stem_maximum_height + params_.stem_section_thickness, params_.stem_search_diameter / 2.0, tree_data_.axis_distance));
-		TreePeeler                       stem_peeler(point_cloud_, z0_, std::move(stem_predicate), TreePeeler::Parameters::StemFromGlobalConfig(params_), executor);
+		// Create stem peeling params (same as stripe peeling but with stem verticality params)
+		StripePeelingParams stem_peeling_params   = params_.stripe_peeling;
+		stem_peeling_params.verticality_nn_scale  = params_.stem.verticality_radius_stem;
+		stem_peeling_params.verticality_threshold = params_.stem.verticality_threshold_stem;
+
+		std::unique_ptr<FilterPredicate> stem_predicate(new StemFilterPredicate(params_.stem.stem_minimum_height, params_.stem.stem_maximum_height + params_.stem.stem_section_thickness, params_.stem.stem_search_diameter / 2.0, tree_data_.axis_distance));
+		TreePeeler                       stem_peeler(point_cloud_, z0_, std::move(stem_predicate), stem_peeling_params, executor);
 		auto                             stem_indicator = stem_peeler.peel();
 
 		const ArrayClusterIndicator sections_indicator = (stem_indicator > -1).select(tree_data_.tree_cluster_indicator, -1);
-		SectionExtractor            section_extractor(point_cloud_, sections_indicator, z0_, tree_data_, SectionExtractor::Parameters::FromGlobalConfig(params_), executor);
+		SectionExtractor            section_extractor(point_cloud_, sections_indicator, z0_, tree_data_, params_.stem, executor);
 
 		// TODO: try to eliminate the  side effect on tree_data
 		section_extractor.extract();
 
 		// TODO: try to eliminate the  side effect on tree_data
-		LocalizationExtractor localization_extractor(tree_data_, LocalizationExtractor::Parameters::FromGlobalConfig(params_), executor);
+		LocalizationExtractor localization_extractor(tree_data_, params_.stem, executor);
 		localization_extractor.extract();
 
 		const auto stop_total = std::chrono::steady_clock::now();

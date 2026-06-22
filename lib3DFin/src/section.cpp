@@ -22,7 +22,7 @@
 namespace lib3dfin
 {
 
-	SectionExtractor::SectionExtractor(const PointCloud3& point_cloud, const ArrayClusterIndicator& sections_indicator, const Eigen::VectorXd& z0, TreeData& trees, const Parameters params, tf::Executor& executor)
+	SectionExtractor::SectionExtractor(const PointCloud3& point_cloud, const ArrayClusterIndicator& sections_indicator, const Eigen::VectorXd& z0, TreeData& trees, const StemSectionParams& params, tf::Executor& executor)
 	    : point_cloud_(point_cloud)
 	    , section_indicator_(sections_indicator)
 	    , num_points_(point_cloud.rows())
@@ -62,7 +62,7 @@ namespace lib3dfin
 
 			tf::Taskflow taskflow;
 			auto         compute_section = taskflow.for_each_index(Eigen::Index(0), num_sections_, Eigen::Index(1), [&](Eigen::Index section_id)
-                                                           {
+			                                                       {
 				const auto section_start = params_.stem_minimum_height + section_id * params_.stem_section_interval;
 				const auto section_end   = section_start + params_.stem_section_thickness;
 				auto&      cur_circle    = circles[section_id];

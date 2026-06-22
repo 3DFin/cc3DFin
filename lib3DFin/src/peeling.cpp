@@ -83,7 +83,7 @@ namespace lib3dfin
 	    const PointCloud3&               point_cloud,
 	    const Eigen::VectorXd&           z0,
 	    std::unique_ptr<FilterPredicate> initial_state,
-	    const TreePeeler::Parameters     params,
+	    const StripePeelingParams&       params,
 	    tf::Executor&                    executor)
 	    : point_cloud_(point_cloud)
 	    , z0_(z0)

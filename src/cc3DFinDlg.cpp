@@ -237,50 +237,50 @@ lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 
 	params.compute_height_normalization = compute_height_normalization_chk->isChecked();
 
-	// Fields are pre validated, the casts should succeed
+	// Ground params
+	params.ground.cloth_resolution            = cloth_resolution_in->text().toDouble();
+	params.ground.denoise_point_cloud         = denoise_point_cloud_chk->isChecked();
+	params.ground.denoise_resolution          = denoise_resolution_in->text().toDouble();
+	params.ground.denoise_minimum_points      = denoise_minimum_points_in->text().toUInt();
+	params.ground.dtm_smooth_laplacian_lambda = dtm_smooth_laplacian_lambda_in->text().toDouble();
 
-	params.cloth_resolution = cloth_resolution_in->text().toDouble();
+	// Stripe peeling params
+	params.stripe_peeling.stripe_lower_limit    = stripe_lower_limit_in->text().toDouble();
+	params.stripe_peeling.stripe_upper_limit    = stripe_upper_limit_in->text().toDouble();
+	params.stripe_peeling.verticality_nn_scale  = verticality_radius_stripe_in->text().toDouble();
+	params.stripe_peeling.verticality_threshold = verticality_threshold_stripe_in->text().toDouble();
+	params.stripe_peeling.num_voxels_threshold  = stripe_peeling_voxels_threshold_in->text().toInt();
+	params.stripe_peeling.resolution_xy         = stripe_peeling_resolution_xy_in->text().toDouble();
+	params.stripe_peeling.resolution_z          = stripe_peeling_resolution_z_in->text().toDouble();
+	params.stripe_peeling.num_iterations        = stripe_peeling_num_iterations_in->text().toInt();
 
-	params.denoise_point_cloud         = denoise_point_cloud_chk->isChecked();
-	params.denoise_resolution          = denoise_resolution_in->text().toDouble();
-	params.denoise_minimum_points      = denoise_minimum_points_in->text().toUInt();
-	params.dtm_smooth_laplacian_lambda = dtm_smooth_laplacian_lambda_in->text().toDouble();
+	// Tree individualizer params
+	params.tree.resolution_xy                   = tree_resolution_xy_in->text().toDouble();
+	params.tree.resolution_z                    = tree_resolution_z_in->text().toDouble();
+	params.tree.height_range                    = tree_height_range_in->text().toDouble();
+	params.tree.maximum_dist_axis               = tree_dist_axis_threshold_in->text().toDouble();
+	params.tree.minimum_points_stem             = tree_minimum_points_stem_in->text().toUInt();
+	params.tree.axis_maximum_vertical_deviation = tree_axis_max_vertical_deviation_in->text().toDouble();
+	params.tree.height_distance_from_axis       = tree_height_distance_from_axis_in->text().toDouble();
+	params.tree.resolution_height               = tree_resolution_height_in->text().toDouble();
 
-	params.stripe_lower_limit = stripe_lower_limit_in->text().toDouble();
-	params.stripe_upper_limit = stripe_upper_limit_in->text().toDouble();
-
-	params.verticality_radius_stripe       = verticality_radius_stripe_in->text().toDouble();
-	params.verticality_threshold_stripe    = verticality_threshold_stripe_in->text().toDouble();
-	params.stripe_peeling_voxels_threshold = stripe_peeling_voxels_threshold_in->text().toInt();
-	params.stripe_peeling_resolution_xy    = stripe_peeling_resolution_xy_in->text().toDouble();
-	params.stripe_peeling_resolution_z     = stripe_peeling_resolution_z_in->text().toDouble();
-	params.stripe_peeling_num_iterations   = stripe_peeling_num_iterations_in->text().toInt();
-
-	params.tree_resolution_xy               = tree_resolution_xy_in->text().toDouble();
-	params.tree_resolution_z                = tree_resolution_z_in->text().toDouble();
-	params.tree_height_range                = tree_height_range_in->text().toDouble();
-	params.tree_dist_axis_threshold         = tree_dist_axis_threshold_in->text().toDouble();
-	params.tree_minimum_points_stem         = tree_minimum_points_stem_in->text().toUInt();
-	params.tree_axis_max_vertical_deviation = tree_axis_max_vertical_deviation_in->text().toDouble();
-	params.tree_height_distance_from_axis   = tree_height_distance_from_axis_in->text().toDouble();
-	params.tree_resolution_height           = tree_resolution_height_in->text().toDouble();
-
-	params.stem_search_diameter               = stem_search_diameter_in->text().toDouble();
-	params.stem_minimum_height                = stem_minimum_height_in->text().toDouble();
-	params.stem_maximum_height                = stem_maximum_height_in->text().toDouble();
-	params.verticality_radius_stem            = verticality_radius_stem_in->text().toDouble();
-	params.verticality_threshold_stem         = verticality_threshold_stem_in->text().toDouble();
-	params.stem_section_thickness             = stem_section_thickness_in->text().toDouble();
-	params.stem_section_circle_width          = stem_section_circle_width_in->text().toDouble();
-	params.stem_section_interval              = stem_section_interval_in->text().toDouble();
-	params.stem_section_clustering_distance   = stem_section_clustering_distance_in->text().toDouble();
-	params.stem_section_minimum_diameter      = stem_section_minimum_diameter_in->text().toDouble();
-	params.stem_section_maximum_diameter      = stem_section_maximum_diameter_in->text().toDouble();
-	params.stem_section_inner_point_threshold = stem_section_inner_point_threshold_in->text().toInt();
-	params.stem_section_min_points            = stem_section_min_points_in->text().toInt();
-	params.stem_section_diameter_proportion   = stem_section_diameter_proportion_in->text().toDouble();
-	params.stem_section_sector_count          = stem_section_sector_count_in->text().toInt();
-	params.stem_section_min_occupied_sectors  = stem_section_min_occupied_sectors_in->text().toInt();
+	// Stem section params
+	params.stem.stem_search_diameter               = stem_search_diameter_in->text().toDouble();
+	params.stem.stem_minimum_height                = stem_minimum_height_in->text().toDouble();
+	params.stem.stem_maximum_height                = stem_maximum_height_in->text().toDouble();
+	params.stem.verticality_radius_stem            = verticality_radius_stem_in->text().toDouble();
+	params.stem.verticality_threshold_stem         = verticality_threshold_stem_in->text().toDouble();
+	params.stem.stem_section_thickness             = stem_section_thickness_in->text().toDouble();
+	params.stem.stem_section_circle_width          = stem_section_circle_width_in->text().toDouble();
+	params.stem.stem_section_interval              = stem_section_interval_in->text().toDouble();
+	params.stem.stem_section_clustering_distance   = stem_section_clustering_distance_in->text().toDouble();
+	params.stem.stem_section_minimum_diameter      = stem_section_minimum_diameter_in->text().toDouble();
+	params.stem.stem_section_maximum_diameter      = stem_section_maximum_diameter_in->text().toDouble();
+	params.stem.stem_section_inner_point_threshold = stem_section_inner_point_threshold_in->text().toInt();
+	params.stem.stem_section_min_points            = stem_section_min_points_in->text().toInt();
+	params.stem.stem_section_diameter_proportion   = stem_section_diameter_proportion_in->text().toDouble();
+	params.stem.stem_section_sector_count          = stem_section_sector_count_in->text().toInt();
+	params.stem.stem_section_min_occupied_sectors  = stem_section_min_occupied_sectors_in->text().toInt();
 
 	return params;
 }

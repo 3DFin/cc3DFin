@@ -10,7 +10,7 @@
 namespace lib3dfin
 {
 
-	LocalizationExtractor::LocalizationExtractor(TreeData& trees, const Parameters params, tf::Executor& executor)
+	LocalizationExtractor::LocalizationExtractor(TreeData& trees, const StemSectionParams& params, tf::Executor& executor)
 	    : trees_(trees)
 	    , params_(params)
 	    , executor_(executor)

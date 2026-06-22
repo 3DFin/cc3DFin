@@ -33,9 +33,9 @@ namespace lib3dfin
 	using CSFGridMapping        = Eigen::Map<CSFGrid>;
 	using CSFGridMappingStride3 = Eigen::Map<CSFGrid, Eigen::Unaligned, Eigen::InnerStride<3>>;
 
-	HeightNormalization::HeightNormalization(const PointCloud3& point_cloud,
-	                                         Parameters         params,
-	                                         tf::Executor&      executor)
+	HeightNormalization::HeightNormalization(const PointCloud3&  point_cloud,
+	                                         const GroundParams& params,
+	                                         tf::Executor&       executor)
 	    : point_cloud_(point_cloud)
 	    , params_(params)
 	    , executor_(executor)
@@ -274,7 +274,7 @@ namespace lib3dfin
 		spdlog::info("[HeighNorm] smooth DTM using Laplacian filter");
 
 		constexpr double cardinality  = 8.0;
-		const double     lambda       = params_.smooth_laplacian_lambda / cardinality; // Umbrella laplacian scaling -> 1 / cardinality
+		const double     lambda       = params_.dtm_smooth_laplacian_lambda / cardinality; // Umbrella laplacian scaling -> 1 / cardinality
 		constexpr size_t max_num_iter = 20;
 
 		Eigen::VectorXd depth_map = dtm_.col(2);
