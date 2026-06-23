@@ -11,6 +11,8 @@
 // StdLib
 #include <cstddef>
 #include <filesystem>
+#include <span>
+
 namespace fs = std::filesystem;
 
 namespace lib3dfin
@@ -36,8 +38,8 @@ namespace lib3dfin
 	class TDFProcessing
 	{
 	  public:
-		explicit TDFProcessing(const double* cloud_data, const double* z0_sf, size_t num_points);
-		explicit TDFProcessing(const double* cloud_data, size_t num_points);
+		explicit TDFProcessing(std::span<const double> cloud_data, std::span<const double> z0_sf);
+		explicit TDFProcessing(std::span<const double> cloud_data);
 
 		~TDFProcessing()                               = default;
 		TDFProcessing& operator=(const TDFProcessing&) = delete;

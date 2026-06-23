@@ -4,9 +4,19 @@ cmake_minimum_required(VERSION 3.22)
 option(PLUGIN_STANDARD_3DFIN "Install 3DFin plugin" OFF)
 
 if (PLUGIN_STANDARD_3DFIN)
+
 	project(3DFIN_STANDARD_PLUGIN)
 
 	AddPlugin(NAME ${PROJECT_NAME})
+
+	#TODO: Added for span, see if it is fine with VS 2022
+	set_target_properties(${PROJECT_NAME}
+		PROPERTIES
+			CXX_STANDARD 20
+			CXX_STANDARD_REQUIRED ON
+			CXX_EXTENSIONS NO
+	)
+
 	set_property(TARGET ${PROJECT_NAME} PROPERTY AUTORCC ON)
 
 	target_sources(${PROJECT_NAME}

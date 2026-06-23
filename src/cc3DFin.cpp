@@ -39,10 +39,15 @@
 #include <spdlog/spdlog.h>
 
 // ccCoreLib
+#include <ScalarField.h>
+
+// QT
 #include <QMainWindow>
 #include <QtConcurrent>
 #include <QtGui>
-#include <ScalarField.h>
+
+// StdLib
+#include <span>
 
 cc3DFin::cc3DFin(QObject* parent)
     : QObject(parent)
@@ -230,18 +235,15 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		tdfPointCloud.push_back(static_cast<double>(point->z));
 	}
 
-	if (z0Vec.empty())
-	{
-	}
 	std::unique_ptr<lib3dfin::TDFProcessing> tdfProcessing;
 
 	if (z0Vec.empty())
 	{
-		tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(tdfPointCloud.data(), static_cast<size_t>(m_currentCloud->size()));
+		tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(std::span<const double>(tdfPointCloud));
 	}
 	else
 	{
-		tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(tdfPointCloud.data(), z0Vec.data(), static_cast<size_t>(m_currentCloud->size()));
+		tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(std::span<const double>(tdfPointCloud), std::span<const double>(z0Vec));
 	}
 
 	tdfProcessing->setParams(params);

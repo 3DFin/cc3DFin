@@ -22,15 +22,15 @@
 
 namespace lib3dfin
 {
-	TDFProcessing::TDFProcessing(const double* cloud_data, const double* z0_sf, size_t num_points)
+	TDFProcessing::TDFProcessing(std::span<const double> cloud_data, std::span<const double> z0_sf)
 	{
-		point_cloud_ = Eigen::Map<const PointCloud3>(cloud_data, num_points, 3);
-		z0_          = Eigen::Map<const Eigen::VectorXd>(z0_sf, num_points);
+		point_cloud_ = Eigen::Map<const PointCloud3>(cloud_data.data(), cloud_data.size() / 3, 3);
+		z0_          = Eigen::Map<const Eigen::VectorXd>(z0_sf.data(), z0_sf.size());
 	}
 
-	TDFProcessing::TDFProcessing(const double* cloud_data, size_t num_points)
+	TDFProcessing::TDFProcessing(std::span<const double> cloud_data)
 	{
-		point_cloud_ = Eigen::Map<const PointCloud3>(cloud_data, num_points, 3);
+		point_cloud_ = Eigen::Map<const PointCloud3>(cloud_data.data(), cloud_data.size() / 3, 3);
 	}
 
 	Status TDFProcessing::process()
