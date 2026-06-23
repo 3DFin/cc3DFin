@@ -93,13 +93,13 @@ namespace lib3dfin
 		TreeLocatorResult result;
 		result.dbh = 0.0; // No evaluation of the DBH
 
-		const double cos_deviation = std::cos(tree_descriptor.axis_vertical_deviation * DEG_TO_RAD);
+		const double cos_deviation = std::cos(tree_descriptor.axis.vertical_deviation_deg * DEG_TO_RAD);
 		// axis_verical_deviation is filtered a priori, so there is no chance of division by zero.
 		assert(abs(cos_deviation) > 1e-8);
 
-		const double diff_height       = params_.DBH - tree_descriptor.centroid_coordinates.z() + tree_descriptor.height_difference;
+		const double diff_height       = params_.DBH - tree_descriptor.location.centroid_coordinates.z() + tree_descriptor.dims.height_difference;
 		const double dist_centroid_dbh = diff_height / cos_deviation;
-		result.location                = tree_descriptor.axis * dist_centroid_dbh + tree_descriptor.centroid_coordinates;
+		result.location                = tree_descriptor.axis.direction * dist_centroid_dbh + tree_descriptor.location.centroid_coordinates;
 		result.dbh_source              = DBHSource::NOT_RELIABLE;
 		return result;
 	}
@@ -108,7 +108,7 @@ namespace lib3dfin
 	{
 		TreeLocatorResult result;
 		result.dbh = circles[section_index].circle.radius * 2.0;
-		result.location << circles[section_index].circle.center, tree_descriptor.height_difference + params_.DBH;
+		result.location << circles[section_index].circle.center, tree_descriptor.dims.height_difference + params_.DBH;
 		result.dbh_source = dbh_source;
 		return result;
 	}

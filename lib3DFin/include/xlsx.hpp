@@ -100,10 +100,10 @@ namespace lib3dfin
 
 			// Special case for sheet_1 row_id is shifted by 1 because of the subheader
 			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 2)) = row_header;
-			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 3)) = tree.highest_z0 / meta.scale;
-			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 4)) = tree.dbh / meta.scale;
+			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 3)) = tree.dims.highest_z0 / meta.scale;
+			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 4)) = tree.dims.dbh / meta.scale;
 
-			const Vec3 global_tree_location = (tree.location / meta.scale) - meta.shift;
+			const Vec3 global_tree_location = (tree.location.position / meta.scale) - meta.shift;
 
 			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 5)) = global_tree_location.x();
 			worksheets[0].cell(OpenXLSX::XLCellReference(row_id + 1, 6)) = global_tree_location.y();

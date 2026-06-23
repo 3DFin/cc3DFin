@@ -113,6 +113,29 @@ namespace lib3dfin
 
 	using CircleSections = std::vector<CircleData>;
 
+	struct TreeAxis
+	{
+		Vec3   direction{0., 0., 0.};
+		Vec3   bottom_point{0., 0., 0.};
+		Vec3   top_point{0., 0., 0.};
+		double vertical_deviation_deg{0};
+		bool   valid{false};
+	};
+
+	struct TreeDims
+	{
+		double height_difference{0};
+		Vec3   highest_point{0.0, 0.0, 0.0};
+		double highest_z0{0.0};
+		double dbh{0.0};
+	};
+
+	struct TreeLocation
+	{
+		Vec3 centroid_coordinates{0., 0., 0.};
+		Vec3 position{0.0, 0.0, 0.0};
+	};
+
 	struct TreeDescriptor
 	{
 		TreeDescriptor(Eigen::Index tree_id_)
@@ -123,46 +146,38 @@ namespace lib3dfin
 		void setAxis(const Vec3& axis_, const double max_deviation)
 		{
 			// axis always points upwards
-			axis                    = (axis_(2) < 0) ? -axis_ : axis_;
-			axis_vertical_deviation = std::atan2(std::hypot(axis(0), axis(1)), axis(2)) * RAD_TO_DEG;
-			valid                   = axis_vertical_deviation < max_deviation;
+			axis.direction              = (axis_(2) < 0) ? -axis_ : axis_;
+			axis.vertical_deviation_deg = std::atan2(std::hypot(axis.direction(0), axis.direction(1)), axis.direction(2)) * RAD_TO_DEG;
+			axis.valid                  = axis.vertical_deviation_deg < max_deviation;
 		}
 
-		void setHeighestPoint(const Vec3& heighest_point_)
+		void setHeighestPoint(const Vec3& highest_point_)
 		{
-			highest_point = heighest_point_;
-			highest_z0    = highest_point(2) - height_difference;
+			dims.highest_point = highest_point_;
+			dims.highest_z0    = dims.highest_point(2) - dims.height_difference;
 		}
 
 		void setLocation(const TreeLocatorResult& location_)
 		{
-			location = location_.location;
-			dbh      = location_.dbh;
+			location.position = location_.location;
+			dims.dbh          = location_.dbh;
 		}
 
 		PointCloud3 computeAxisSampling(const Vec3& bb_min, const Vec3& bb_max, double sample_step)
 		{
-			const auto result = lib3dfin::computeAxisSampling(centroid_coordinates, axis, bb_min, bb_max, sample_step);
+			const auto result = lib3dfin::computeAxisSampling(location.centroid_coordinates, axis.direction, bb_min, bb_max, sample_step);
 			if (result.rows() >= 2)
 			{
-				bottom_point = result.row(0);
-				top_point    = result.row(result.rows() - 1);
+				axis.bottom_point = result.row(0);
+				axis.top_point    = result.row(result.rows() - 1);
 			}
 			return result;
 		}
 
 		Eigen::Index            tree_id{0};
-		double                  height_difference{0}; // z - z0
-		Vec3                    centroid_coordinates{0., 0., 0.};
-		Vec3                    axis{0., 0., 0.}; // most significant eigen vector
-		Vec3                    top_point{0., 0., 0.};
-		Vec3                    bottom_point{0., 0., 0.};
-		double                  axis_vertical_deviation{0.};
-		bool                    valid{false}; // under max deviation threshold
-		Vec3                    highest_point{0.0, 0.0, 0.0};
-		double                  highest_z0{0.0};
-		double                  dbh{0.0};
-		Vec3                    location{0.0, 0.0, 0.0};
+		TreeAxis                axis;
+		TreeDims                dims;
+		TreeLocation            location;
 		std::vector<CircleData> circle_data{};
 	};
 

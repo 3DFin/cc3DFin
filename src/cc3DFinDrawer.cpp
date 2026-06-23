@@ -189,7 +189,7 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 			{
 				const auto& circle = circle_data.circle;
 				// We need to shift the circle center to go from z0 coordinates to the actual coordinates
-				const double height   = circle_data.z0 + tree_descriptors[tree_id].height_difference;
+				const double height   = circle_data.z0 + tree_descriptors[tree_id].dims.height_difference;
 				const auto   f_height = static_cast<PointCoordinateType>(height);
 
 				// Add circle center
@@ -259,10 +259,10 @@ void cc3DFinDrawer::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_d
 
 	for (const auto& desc : tree_descriptors)
 	{
-		const Eigen::Vector3d  axis_step      = step_size * desc.axis; // TODO parameters
-		const double           tilting_degree = desc.axis_vertical_deviation;
-		const Eigen::Vector3d& top_point      = desc.top_point;
-		Eigen::Vector3d        curr_point     = desc.bottom_point;
+		const Eigen::Vector3d  axis_step      = step_size * desc.axis.direction; // TODO parameters
+		const double           tilting_degree = desc.axis.vertical_deviation_deg;
+		const Eigen::Vector3d& top_point      = desc.axis.top_point;
+		Eigen::Vector3d        curr_point     = desc.axis.bottom_point;
 		while (curr_point.z() < top_point.z())
 		{
 			axis_points->addPoint({static_cast<PointCoordinateType>(curr_point.x()),
@@ -292,19 +292,19 @@ void cc3DFinDrawer::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>
 
 	for (const auto& desc : tree_descriptors)
 	{
-		tree_locations->addPoint({static_cast<PointCoordinateType>(desc.location.x()),
-		                          static_cast<PointCoordinateType>(desc.location.y()),
-		                          static_cast<PointCoordinateType>(desc.location.z())});
-		dbh_sf->addElement(desc.dbh);
+		tree_locations->addPoint({static_cast<PointCoordinateType>(desc.location.position.x()),
+		                          static_cast<PointCoordinateType>(desc.location.position.y()),
+		                          static_cast<PointCoordinateType>(desc.location.position.z())});
+		dbh_sf->addElement(desc.dims.dbh);
 		auto* label = new cc2DLabel;
 		label->addPickedPoint(tree_locations, tree_id);
-		if (desc.dbh < std::numeric_limits<float>::epsilon())
+		if (desc.dims.dbh < std::numeric_limits<float>::epsilon())
 		{
 			label->setName(QString("Tree %1 | Not Reliable").arg(tree_id + 1));
 		}
 		else
 		{
-			label->setName(QString("Tree %1 | %2").arg(tree_id + 1).arg(desc.dbh));
+			label->setName(QString("Tree %1 | %2").arg(tree_id + 1).arg(desc.dims.dbh));
 		}
 		label->displayPointLegend(true);
 		label->toggleVisibility();
@@ -333,14 +333,14 @@ void cc3DFinDrawer::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>&
 	// add labels with z0 values
 	for (const auto& desc : tree_descriptors)
 	{
-		tree_heights->addPoint({static_cast<PointCoordinateType>(desc.highest_point.x()),
-		                        static_cast<PointCoordinateType>(desc.highest_point.y()),
-		                        static_cast<PointCoordinateType>(desc.highest_point.z())});
-		z0_sf->addElement(desc.highest_z0);
-		deviated_sf->addElement(static_cast<double>(desc.valid));
+		tree_heights->addPoint({static_cast<PointCoordinateType>(desc.dims.highest_point.x()),
+		                        static_cast<PointCoordinateType>(desc.dims.highest_point.y()),
+		                        static_cast<PointCoordinateType>(desc.dims.highest_point.z())});
+		z0_sf->addElement(desc.dims.highest_z0);
+		deviated_sf->addElement(static_cast<double>(desc.axis.valid));
 		auto* label = new cc2DLabel(QString("point %1").arg(tree_id + 1));
 		label->addPickedPoint(tree_heights, tree_id);
-		label->setName(QString::number(desc.highest_z0));
+		label->setName(QString::number(desc.dims.highest_z0));
 		label->displayPointLegend(true);
 		label->toggleVisibility();
 		label->setDisplayedIn2D(false);

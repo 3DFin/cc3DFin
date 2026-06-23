@@ -116,11 +116,11 @@ namespace lib3dfin
 			{
 				TreeDescriptor tree_descriptor(stem_id);
 				// get min diff in scalar type unused in 3DFin
-				tree_descriptor.centroid_coordinates = coord_accumulator / stem_num_points;
-				tree_descriptor.height_difference    = tree_descriptor.centroid_coordinates.z() - (z0_accumulator / stem_num_points);
+				tree_descriptor.location.centroid_coordinates = coord_accumulator / stem_num_points;
+				tree_descriptor.dims.height_difference        = tree_descriptor.location.centroid_coordinates.z() - (z0_accumulator / stem_num_points);
 
 				// compute the (3, 3) covariance matrix
-				const PointCloud3     centered_cloud = stem_cloud.rowwise() - tree_descriptor.centroid_coordinates.transpose();
+				const PointCloud3     centered_cloud = stem_cloud.rowwise() - tree_descriptor.location.centroid_coordinates.transpose();
 				const Eigen::Matrix3d covariance     = (centered_cloud.transpose() * centered_cloud) / double(stem_num_points);
 
 				// Eigen decomposition of the covariance
@@ -131,7 +131,7 @@ namespace lib3dfin
 
 				constexpr double verticality_threshold = 88.0;
 				// safe guard
-				if (tree_descriptor.axis_vertical_deviation > verticality_threshold)
+				if (tree_descriptor.axis.vertical_deviation_deg > verticality_threshold)
 				{
 					spdlog::warn("[Individualize] Invalid axis (near horizontal), tree skipped");
 					continue;
