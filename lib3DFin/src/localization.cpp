@@ -59,35 +59,6 @@ namespace lib3dfin
 		total_sections_  = upper_d_section_ - lower_d_section_ + 1;
 	}
 
-	bool LocalizationExtractor::checkRadiiConsistency(const CircleSections& circles, size_t lower, size_t upper, double factor)
-	{
-		assert(upper - lower == 3);
-		double rmax = circles[lower].circle.radius;
-		double rmin = circles[lower].circle.radius;
-
-		for (size_t j = lower + 1; j < upper; j++)
-		{
-			double cur_radius = circles[j].circle.radius;
-			if (cur_radius > rmax)
-				rmax = cur_radius;
-			if (cur_radius < rmin)
-				rmin = cur_radius;
-		}
-
-		double min_max = rmax / rmin;
-		return min_max <= factor;
-	}
-
-	bool LocalizationExtractor::checkTwoRadiiConsistency(const CircleSections& circles, size_t lower, size_t upper, double factor)
-	{
-		const double radius1 = circles[lower].circle.radius;
-		const double radius2 = circles[upper].circle.radius;
-		const double rmin    = std::min(radius1, radius2);
-		const double rmax    = std::max(radius1, radius2);
-
-		return rmax / rmin <= factor;
-	}
-
 	TreeLocatorResult LocalizationExtractor::axisLocation(const TreeDescriptor& tree_descriptor) const
 	{
 		TreeLocatorResult result;
@@ -117,7 +88,7 @@ namespace lib3dfin
 	{
 		std::array<int, 5> indices{-1, -1, -1, -1, -1};
 
-		// -1 for OOB or status < sucess (i.e 0 diameter)
+		// assign -1 for OoB or status < sucess (i.e 0 diameter)
 		for (int offset = -2; offset <= 2; ++offset)
 		{
 			int id = dbh_id + offset;

@@ -19,15 +19,11 @@ namespace lib3dfin
 		void extract(TreeData& trees);
 
 	  private: // static methods
-		static bool                      checkRadiiConsistency(const CircleSections& circles, size_t lower, size_t upper, double factor);
-		static bool                      checkRadiiConsistencyMADS(const CircleSections& circles, size_t lower, size_t upper);
-		static bool                      checkTwoRadiiConsistency(const CircleSections& circles, size_t lower, size_t upper, double factor);
 		static std::pair<size_t, size_t> countValidSections(const CircleSections& circles, size_t lower, size_t upper);
 
 	  private: // methods
 		void              computeDBHSectionID();
 		void              computeDBHRangeIDs();
-		bool              checkRadiiConsistencyProgressive(const CircleSections& circles, size_t lower, size_t upper);
 		TreeLocatorResult axisLocation(const TreeDescriptor& tree_descriptor) const;
 		TreeLocatorResult dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles, const DBHSource& dbh_source) const;
 		TreeLocatorResult treeLocator(const TreeDescriptor& tree_descriptor);
