@@ -142,14 +142,11 @@ namespace lib3dfin
 		const auto stem_indicator = stem_peeler.peel();
 
 		const ArrayClusterIndicator sections_indicator = (stem_indicator > -1).select(tree_data_.tree_cluster_indicator, -1);
-		SectionExtractor            section_extractor(point_cloud_, sections_indicator, z0_, tree_data_, params_.stem, executor);
+		SectionExtractor            section_extractor(point_cloud_, sections_indicator, z0_, params_.stem, executor);
+		LocalizationExtractor       localization_extractor(params_.stem, executor);
 
-		// TODO: try to eliminate the side effect on tree_data
-		section_extractor.extract();
-
-		// TODO: try to eliminate the  side effect on tree_data
-		LocalizationExtractor localization_extractor(tree_data_, params_.stem, executor);
-		localization_extractor.extract();
+		section_extractor.extract(tree_data_);
+		localization_extractor.extract(tree_data_);
 
 		const auto stop_total = std::chrono::steady_clock::now();
 		spdlog::info("End of 3DFin computation. Found {0:} Trees. Total time: {1:.2f} s", tree_data_.tree_descriptors.size(), std::chrono::duration_cast<std::chrono::milliseconds>(stop_total - start_total).count() / 1000.0);

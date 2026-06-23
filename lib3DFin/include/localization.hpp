@@ -15,8 +15,8 @@ namespace lib3dfin
 	class LocalizationExtractor
 	{
 	  public: // methods
-		explicit LocalizationExtractor(TreeData& trees, const StemSectionParams& params, tf::Executor& executor);
-		void extract();
+		explicit LocalizationExtractor(const StemSectionParams& params, tf::Executor& executor);
+		void extract(TreeData& trees);
 
 	  private: // static methods
 		static bool                      checkRadiiConsistency(const CircleSections& circles, size_t lower, size_t upper, double factor);
@@ -33,7 +33,6 @@ namespace lib3dfin
 		TreeLocatorResult treeLocator(const TreeDescriptor& tree_descriptor);
 
 	  private: // members
-		TreeData&               trees_;
 		const StemSectionParams params_;
 		Eigen::Index            num_sections_{0};
 		size_t                  bh_section_id_{0};

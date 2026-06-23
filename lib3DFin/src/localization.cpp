@@ -10,15 +10,10 @@
 namespace lib3dfin
 {
 
-	LocalizationExtractor::LocalizationExtractor(TreeData& trees, const StemSectionParams& params, tf::Executor& executor)
-	    : trees_(trees)
-	    , params_(params)
+	LocalizationExtractor::LocalizationExtractor(const StemSectionParams& params, tf::Executor& executor)
+	    : params_(params)
 	    , executor_(executor)
 	{
-		assert(!trees_.tree_descriptors.empty());
-		num_sections_ = trees_.tree_descriptors[0].circle_data.size();
-		computeDBHSectionID();
-		computeDBHRangeIDs();
 	}
 
 	void LocalizationExtractor::computeDBHSectionID()
@@ -37,11 +32,16 @@ namespace lib3dfin
 		}
 	}
 
-	void LocalizationExtractor::extract()
+	void LocalizationExtractor::extract(TreeData& trees)
 	{
+		assert(!trees.tree_descriptors.empty());
+		num_sections_ = trees.tree_descriptors[0].circle_data.size();
+		computeDBHSectionID();
+		computeDBHRangeIDs();
+
 		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 		spdlog::info("[LocalizationExtractor] Computing tree DBH and localization...");
-		for (auto& tree : trees_.tree_descriptors)
+		for (auto& tree : trees.tree_descriptors)
 		{
 			// run tree localization on the fitted sections
 			const auto tree_localization = treeLocator(tree);

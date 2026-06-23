@@ -22,27 +22,25 @@
 namespace lib3dfin
 {
 
-	SectionExtractor::SectionExtractor(const PointCloud3& point_cloud, const ArrayClusterIndicator& sections_indicator, const Eigen::VectorXd& z0, TreeData& trees, const StemSectionParams& params, tf::Executor& executor)
+	SectionExtractor::SectionExtractor(const PointCloud3& point_cloud, const ArrayClusterIndicator& sections_indicator, const Eigen::VectorXd& z0, const StemSectionParams& params, tf::Executor& executor)
 	    : point_cloud_(point_cloud)
 	    , section_indicator_(sections_indicator)
 	    , num_points_(point_cloud.rows())
 	    , z0_(z0)
-	    , trees_(trees)
-	    , num_sections_(static_cast<Eigen::Index>(std::floor((params_.stem_maximum_height - params_.stem_minimum_height) / params_.stem_section_interval)))
+	    , num_sections_(static_cast<Eigen::Index>(std::floor((params.stem_maximum_height - params.stem_minimum_height) / params.stem_section_interval)))
 	    , params_(params)
 	    , executor_(executor)
 	{
 	}
 
-	void SectionExtractor::extract()
+	void SectionExtractor::extract(TreeData& trees) const
 	{
 
 		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 		spdlog::info("[SectionExtractor] Computing diameters along stems...");
 
-		std::vector<CircleSections> result;
 		// iterate over the trees
-		for (auto& tree : trees_.tree_descriptors)
+		for (auto& tree : trees.tree_descriptors)
 		{
 			const auto         tree_mask          = (section_indicator_.array() == tree.tree_id);
 			const Eigen::Index number_points_tree = tree_mask.count();
@@ -117,7 +115,7 @@ namespace lib3dfin
 		spdlog::info("[SectionExtractor] Computing diameters along stems done in {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 	}
 
-	void SectionExtractor::fitCircle(const PointCloud2& section_cloud, CircleData& circle_data)
+	void SectionExtractor::fitCircle(const PointCloud2& section_cloud, CircleData& circle_data) const
 	{
 		circle_data.circle          = LMCircleFit(section_cloud);
 		const Circle& circle_params = circle_data.circle;
@@ -153,7 +151,7 @@ namespace lib3dfin
 		circle_data.status = CircleData::Status::SUCCESS;
 	}
 
-	uint32_t SectionExtractor::innerCircle(const PointCloud2& circle_cloud, const Circle& circle_params)
+	uint32_t SectionExtractor::innerCircle(const PointCloud2& circle_cloud, const Circle& circle_params) const
 	{
 		const double sq_threshold = (circle_params.radius * params_.stem_section_diameter_proportion) * (circle_params.radius * params_.stem_section_diameter_proportion);
 		// vectorize
@@ -161,7 +159,7 @@ namespace lib3dfin
 		return num_valid_points;
 	}
 
-	uint32_t SectionExtractor::sectorOccupancy(const PointCloud2& circle_cloud, const Circle& circle_params)
+	uint32_t SectionExtractor::sectorOccupancy(const PointCloud2& circle_cloud, const Circle& circle_params) const
 	{
 		const double R_min_sq        = (circle_params.radius - params_.stem_section_circle_width) * (circle_params.radius - params_.stem_section_circle_width);
 		const double R_max_sq        = (circle_params.radius + params_.stem_section_circle_width) * (circle_params.radius + params_.stem_section_circle_width);
@@ -203,7 +201,7 @@ namespace lib3dfin
 	// tilt detection for all sections of a given stem
 	void SectionExtractor::tiltDetection(CircleSections& circles,
 	                                     const double    abs_weight_factor,
-	                                     const double    rel_weight_factor)
+	                                     const double    rel_weight_factor) const
 	{
 		std::vector<size_t> valid_ids;
 		valid_ids.reserve(circles.size());
