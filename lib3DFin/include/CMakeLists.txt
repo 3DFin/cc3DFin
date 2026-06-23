@@ -3,6 +3,7 @@ set(HEADERS
 	circle_fit.hpp
 	config.hpp
 	connected_components.hpp
+	geom.hpp
 	ground.hpp
 	individualize.hpp
 	interface.hpp

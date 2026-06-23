@@ -1,6 +1,7 @@
 # Add source files to target
 target_sources(${PROJECT_NAME}
 	PRIVATE
+		geom.cpp
 		voxel.cpp
 		connected_components.cpp
 		ground.cpp
