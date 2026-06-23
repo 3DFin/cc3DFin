@@ -39,6 +39,6 @@ class cc3DFinExpertDlg : public QDialog
         connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
 	}
 
-	//! Destrcuctor
+	//! Destructor
 	virtual ~cc3DFinExpertDlg() override = default;
 };

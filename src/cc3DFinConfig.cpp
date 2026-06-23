@@ -47,7 +47,7 @@ namespace tdf
 	     "meters",
 	     0.0},
 	    {"stripe_peeling_num_iterations",
-	     "Prunning intensity",
+	     "Pruning intensity",
 	     "Number of iterations of \"pruning\" during stem identification. \n"
 	     "Values between 1 (slight stem peeling/cleaning) "
 	     "and 5 (extreme branch peeling/cleaning).",
@@ -99,7 +99,7 @@ namespace tdf
 	    {"stem_section_thickness",
 	     "Section width",
 	     "Sections are this wide. This means that points within this distance "
-	     "(vertical) are considered during circle fitting and diameter coumputation.",
+	     "(vertical) are considered during circle fitting and diameter computation.",
 	     0.05,
 	     "meters",
 	     0.0 + std::numeric_limits<double>::epsilon()}};
@@ -132,7 +132,7 @@ namespace tdf
 	     0.0 + std::numeric_limits<double>::epsilon()},
 	    {"verticality_threshold_stripe",
 	     "Verticality threshold",
-	     "Verticality threshold durig stem identification.\n"
+	     "Verticality threshold during stem identification.\n"
 	     "Verticality is defined as (1 - sin(V)), being V the vertical angle of the "
 	     "normal vector, measured from the horizontal. "
 	     "Note that it does not grow linearly.",
@@ -175,7 +175,7 @@ namespace tdf
 	     0.0 + std::numeric_limits<double>::epsilon()},
 	    {"verticality_threshold_stem",
 	     "Verticality threshold",
-	     "Verticality threshold durig stem extraction.\n"
+	     "Verticality threshold during stem extraction.\n"
 	     "Verticality is defined as (1 - sin(V)), being V the vertical angle of the "
 	     "normal vector, measured from the horizontal.\n"
 	     "Note that it does not grow linearly.",
@@ -302,7 +302,7 @@ namespace tdf
 	     "",
 	     int(1)},
 	    {"dtm_smooth_laplacian_lambda",
-	     "DTM smoothing strenght",
+	     "DTM smoothing strength",
 	     "lambda parameter of laplacian smoothing applied to the DTM, should be approx. [0.1;0.2]",
 	     0.125,
 	     "",

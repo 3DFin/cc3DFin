@@ -8,6 +8,7 @@
 
 // StdLib
 #include <cstdint>
+#include <memory>
 
 // Taskflow
 #include <taskflow/taskflow.hpp>
@@ -92,8 +93,43 @@ namespace lib3dfin
 	  public: // static
 		static PointCloud3 extractStripe(const PointCloud3& point_cloud, const ArrayClusterIndicator& stripe_indicator);
 
+		static TreePeeler StripePeeler(
+		    const PointCloud3&         point_cloud,
+		    const Eigen::VectorXd&     z0,
+		    const StripePeelingParams& params,
+		    tf::Executor&              executor)
+		{
+			return TreePeeler(
+			    point_cloud,
+			    z0,
+			    std::make_unique<StripeFilterPredicate>(params.stripe_lower_limit, params.stripe_upper_limit),
+			    params,
+			    executor);
+		}
+
+		static TreePeeler StemPeeler(
+		    const PointCloud3&         point_cloud,
+		    const Eigen::VectorXd&     z0,
+		    const StripePeelingParams& params,
+		    tf::Executor&              executor,
+		    double                     max_distance,
+		    const Eigen::VectorXd&     axis_distance)
+		{
+			return TreePeeler(
+			    point_cloud,
+			    z0,
+			    std::make_unique<StemFilterPredicate>(params.stripe_lower_limit, params.stripe_upper_limit, max_distance, axis_distance),
+			    params,
+			    executor);
+		}
+
 	  public: // methods
-		explicit TreePeeler(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, std::unique_ptr<FilterPredicate> unitial_state, const StripePeelingParams& params, tf::Executor& executor);
+		explicit TreePeeler(
+		    const PointCloud3&               point_cloud,
+		    const Eigen::VectorXd&           z0,
+		    std::unique_ptr<FilterPredicate> initial_state,
+		    const StripePeelingParams&       params,
+		    tf::Executor&                    executor);
 		ArrayClusterIndicator peel();
 
 	  private: // methods

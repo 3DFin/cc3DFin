@@ -68,7 +68,7 @@ namespace lib3dfin
 				return Status::DTMTooSmall;
 			}
 
-			auto [warning, area_discrepancy] = HeightNormalization::checkHeightNormDiscrepancy(point_cloud_, z0_, project_meta_.area_m2, executor);
+			const auto [warning, area_discrepancy] = HeightNormalization::checkHeightNormDiscrepancy(point_cloud_, z0_, project_meta_.area_m2, executor);
 			if (warning)
 			{
 				spdlog::warn("[HeighNorm] Warning: 3DFin has detected a potential error in the terrain modelling.\n"
@@ -85,7 +85,7 @@ namespace lib3dfin
 
 			const ArrayMask pseudo_ground_mask = (z0_.array() < 0.5);
 
-			auto        pseudo_ground_point_count = pseudo_ground_mask.count();
+			const auto  pseudo_ground_point_count = pseudo_ground_mask.count();
 			PointCloud3 pseudo_ground_cloud(pseudo_ground_point_count, 3);
 
 			Eigen::Index filtered_point_id = 0;
@@ -97,15 +97,18 @@ namespace lib3dfin
 				}
 			}
 
-			auto [voxelated_ground, _] = voxelize(pseudo_ground_cloud, 1.0, 2000, executor, true);
-			project_meta_.num_points   = point_cloud_.rows();
-			project_meta_.area_m2      = voxelated_ground.rows();
+			const auto [voxelated_ground, _] = voxelize(pseudo_ground_cloud, 1.0, 2000, executor, true);
+			project_meta_.num_points         = point_cloud_.rows();
+			project_meta_.area_m2            = voxelated_ground.rows();
 
 			spdlog::info("This cloud has {0:.2f} million points, its area is {1:} m^2", project_meta_.num_points / 1'000'000.0, project_meta_.area_m2);
 		}
 
-		std::unique_ptr<FilterPredicate> stripe_predicate(new StripeFilterPredicate(params_.stripe_peeling.stripe_lower_limit, params_.stripe_peeling.stripe_upper_limit));
-		TreePeeler                       stripe_peeler(point_cloud_, z0_, std::move(stripe_predicate), params_.stripe_peeling, executor);
+		TreePeeler stripe_peeler = TreePeeler::StripePeeler(
+		    point_cloud_,
+		    z0_,
+		    params_.stripe_peeling,
+		    executor);
 
 		try
 		{
@@ -122,18 +125,26 @@ namespace lib3dfin
 		tree_data_ = tree_individualizer.individualize();
 
 		// Create stem peeling params (same as stripe peeling but with stem verticality params)
-		StripePeelingParams stem_peeling_params   = params_.stripe_peeling;
+		StripePeelingParams stem_peeling_params = params_.stripe_peeling;
+		stem_peeling_params.stripe_lower_limit  = params_.stem.stem_minimum_height;
+		stem_peeling_params.stripe_upper_limit =
+		    params_.stem.stem_maximum_height + params_.stem.stem_section_thickness,
 		stem_peeling_params.verticality_nn_scale  = params_.stem.verticality_radius_stem;
 		stem_peeling_params.verticality_threshold = params_.stem.verticality_threshold_stem;
 
-		std::unique_ptr<FilterPredicate> stem_predicate(new StemFilterPredicate(params_.stem.stem_minimum_height, params_.stem.stem_maximum_height + params_.stem.stem_section_thickness, params_.stem.stem_search_diameter / 2.0, tree_data_.axis_distance));
-		TreePeeler                       stem_peeler(point_cloud_, z0_, std::move(stem_predicate), stem_peeling_params, executor);
-		auto                             stem_indicator = stem_peeler.peel();
+		TreePeeler stem_peeler = TreePeeler::StemPeeler(
+		    point_cloud_,
+		    z0_,
+		    stem_peeling_params,
+		    executor,
+		    params_.stem.stem_search_diameter / 2.0,
+		    tree_data_.axis_distance);
+		const auto stem_indicator = stem_peeler.peel();
 
 		const ArrayClusterIndicator sections_indicator = (stem_indicator > -1).select(tree_data_.tree_cluster_indicator, -1);
 		SectionExtractor            section_extractor(point_cloud_, sections_indicator, z0_, tree_data_, params_.stem, executor);
 
-		// TODO: try to eliminate the  side effect on tree_data
+		// TODO: try to eliminate the side effect on tree_data
 		section_extractor.extract();
 
 		// TODO: try to eliminate the  side effect on tree_data
