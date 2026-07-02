@@ -9,7 +9,6 @@ if (PLUGIN_STANDARD_3DFIN)
 
 	AddPlugin(NAME ${PROJECT_NAME})
 
-	#TODO: Added for span, see if it is fine with VS 2022
 	set_target_properties(${PROJECT_NAME}
 		PROPERTIES
 			CXX_STANDARD 20

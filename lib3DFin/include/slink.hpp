@@ -57,10 +57,7 @@ namespace lib3dfin
 		{
 			for (size_t j = i + 1; j < num_points; ++j)
 			{
-				const double deltax = xy(i, 0) - xy(j, 0);
-				const double deltay = xy(i, 1) - xy(j, 1);
-
-				if (deltax * deltax + deltay * deltay <= sq_threshold)
+				if ((xy.row(i) - xy.row(j)).squaredNorm() <= sq_threshold)
 				{
 					uf.unite(i, j);
 				}

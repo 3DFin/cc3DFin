@@ -23,7 +23,7 @@ namespace lib3dfin
 		// number of bit used to encode one dimension
 		constexpr uint64_t voxel_bits     = 21;
 		constexpr uint64_t two_voxel_bits = 42;
-		constexpr uint64_t num_cells      = 2097151; // 2^21 -1 TODO: make this an exception if we need more
+		constexpr uint64_t num_cells      = 2097151; // 2^21 -1 TODO(RJ): make this an exception if we need more
 
 		// The coordinate minima
 		const auto start_total = std::chrono::high_resolution_clock::now();

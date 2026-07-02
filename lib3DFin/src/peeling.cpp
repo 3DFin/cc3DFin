@@ -157,7 +157,6 @@ namespace lib3dfin
 		if (!num_valid_voxels)
 		{
 			throw std::runtime_error("No vertical clusters found. Try to decrease threshold or voxel size.");
-			// TODO catch this in the GUI
 		}
 
 		PointCloud3        vox_filtered_stripe(num_valid_voxels, 3);
@@ -181,7 +180,7 @@ namespace lib3dfin
 
 		spdlog::info("[Peeling] Clustering...");
 
-		// TODO : this does not handle anisotropy in the voxelization...
+		// TODO(RJ): this does not handle anisotropy in the voxelization...
 		// this is already the case in the original implementation...
 		const double eps            = params_.resolution_xy * std::sqrt(3.0) + 1e-6;
 		const auto   cluster_labels = connected_components(vox_filtered_stripe, eps, 2, executor_);
@@ -215,7 +214,6 @@ namespace lib3dfin
 		if (large_clusters.empty())
 		{
 			throw std::runtime_error("Clusters found, but all are too small to be considered stems.");
-			// TODO catch this in the GUI
 		}
 
 		// Create a new_cluster_indicator and extract it.

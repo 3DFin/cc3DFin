@@ -188,7 +188,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 
 	std::vector<double> z0Vec;
 
-	// TODO: encapsulation of the UI operations
+	// TODO(RJ): encapsulation of the UI operations
 	if (dialog.compute_height_normalization_chk->checkState() == Qt::CheckState::Unchecked)
 	{
 		const auto z0Name = dialog.z0_name_cbx->currentText().toStdString();
@@ -286,6 +286,5 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 
 		tdfComputationWatcher->deleteLater(); });
 
-	// TODO: error and cancellation handling
 	tdfComputationWatcher->setFuture(TdfFutureResult);
 }

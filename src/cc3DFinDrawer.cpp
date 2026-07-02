@@ -250,7 +250,7 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 
 void cc3DFinDrawer::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
-	const double step_size = 0.1; // TODO parameters
+	const double step_size = 0.1; // TODO(RJ) parameters
 
 	auto*  axis_points  = new ccPointCloud(QString("Tree axes"));
 	int    axis_tilt_id = axis_points->addScalarField("tilting_degree");
@@ -259,7 +259,7 @@ void cc3DFinDrawer::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_d
 
 	for (const auto& desc : tree_descriptors)
 	{
-		const Eigen::Vector3d  axis_step      = step_size * desc.axis.direction; // TODO parameters
+		const Eigen::Vector3d  axis_step      = step_size * desc.axis.direction; // TODO(RJ) parameters
 		const double           tilting_degree = desc.axis.vertical_deviation_deg;
 		const Eigen::Vector3d& top_point      = desc.axis.top_point;
 		Eigen::Vector3d        curr_point     = desc.axis.bottom_point;

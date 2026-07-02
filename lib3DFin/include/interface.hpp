@@ -82,7 +82,6 @@ namespace lib3dfin
 			return dtm_;
 		}
 
-		// TODO: use the future draw interface here.
 		// TODO catch xlsx exceptions
 		void exportTabularData() const;
 

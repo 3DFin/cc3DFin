@@ -28,12 +28,12 @@ namespace lib3dfin
 		auto                          stop                = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> elapsed             = stop - start;
 
-		spdlog::info("[Individualize] Compute axes (by approximation): {} seconds", elapsed.count());
+		spdlog::info("[Individualize] Compute axes (by approximation): {0:.2f} s", elapsed.count());
 		start = std::chrono::high_resolution_clock::now();
 		compute_heights(voxelated_cloud, voxelated_axes_data);
 		stop    = std::chrono::high_resolution_clock::now();
 		elapsed = stop - start;
-		spdlog::info("[Individualize] Compute tree heights: {} seconds", elapsed.count());
+		spdlog::info("[Individualize] Compute tree heights: {0:.2f} s", elapsed.count());
 
 		TreeData axes_data;
 		axes_data.tree_descriptors = std::move(voxelated_axes_data.tree_descriptors);
@@ -50,7 +50,6 @@ namespace lib3dfin
 	TreeData TreeIndividualizer::computeAxesApproximate(
 	    const PointCloud3& voxelated_cloud)
 	{
-		// TODO chrono and progress bar...
 		// Space between samples along the axes
 		const double sample_step = params_.resolution_xy;
 		const auto   num_voxels  = voxelated_cloud.rows();
@@ -68,7 +67,7 @@ namespace lib3dfin
 		}
 
 		// Filter clusters without enough points
-		// TODO: This filter exists in the original algorithm but appears to be weak because it is
+		// TODO(RJ): This filter exists in the original algorithm but appears to be weak because it is
 		// less restrictive than the minimum voxel threshold used in the peeling process before.
 		std::vector<int32_t> valid_cluster_ids;
 		valid_cluster_ids.reserve(counts.size());

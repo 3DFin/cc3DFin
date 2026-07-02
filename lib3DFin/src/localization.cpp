@@ -48,8 +48,7 @@ namespace lib3dfin
 			tree.setLocation(tree_localization);
 		}
 		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		spdlog::info("num_pass_test_: {} / total_pass_test_: {}", num_pass_test_, total_pass_test_);
-		spdlog::info("[LocalizationExtractor] Computing tree DBH and localization in {} us", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+		spdlog::info("[LocalizationExtractor] Computing tree DBH and localization done in {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 	}
 
 	void LocalizationExtractor::computeDBHRangeIDs()

@@ -24,7 +24,7 @@
 // System
 #include <cstddef>
 
-// #define HN3DFIN_BARYCENTRIC_INTERPOLATION
+#define HN3DFIN_BARYCENTRIC_INTERPOLATION
 
 namespace lib3dfin
 {
@@ -60,12 +60,12 @@ namespace lib3dfin
 		{
 
 #ifdef HN3DFIN_BARYCENTRIC_INTERPOLATION
-			smoothDTMmedian();
-
-#else
-			// cleanDTMmad(); old behavior... can't use exported mesh
 			smoothDTMLaplacian();
 			// smoothDTMmedian();
+
+#else
+			// cleanDTMmad(); old behavior used in Python package... can't be used with exported mesh
+			smoothDTMLaplacian();
 #endif
 		}
 
@@ -88,14 +88,14 @@ namespace lib3dfin
 		std::vector<double>       dists_buffer(N_NEIGHBORS * num_workers);
 		std::vector<double>       heights_buffer(N_NEIGHBORS * num_workers);
 #ifdef HN3DFIN_BARYCENTRIC_INTERPOLATION
-		spdlog::info("[HeighNorm] Normalization using barycentric interpolation")
+		spdlog::info("[HeighNorm] Normalization using barycentric interpolation");
 #else
 		spdlog::info("[HeighNorm] Normalization using IDW interpolation");
 #endif
 
-		    taskflow.for_each_index(
-		        size_t(0), n_points, size_t(1), [&](size_t i)
-		        {
+		taskflow.for_each_index(
+		    size_t(0), n_points, size_t(1), [&](size_t i)
+		    {
 			const int    worker_id = executor_.this_worker_id();
 			const size_t offset    = worker_id * N_NEIGHBORS;
 
@@ -149,7 +149,7 @@ namespace lib3dfin
 #endif
 
 			    normalized_heights(i) = point_cloud_(i, 2) - weighted_z; },
-		        tf::StaticPartitioner()); // worker ID
+		    tf::StaticPartitioner()); // worker ID
 		executor_.run(taskflow).get();
 		spdlog::info("[HeighNorm] End CSF computation...");
 		return normalized_heights;
@@ -187,7 +187,7 @@ namespace lib3dfin
 		std::vector<Eigen::Index> valid_indices;
 
 		// hint to avoid too small allocation
-		// TODO: maybe prefer a mask (more efficient - less allocations - but uses more memory...)
+		// TODO(RJ): maybe prefer a mask (more efficient - less allocations - but uses more memory...)
 		valid_indices.reserve(large_clusters.size() * params_.denoise_minimum_points);
 		for (Eigen::Index point_id = 0; point_id < point_cloud_.rows(); ++point_id)
 		{
@@ -285,7 +285,7 @@ namespace lib3dfin
 		CSFGridMapping  result_mat(depth_map_result.data(), height_, width_);
 		for (size_t num_iter = 0; num_iter < max_num_iter; ++num_iter)
 		{
-			for (Eigen::Index y = 1; y < height_ - 1; ++y) // Keep boundary constent (Dirichlet)
+			for (Eigen::Index y = 1; y < height_ - 1; ++y) // Keep boundary constant (Dirichlet)
 			{
 				for (Eigen::Index x = 1; x < width_ - 1; ++x)
 				{
@@ -319,7 +319,6 @@ namespace lib3dfin
 		const size_t n_points = dtm_.rows();
 
 		if (n_points < N_NEIGHBORS)
-			// TODO catch this in the GUI
 			throw std::runtime_error("Input DTM too small (less than 15 points).");
 
 		if (n_points == N_NEIGHBORS)
@@ -467,7 +466,7 @@ namespace lib3dfin
 
 		double area_difference = std::abs(original_area - slice_area);
 
-		//  TODO: In very rare occasions, the slice area could be larger than the original
+		//  TODO(Diego): In very rare occasions, the slice area could be larger than the original
 		//  area. The function should account for that, and return a different kind of
 		//  warning for those situations (and its threshold could be different).
 		//  For instance, if the original area has been computed through a grid of voxels
