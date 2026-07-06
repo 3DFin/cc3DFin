@@ -29,6 +29,9 @@
 #include "ccPointCloud.h"
 #include "ccScalarField.h"
 
+// plugin
+#include "cc3DFinUiConfig.h"
+
 // lib3DFin
 #include <lib3DFin/config.hpp>
 #include <lib3DFin/interface.hpp>
@@ -398,7 +401,7 @@ void cc3DFinDrawer::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, con
 	tree_id_sf->computeMinAndMax();
 	z0_sf->computeMinAndMax();
 
-	auto color_scale = ccColorScalesManager::GetUniqueInstance()->getScale(COLOR_SCALE_UUID);
+	auto color_scale = ccColorScalesManager::GetUniqueInstance()->getScale(tdf::COLOR_SCALE_UUID);
 
 	enriched_cloud->setCurrentDisplayedScalarField(dist_axes_id);
 	enriched_cloud->getCurrentDisplayedScalarField()->setColorScale(color_scale);

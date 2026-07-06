@@ -21,13 +21,17 @@
 #include "CCGeom.h"
 
 // qCC
-#include "cc3DFinDlg.h"
-#include "cc3DFinDrawer.h"
+
 #include "ccColorScalesManager.h"
 #include "ccHObject.h"
 #include "ccHObjectCaster.h"
 #include "ccLog.h"
 #include "ccPointCloud.h"
+
+// plugin
+#include "cc3DFinDlg.h"
+#include "cc3DFinDrawer.h"
+#include "cc3DFinUiConfig.h"
 
 // lib3DFin
 #include <lib3DFin/config.hpp>
@@ -97,7 +101,7 @@ void cc3DFin::do3DFinAction()
 	// we need one point cloud
 	if (!m_app->haveOneSelection())
 	{
-		m_app->dispToConsole("Select only one cloud!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+		ccLog::Error("Select only one cloud!");
 		return;
 	}
 
@@ -108,7 +112,7 @@ void cc3DFin::do3DFinAction()
 	assert(ent);
 	if (!ent->isA(CC_TYPES::POINT_CLOUD))
 	{
-		m_app->dispToConsole("Select a cloud!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+		ccLog::Error("Select a cloud!");
 		return;
 	}
 
@@ -128,7 +132,7 @@ void cc3DFin::do3DFinAction()
 
 	cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
-	int  maxLines = 1000;
+	int  maxLines = 2000;
 	auto logger   = spdlog::qt_color_logger_mt("3DFin", tdfDlg.logTextEdit, maxLines);
 	logger->set_pattern("[%T] %^[%L]%$ %v");
 	spdlog::set_default_logger(logger);
@@ -152,7 +156,7 @@ void cc3DFin::do3DFinAction()
 
 void cc3DFin::initCustomColorScale()
 {
-	auto maybeColorScale = ccColorScalesManager::GetUniqueInstance()->getScale(COLOR_SCALE_UUID);
+	auto maybeColorScale = ccColorScalesManager::GetUniqueInstance()->getScale(tdf::COLOR_SCALE_UUID);
 
 	if (maybeColorScale != nullptr)
 	{
@@ -161,7 +165,7 @@ void cc3DFin::initCustomColorScale()
 	}
 
 	ccColorScale::Shared customColorScale = ccColorScale::Create("3DFin");
-	customColorScale->setUuid(COLOR_SCALE_UUID);
+	customColorScale->setUuid(tdf::COLOR_SCALE_UUID);
 	customColorScale->setRelative();
 
 	customColorScale->insert(ccColorScaleElement(0., {91, 155, 213}));
@@ -204,7 +208,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 			}
 			catch (const std::bad_alloc&)
 			{
-				ccLog::Error("[3DFin] Scalar field allocation failure");
+				ccLog::Error("[3DFin] Scalar field allocation failure (OoM)");
 				return;
 			}
 
@@ -223,7 +227,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 	}
 	catch (const std::bad_alloc&)
 	{
-		ccLog::Error("[3DFin] Point cloud allocation failure");
+		ccLog::Error("[3DFin] Point cloud allocation failure (OoM)");
 		return;
 	}
 

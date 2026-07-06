@@ -25,8 +25,6 @@
 class cc3DFinDlg;
 class cc3DFinDrawer;
 
-inline const QString COLOR_SCALE_UUID = "{25ec76a1-9b8d-4e4a-a129-21ae313ef8ba}";
-
 //! 3DFin qCC plugin
 class cc3DFin : public QObject
     , public ccStdPluginInterface

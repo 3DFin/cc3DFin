@@ -18,7 +18,6 @@
 // Local
 #include "cc3DFinDlg.h"
 
-#include "cc3DFinConfig.h"
 #include "cc3DFinExpertDlg.h"
 #include "ccLog.h"
 #include "ccSerializableObject.h"
@@ -42,7 +41,7 @@ namespace fs = std::filesystem;
 cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
     : QDialog(parent, Qt::Dialog)
     , m_scalarFields(sfNames)
-    , m_fields(tdf::Field::getConfigFields())
+    , m_fields(tdf::UiConfig::getAllFieldsFromLib3DFin())
     , Ui::cc3DFinDlg()
 {
 	setupUi(this);
@@ -54,7 +53,7 @@ cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
 
 	// Configure the logging tab
 	logTextEdit->setReadOnly(true);
-	connect(logTextEdit, &QTextEdit::textChanged, this, [=]()
+	connect(logTextEdit, &QTextEdit::textChanged, this, [this]()
 	        { logTextEdit->moveCursor(QTextCursor::End); logTextEdit->ensureCursorVisible(); });
 
 	populateFields();
@@ -129,8 +128,8 @@ void cc3DFinDlg::populateFields()
 			auto* rb2 = qobject_cast<QRadioButton*>(findChild<QWidget*>(fieldName + "_rb_2"));
 			if (rb1 && rb2)
 			{
-				rb1->setChecked(field.value.toBool());
-				rb2->setChecked(!field.value.toBool());
+				rb1->setChecked(field.defaultValue.toBool());
+				rb2->setChecked(!field.defaultValue.toBool());
 				rb1->setToolTip(field.description);
 				rb2->setToolTip(field.description);
 				export_txt_lbl->setText(field.label);
@@ -148,7 +147,7 @@ void cc3DFinDlg::populateFields()
 			populateToolTipAndLabel(field, widget);
 			if (auto* checkBox = qobject_cast<QCheckBox*>(widget))
 			{
-				checkBox->setChecked(field.value.toBool());
+				checkBox->setChecked(field.defaultValue.toBool());
 			}
 			else
 			{
@@ -159,7 +158,7 @@ void cc3DFinDlg::populateFields()
 		{
 			populateToolTipAndLabel(field, widget);
 
-			const auto& value    = field.value;
+			const auto& value    = field.defaultValue;
 			QLineEdit*  lineEdit = qobject_cast<QLineEdit*>(widget);
 			if (lineEdit)
 			{
@@ -357,7 +356,7 @@ void cc3DFinDlg::populateSfCombo()
 	}
 
 	z0_name_cbx->addItems(m_scalarFields);
-	const auto& sfComboField = m_fields["z0_name"];
+	const auto* sfComboField = tdf::UiConfig::findField("z0_name");
 	int         z0index      = z0_name_cbx->findText("Z0");
 	if (z0index != -1)
 	{
@@ -367,11 +366,14 @@ void cc3DFinDlg::populateSfCombo()
 	{
 		compute_height_normalization_chk->setChecked(true);
 	}
-	z0_name_lbl->setToolTip(sfComboField.description);
-	z0_name_cbx->setToolTip(sfComboField.description);
+	if (sfComboField)
+	{
+		z0_name_lbl->setToolTip(sfComboField->description);
+		z0_name_cbx->setToolTip(sfComboField->description);
+	}
 }
 
-void cc3DFinDlg::populateToolTipAndLabel(const tdf::Field& field, QWidget* widget)
+void cc3DFinDlg::populateToolTipAndLabel(const tdf::UiField& field, QWidget* widget)
 {
 	assert(widget);
 	const auto& tooltip = field.description;

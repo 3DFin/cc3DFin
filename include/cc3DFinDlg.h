@@ -18,7 +18,7 @@
 // ##########################################################################
 
 // local
-#include "cc3DFinConfig.h"
+#include "cc3DFinUiConfig.h"
 #include "ui_cc3dfindlg.h"
 
 // lib3dfin
@@ -54,10 +54,11 @@ class cc3DFinDlg : public QDialog
   protected: // Methods
 	void populateFields();
 	void populateSfCombo();
-	void populateToolTipAndLabel(const tdf::Field& field, QWidget* widget);
+	void populateToolTipAndLabel(const tdf::UiField& field, QWidget* widget);
 	void closeEvent(QCloseEvent* event) override;
 
   protected: // Slots
+      
 	void        askOutputPath();
 	void        showExpertDialog();
 	void        onTextChanged();
@@ -65,8 +66,8 @@ class cc3DFinDlg : public QDialog
 	static void showTutorial();
 
   protected: // Members
-	const QStringList&                      m_scalarFields;
-	std::unordered_map<QString, tdf::Field> m_fields;
-	QSet<QLineEdit*>                        m_InvalidEditFields;
-	bool                                    m_isComputationActive{false};
+	const QStringList&                        m_scalarFields;
+	std::unordered_map<QString, tdf::UiField> m_fields;
+	QSet<QLineEdit*>                          m_InvalidEditFields;
+	bool                                      m_isComputationActive{false};
 };

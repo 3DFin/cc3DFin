@@ -20,16 +20,21 @@
 // CloudCompare
 #include "ccPointCloud.h"
 
+// QT
+#include <QString>
+
 // lib3DFin
 #include <lib3DFin/interface.hpp>
 #include <lib3DFin/types.hpp>
 
-class ccHObject;
-
-#include "cc3DFin.h"
-
-#include <QString>
+// StdLib
 #include <memory>
+
+class ccHObject;
+namespace lib3dfin
+{
+	class TDFProcessing;
+}
 
 class cc3DFinDrawer
 {

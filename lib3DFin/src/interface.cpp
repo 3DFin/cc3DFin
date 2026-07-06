@@ -158,6 +158,6 @@ namespace lib3dfin
 #ifdef TDFIN_USES_OPENXLSX
 		export_xlsx(tree_data_, output_basepath_.string() + ".xlsx", project_meta_);
 #endif
-		// else do nothing for now...
+		// else do nothing for now but maybe implement a CSV filter
 	}
 } // namespace lib3dfin
