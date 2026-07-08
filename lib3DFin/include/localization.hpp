@@ -30,7 +30,7 @@ namespace lib3dfin
 
 	  private: // members
 		const StemSectionParams params_;
-		Eigen::Index            num_sections_{0};
+		size_t                  num_sections_{0};
 		size_t                  bh_section_id_{0};
 		size_t                  lower_d_section_{0};
 		size_t                  upper_d_section_{0};

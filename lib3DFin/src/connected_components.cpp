@@ -26,7 +26,7 @@ namespace lib3dfin
 		kd_tree_t    kd_tree(3, xyz, 10, 0);
 		const double sq_search_radius = eps * eps;
 
-		const Eigen::Index n_points = xyz.rows();
+		const size_t n_points = static_cast<size_t>(xyz.rows());
 
 		tf::Taskflow taskflow;
 
@@ -35,7 +35,7 @@ namespace lib3dfin
 		std::vector<int32_t>                   cluster_id(n_points, NO_CLUSTER_ID);
 
 		taskflow.for_each_index(
-		    Eigen::Index(0), n_points, Eigen::Index(1), [&](Eigen::Index point_id)
+		    Eigen::Index(0), static_cast<Eigen::Index>(n_points), Eigen::Index(1), [&](Eigen::Index point_id)
 		    {
             std::vector<nanoflann::ResultItem<Eigen::Index, double>> result_set;
 
@@ -58,7 +58,7 @@ namespace lib3dfin
 
 		// Link core with disjoint set
 		// not parallel since it does not seems to lower the runtime
-		DisjointSets uf(n_points);
+		DisjointSets uf(static_cast<uint32_t>(n_points));
 		for (size_t curr_id = 0; curr_id < n_points; ++curr_id)
 		{
 			if (!is_core[curr_id])
@@ -74,7 +74,7 @@ namespace lib3dfin
 
 		// label core points in //
 		auto label_core = taskflow.for_each_index(
-		    size_t(0), size_t(n_points), size_t(1), [&](size_t curr_id)
+		    size_t(0), n_points, size_t(1), [&](size_t curr_id)
 		    {
             if (!is_core[curr_id]) return;
             cluster_id[curr_id] = uf.find(curr_id); });
@@ -82,7 +82,7 @@ namespace lib3dfin
 		// label other nodes as borders in //
 		// borders are attributed to their nearest cluster
 		auto label_border = taskflow.for_each_index(
-		    size_t(0), size_t(n_points), size_t(1), [&](size_t curr_id)
+		    size_t(0), n_points, size_t(1), [&](size_t curr_id)
 		    {
             if (!is_core[curr_id])
             {
@@ -91,7 +91,7 @@ namespace lib3dfin
                 {
                     if (is_core[nn_id])
                     {
-                        double dist = (xyz.row(nn_id) - xyz.row(curr_id)).squaredNorm();
+                        double dist = (xyz.row(nn_id) - xyz.row(static_cast<Eigen::Index>(curr_id))).squaredNorm();
                         if (dist < min_dist)
                         {
                             min_dist            = dist;

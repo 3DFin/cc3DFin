@@ -34,7 +34,7 @@ namespace lib3dfin
 		const Eigen::VectorXd&       z0_;
 		const Eigen::Index           num_points_{0};
 		const StemSectionParams      params_;
-		const Eigen::Index           num_sections_{0};
+		const size_t                 num_sections_{0};
 		size_t                       dbh_section_id_{0};
 		tf::Executor&                executor_;
 	};

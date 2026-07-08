@@ -27,7 +27,7 @@ namespace lib3dfin
 	    , section_indicator_(sections_indicator)
 	    , num_points_(point_cloud.rows())
 	    , z0_(z0)
-	    , num_sections_(static_cast<Eigen::Index>(std::floor((params.stem_maximum_height - params.stem_minimum_height) / params.stem_section_interval)))
+	    , num_sections_(static_cast<size_t>(std::floor((params.stem_maximum_height - params.stem_minimum_height) / params.stem_section_interval)))
 	    , params_(params)
 	    , executor_(executor)
 	{
@@ -59,7 +59,7 @@ namespace lib3dfin
 			CircleSections circles(num_sections_);
 
 			tf::Taskflow taskflow;
-			auto         compute_section = taskflow.for_each_index(Eigen::Index(0), num_sections_, Eigen::Index(1), [&](Eigen::Index section_id)
+			auto         compute_section = taskflow.for_each_index(Eigen::Index(0), static_cast<Eigen::Index>(num_sections_), Eigen::Index(1), [&](Eigen::Index section_id)
 			                                                       {
 				const auto section_start = params_.stem_minimum_height + section_id * params_.stem_section_interval;
 				const auto section_end   = section_start + params_.stem_section_thickness;

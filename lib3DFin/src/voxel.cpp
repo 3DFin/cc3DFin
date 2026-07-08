@@ -25,7 +25,6 @@ namespace lib3dfin
 		constexpr uint64_t two_voxel_bits = 42;
 		constexpr uint64_t num_cells      = 2097151; // 2^21 -1 TODO(RJ): make this an exception if we need more
 
-		// The coordinate minima
 		const auto start_total = std::chrono::high_resolution_clock::now();
 
 		if (verbose)
@@ -35,7 +34,8 @@ namespace lib3dfin
 
 		const Eigen::Index num_points = xyz.rows();
 
-		// Lambda to compute min in one dimension
+		// The coordinate minima
+		// Lambda to compute minima in one dimension
 		const auto min_one_dim = [&xyz, num_points](const Eigen::Index id_dim, double& min_dim)
 		{
 			min_dim = xyz(0, id_dim);

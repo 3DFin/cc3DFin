@@ -70,7 +70,7 @@ namespace lib3dfin
 		}
 
 		constexpr size_t N_NEIGHBORS = 3;
-		const size_t     n_points    = point_cloud_.rows();
+		const size_t     n_points    = static_cast<size_t>(point_cloud_.rows());
 
 		if (n_points < N_NEIGHBORS)
 			throw std::runtime_error("Input DTM too small (less than 3 points).");
@@ -186,7 +186,7 @@ namespace lib3dfin
 
 		std::vector<Eigen::Index> valid_indices;
 
-		// hint to avoid too small allocation
+		// Hint to avoid too small allocations
 		// TODO(RJ): maybe prefer a mask (more efficient - less allocations - but uses more memory...)
 		valid_indices.reserve(large_clusters.size() * params_.denoise_minimum_points);
 		for (Eigen::Index point_id = 0; point_id < point_cloud_.rows(); ++point_id)
@@ -316,7 +316,7 @@ namespace lib3dfin
 		constexpr size_t HALF_N_NEIGHBORS = N_NEIGHBORS / 2;
 		constexpr double MAD_FACTOR       = 2.0;
 
-		const size_t n_points = dtm_.rows();
+		const size_t n_points = static_cast<size_t>(dtm_.rows());
 
 		if (n_points < N_NEIGHBORS)
 			throw std::runtime_error("Input DTM too small (less than 15 points).");

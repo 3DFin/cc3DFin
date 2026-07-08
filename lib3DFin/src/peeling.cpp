@@ -72,7 +72,7 @@ namespace lib3dfin
               const size_t num_nn = std::min(num_found, max_knn);
 
               PointCloud3 cloud(num_nn, 3);
-              for (size_t id = 0; id < num_nn; ++id) { cloud.row(id) = stripe.row(result_set[id].first); }
+              for (size_t id = 0; id < num_nn; ++id) { cloud.row(static_cast<Eigen::Index>(id)) = stripe.row(result_set[id].first); }
               verticality(point_id) = adhoc_verticality(cloud); });
 		executor.run(taskflow).get();
 

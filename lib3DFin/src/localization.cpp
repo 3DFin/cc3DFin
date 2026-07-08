@@ -20,14 +20,14 @@ namespace lib3dfin
 	{
 		double min_diff = std::abs(params_.stem_minimum_height - params_.DBH);
 
-		for (size_t section_id = 1; section_id < static_cast<size_t>(num_sections_); ++section_id)
+		for (size_t section_id = 1; section_id < num_sections_; ++section_id)
 		{
 			const double section_height = params_.stem_minimum_height + section_id * params_.stem_section_interval;
 			const double diff           = std::abs(section_height - params_.DBH);
 			if (diff < min_diff)
 			{
 				min_diff       = diff;
-				bh_section_id_ = static_cast<size_t>(section_id);
+				bh_section_id_ = section_id;
 			}
 		}
 	}
@@ -53,9 +53,9 @@ namespace lib3dfin
 
 	void LocalizationExtractor::computeDBHRangeIDs()
 	{
-		lower_d_section_ = std::max(bh_section_id_ - size_t(2), size_t(0));
-		upper_d_section_ = std::min(static_cast<size_t>(num_sections_ - 1), bh_section_id_ + size_t(2));
-		total_sections_  = upper_d_section_ - lower_d_section_ + 1;
+		lower_d_section_ = static_cast<size_t>(std::max(int(bh_section_id_ - 2), int(0)));
+		upper_d_section_ = static_cast<size_t>(std::min(num_sections_ - 1, bh_section_id_ + 2));
+		total_sections_  = static_cast<size_t>(upper_d_section_ - lower_d_section_ + 1);
 	}
 
 	TreeLocatorResult LocalizationExtractor::axisLocation(const TreeDescriptor& tree_descriptor) const
