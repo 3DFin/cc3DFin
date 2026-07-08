@@ -38,11 +38,12 @@ namespace lib3dfin
 	class TDFProcessing
 	{
 	  public:
-		explicit TDFProcessing(std::span<const double> cloud_data, std::span<const double> z0_sf);
 		explicit TDFProcessing(std::span<const double> cloud_data);
 
 		~TDFProcessing()                               = default;
 		TDFProcessing& operator=(const TDFProcessing&) = delete;
+
+		void setExternalZ0(std::span<const double> z0_data);
 
 		void setParams(const Params& params)
 		{

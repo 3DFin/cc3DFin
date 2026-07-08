@@ -190,6 +190,29 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 	    m_currentCloud->getGlobalShift().z,
 	    m_currentCloud->getGlobalScale()};
 
+	std::vector<double> tdfPointCloud;
+	try
+	{
+		tdfPointCloud.reserve(m_currentCloud->size() * 3);
+	}
+	catch (const std::bad_alloc&)
+	{
+		ccLog::Error("[3DFin] Point cloud allocation failure (OoM)");
+		return;
+	}
+
+	for (unsigned point_id = 0; point_id < m_currentCloud->size(); ++point_id)
+	{
+		const CCVector3* point = m_currentCloud->getPoint(point_id);
+		tdfPointCloud.push_back(static_cast<double>(point->x));
+		tdfPointCloud.push_back(static_cast<double>(point->y));
+		tdfPointCloud.push_back(static_cast<double>(point->z));
+	}
+
+	std::unique_ptr<lib3dfin::TDFProcessing> tdfProcessing;
+
+	tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(std::span<const double>(tdfPointCloud));
+
 	std::vector<double> z0Vec;
 
 	auto maybeZ0 = dialog.getZ0FieldName();
@@ -218,36 +241,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 				z0Vec.push_back(z0Sf->getValue(svId));
 			}
 		}
-	}
-
-	std::vector<double> tdfPointCloud;
-	try
-	{
-		tdfPointCloud.reserve(m_currentCloud->size() * 3);
-	}
-	catch (const std::bad_alloc&)
-	{
-		ccLog::Error("[3DFin] Point cloud allocation failure (OoM)");
-		return;
-	}
-
-	for (unsigned point_id = 0; point_id < m_currentCloud->size(); ++point_id)
-	{
-		const CCVector3* point = m_currentCloud->getPoint(point_id);
-		tdfPointCloud.push_back(static_cast<double>(point->x));
-		tdfPointCloud.push_back(static_cast<double>(point->y));
-		tdfPointCloud.push_back(static_cast<double>(point->z));
-	}
-
-	std::unique_ptr<lib3dfin::TDFProcessing> tdfProcessing;
-
-	if (z0Vec.empty())
-	{
-		tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(std::span<const double>(tdfPointCloud));
-	}
-	else
-	{
-		tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(std::span<const double>(tdfPointCloud), std::span<const double>(z0Vec));
+		tdfProcessing->setExternalZ0(std::span<const double>(z0Vec));
 	}
 
 	tdfProcessing->setParams(params);

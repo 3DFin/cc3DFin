@@ -93,13 +93,12 @@ namespace lib3dfin
 
 	Circle algebraicTaubinCircleFit(const PointCloud2& xy)
 	{
-		const size_t num_points = xy.rows();
 
 		// Linear system
-		Eigen::MatrixXd ZXY(num_points, 3);
+		Eigen::MatrixXd ZXY(xy.rows(), 3);
 
 		// Compute centroid
-		const Eigen::Vector2<double> centroid = xy.colwise().mean();
+		const Eigen::Vector2d centroid = xy.colwise().mean();
 
 		// Center the data
 		ZXY.col(1) = xy.col(0).array() - centroid(0);
@@ -109,16 +108,19 @@ namespace lib3dfin
 		const Eigen::VectorXd Z      = ZXY.col(1).array().square() + ZXY.col(2).array().square();
 		const double          Z_mean = Z.mean();
 
+		// pre compute inv_norm
+		const double inv_norm = 1.0 / (2.0 * std::sqrt(Z_mean));
+
 		// Normalize Z
-		ZXY.col(0) = (Z.array() - Z_mean) / (2.0 * sqrt(Z_mean));
+		ZXY.col(0) = (Z.array() - Z_mean) * inv_norm;
 
 		// Solve by SVD
 		Eigen::JacobiSVD<Eigen::MatrixXd> svd(ZXY, Eigen::ComputeFullV);
 		const Eigen::MatrixXd             V = svd.matrixV();
 
 		Eigen::Vector3d A = V.col(2);
-		A(0) /= (2.0 * sqrt(Z_mean));
-		Eigen::Vector4<double> A_mat;
+		A(0) *= inv_norm;
+		Eigen::Vector4d A_mat;
 		A_mat << A, -Z_mean * A(0);
 
 		// Compute parameter
