@@ -28,10 +28,21 @@ namespace lib3dfin
 		point_cloud_ = Eigen::Map<const PointCloud3>(cloud_data.data(), cloud_data.size() / 3, 3);
 	}
 
+	TDFProcessing::TDFProcessing(PointCloud3 point_cloud)
+	    : point_cloud_(std::move(point_cloud))
+	{
+	}
+
 	void TDFProcessing::setExternalZ0(std::span<const double> z0_data)
 	{
 		assert(z0_data.size() == point_cloud_.rows());
 		z0_ = Eigen::Map<const Eigen::VectorXd>(z0_data.data(), z0_data.size());
+	}
+
+	void TDFProcessing::setExternalZ0(Eigen::VectorXd z0)
+	{
+		assert(z0.size() == point_cloud_.rows());
+		z0_ = std::move(z0);
 	}
 
 	Status TDFProcessing::process()

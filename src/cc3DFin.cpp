@@ -51,7 +51,7 @@
 #include <QtGui>
 
 // StdLib
-#include <span>
+#include <optional>
 
 cc3DFin::cc3DFin(QObject* parent)
     : QObject(parent)
@@ -176,6 +176,59 @@ void cc3DFin::initCustomColorScale()
 	ccColorScalesManager::GetUniqueInstance()->addScale(customColorScale);
 }
 
+std::optional<Eigen::VectorXd> cc3DFin::loadZ0Values(const std::string& sfName) const
+{
+	assert(m_currentCloud);
+	const auto sfId = m_currentCloud->getScalarFieldIndexByName(sfName);
+	if (sfId == -1)
+	{
+		return std::nullopt;
+	}
+
+	const auto* sf = m_currentCloud->getScalarField(sfId);
+	try
+	{
+
+		Eigen::VectorXd values(sf->size());
+
+		// copy the scalar_field to double
+		for (size_t svId = 0; svId < sf->size(); ++svId)
+		{
+			values(svId) = sf->getValue(svId);
+		}
+		return values;
+	}
+	catch (const std::bad_alloc&)
+	{
+		ccLog::Error("[3DFin] z0 allocation failure (OoM)");
+		return std::nullopt;
+	}
+}
+
+std::optional<lib3dfin::PointCloud3> cc3DFin::loadPointCloudCoordinates() const
+{
+	assert(m_currentCloud);
+	try
+	{
+		lib3dfin::PointCloud3 coordinates(m_currentCloud->size(), 3);
+
+		for (unsigned point_id = 0; point_id < m_currentCloud->size(); ++point_id)
+		{
+			const CCVector3* point   = m_currentCloud->getPoint(point_id);
+			coordinates(point_id, 0) = static_cast<double>(point->x);
+			coordinates(point_id, 1) = static_cast<double>(point->y);
+			coordinates(point_id, 2) = static_cast<double>(point->z);
+		}
+
+		return coordinates;
+	}
+	catch (const std::bad_alloc&)
+	{
+		ccLog::Error("[3DFin] Point cloud allocation failure (OoM)");
+		return std::nullopt;
+	}
+}
+
 void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 {
 	assert(m_currentCloud);
@@ -190,58 +243,26 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 	    m_currentCloud->getGlobalShift().z,
 	    m_currentCloud->getGlobalScale()};
 
-	std::vector<double> tdfPointCloud;
-	try
-	{
-		tdfPointCloud.reserve(m_currentCloud->size() * 3);
-	}
-	catch (const std::bad_alloc&)
-	{
-		ccLog::Error("[3DFin] Point cloud allocation failure (OoM)");
-		return;
-	}
+	const auto tdfPointCloud = loadPointCloudCoordinates();
 
-	for (unsigned point_id = 0; point_id < m_currentCloud->size(); ++point_id)
+	if (!tdfPointCloud.has_value())
 	{
-		const CCVector3* point = m_currentCloud->getPoint(point_id);
-		tdfPointCloud.push_back(static_cast<double>(point->x));
-		tdfPointCloud.push_back(static_cast<double>(point->y));
-		tdfPointCloud.push_back(static_cast<double>(point->z));
+		return;
 	}
 
 	std::unique_ptr<lib3dfin::TDFProcessing> tdfProcessing;
 
-	tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(std::span<const double>(tdfPointCloud));
-
-	std::vector<double> z0Vec;
+	tdfProcessing = std::make_unique<lib3dfin::TDFProcessing>(std::move(*tdfPointCloud));
 
 	auto maybeZ0 = dialog.getZ0FieldName();
 	if (maybeZ0.has_value())
 	{
-		const auto z0Name = maybeZ0.value();
-		const auto z0Id   = m_currentCloud->getScalarFieldIndexByName(z0Name);
-		if (z0Id != -1)
+		const auto z0Vec = loadZ0Values(maybeZ0.value());
+		if (!z0Vec.has_value())
 		{
-			const auto* z0Sf = m_currentCloud->getScalarField(z0Id);
-
-			// try to allocate the sf array
-			try
-			{
-				z0Vec.reserve(z0Sf->size());
-			}
-			catch (const std::bad_alloc&)
-			{
-				ccLog::Error("[3DFin] Scalar field allocation failure (OoM)");
-				return;
-			}
-
-			// copy the scalar_field to double
-			for (size_t svId = 0; svId < z0Sf->size(); ++svId)
-			{
-				z0Vec.push_back(z0Sf->getValue(svId));
-			}
+			return;
 		}
-		tdfProcessing->setExternalZ0(std::span<const double>(z0Vec));
+		tdfProcessing->setExternalZ0(std::move(*z0Vec));
 	}
 
 	tdfProcessing->setParams(params);
@@ -255,11 +276,11 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 	    });
 
 	// Create watcher to notify when its done
-	// will be cleaned by using QFutureWatcher::deleteLater()
+	// Will be cleaned by using QFutureWatcher::deleteLater()
 	auto* tdfComputationWatcher = new QFutureWatcher<lib3dfin::Status>(this);
 
-	// we move z0vec and tdfPointCloud for memory clean up at the end of the computation.
-	connect(tdfComputationWatcher, &QFutureWatcher<lib3dfin::Status>::finished, this, [tdfComputationWatcher, this, &dialog, tdfProcessing = std::move(tdfProcessing), z0Vec = std::move(z0Vec), tdfCloud = std::move(tdfPointCloud)]()
+	// We move z0vec and tdfPointCloud for memory clean up at the end of the computation
+	connect(tdfComputationWatcher, &QFutureWatcher<lib3dfin::Status>::finished, this, [tdfComputationWatcher, this, &dialog, tdfProcessing = std::move(tdfProcessing)]()
 	        {
 
 

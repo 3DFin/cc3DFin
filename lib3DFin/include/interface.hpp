@@ -43,7 +43,10 @@ namespace lib3dfin
 		~TDFProcessing()                               = default;
 		TDFProcessing& operator=(const TDFProcessing&) = delete;
 
+		explicit TDFProcessing(PointCloud3 point_cloud);
+
 		void setExternalZ0(std::span<const double> z0_data);
+		void setExternalZ0(Eigen::VectorXd z0);
 
 		void setParams(const Params& params)
 		{

@@ -12,6 +12,8 @@
 namespace lib3dfin
 {
 
+	//! Huber loss weighing function
+	//! see https://en.wikipedia.org/wiki/Huber_loss
 	struct HuberLoss
 	{
 		static double weight(double residual, double threshold)
@@ -27,9 +29,10 @@ namespace lib3dfin
 		double             huber_threshold;
 
 		HuberEigenCircleFitFunctor(const PointCloud2& xy, double threshold = 0.1)
-		    : n_values(xy.rows())
-		    , data(xy)
+		    : data(xy)
 		    , huber_threshold(threshold)
+		    , n_values(static_cast<int>(xy.rows()))
+
 		{
 		}
 
@@ -80,7 +83,6 @@ namespace lib3dfin
 			return 0;
 		}
 
-		int n_values = 0;
 		int inputs() const
 		{
 			return 3;
@@ -89,8 +91,12 @@ namespace lib3dfin
 		{
 			return n_values;
 		}
+
+		int n_values = 0;
 	};
 
+	//! Taubin algorithm adapted from Nicolai Chernov's Matlab implementation
+	//! see https://people.cas.uab.edu/~mosya/ (Ok in August 2025, Down in July 2026)
 	Circle algebraicTaubinCircleFit(const PointCloud2& xy)
 	{
 
@@ -178,9 +184,9 @@ namespace lib3dfin
 		int status = lm.minimize(x0); // Status code is not a Eigen::Status
 
 		Circle result;
-		result.center(0) = x0(0);
-		result.center(1) = x0(1);
-		result.radius    = x0(2);
+		result.center.x() = x0(0);
+		result.center.y() = x0(1);
+		result.radius     = x0(2);
 		return result;
 	}
 

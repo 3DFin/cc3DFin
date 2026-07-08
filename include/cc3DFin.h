@@ -21,6 +21,7 @@
 
 #include <lib3DFin/config.hpp>
 #include <lib3DFin/types.hpp>
+#include <optional>
 
 class cc3DFinDlg;
 class cc3DFinDrawer;
@@ -45,9 +46,11 @@ class cc3DFin : public QObject
 	QList<QAction*> getActions() override;
 
   private:
-	void initCustomColorScale();
-	void do3DFinAction();
-	void compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog);
+	void                                 initCustomColorScale();
+	void                                 do3DFinAction();
+	void                                 compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog);
+	std::optional<Eigen::VectorXd>       loadZ0Values(const std::string& sfName) const;
+	std::optional<lib3dfin::PointCloud3> loadPointCloudCoordinates() const;
 
   private:
 	//! Default action
