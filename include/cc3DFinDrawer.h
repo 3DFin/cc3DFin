@@ -24,6 +24,7 @@
 #include <QString>
 
 // lib3DFin
+#include <lib3DFin/drawer.hpp>
 #include <lib3DFin/interface.hpp>
 #include <lib3DFin/types.hpp>
 
@@ -36,11 +37,11 @@ namespace lib3dfin
 	class TDFProcessing;
 }
 
-class cc3DFinDrawer
+class cc3DFinDrawer : public lib3dfin::TDFDrawer
 {
   public:
-	cc3DFinDrawer(ccPointCloud* sourceCloud);
-	std::unique_ptr<ccHObject> drawAll(const lib3dfin::TDFProcessing& result);
+	cc3DFinDrawer(ccPointCloud* sourceCloud, ccHObject* group);
+	void drawAll(const lib3dfin::TDFProcessing& result) override;
 
   private:
 	void drawDTM(const lib3dfin::DTMData& dtm);
@@ -51,6 +52,6 @@ class cc3DFinDrawer
 	void exportEnrichedCloud(const lib3dfin::TreeData& tree_data, const Eigen::VectorXd& z0);
 	void exportStripe(const lib3dfin::ArrayClusterIndicator& stem_indicator);
 
-	ccPointCloud*              m_source;
-	std::unique_ptr<ccHObject> m_group;
+	ccPointCloud* m_source;
+	ccHObject*    m_group;
 };

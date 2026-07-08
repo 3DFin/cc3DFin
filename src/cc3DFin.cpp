@@ -265,6 +265,11 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		tdfProcessing->setExternalZ0(std::move(*z0Vec));
 	}
 
+	auto tdfResultGroup = std::make_unique<ccHObject>(m_currentCloud->getName() + "_3DFIn");
+	auto tdfDrawer      = std::make_unique<cc3DFinDrawer>(m_currentCloud, tdfResultGroup.get());
+
+	tdfProcessing->setDrawer(std::move(tdfDrawer));
+
 	tdfProcessing->setParams(params);
 	tdfProcessing->setGlobalShift(tdfGlobalShift);
 	tdfProcessing->setOutputPath(baseOutputDir.value());
@@ -280,10 +285,8 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 	auto* tdfComputationWatcher = new QFutureWatcher<lib3dfin::Status>(this);
 
 	// We move z0vec and tdfPointCloud for memory clean up at the end of the computation
-	connect(tdfComputationWatcher, &QFutureWatcher<lib3dfin::Status>::finished, this, [tdfComputationWatcher, this, &dialog, tdfProcessing = std::move(tdfProcessing)]()
+	connect(tdfComputationWatcher, &QFutureWatcher<lib3dfin::Status>::finished, this, [tdfComputationWatcher, this, &dialog, tdfProcessing = std::move(tdfProcessing), resultGroup = std::move(tdfResultGroup)]() mutable
 	        {
-
-
 		if(tdfComputationWatcher->result() != lib3dfin::Status::Success)
 		{
 		    dialog.setComputationMode(false);
@@ -292,13 +295,10 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		}
 
 		tdfProcessing->exportTabularData();
+		tdfProcessing->draw();
 
-		cc3DFinDrawer drawer(m_currentCloud);
-		m_base_group = drawer.drawAll(*tdfProcessing);
-
+		m_app->addToDB(resultGroup.release());
 		dialog.setComputationMode(false);
-
-		m_app->addToDB(m_base_group.release());
 		m_app->redrawAll();
 
 		tdfComputationWatcher->deleteLater(); });

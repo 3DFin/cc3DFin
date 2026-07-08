@@ -4,6 +4,7 @@
 // Copyright 2023-2026 Carlos Cabo <carloscabo@uniovi.es>
 
 #include "config.hpp"
+#include "drawer.hpp"
 #include "types.hpp"
 
 #include <spdlog/spdlog.h>
@@ -11,6 +12,7 @@
 // StdLib
 #include <cstddef>
 #include <filesystem>
+#include <memory>
 #include <span>
 
 namespace fs = std::filesystem;
@@ -39,11 +41,10 @@ namespace lib3dfin
 	{
 	  public:
 		explicit TDFProcessing(std::span<const double> cloud_data);
+		explicit TDFProcessing(PointCloud3 point_cloud);
 
 		~TDFProcessing()                               = default;
 		TDFProcessing& operator=(const TDFProcessing&) = delete;
-
-		explicit TDFProcessing(PointCloud3 point_cloud);
 
 		void setExternalZ0(std::span<const double> z0_data);
 		void setExternalZ0(Eigen::VectorXd z0);
@@ -62,6 +63,19 @@ namespace lib3dfin
 		void setOutputPath(const fs::path output_basepath)
 		{
 			output_basepath_ = output_basepath;
+		}
+
+		void setDrawer(std::unique_ptr<TDFDrawer> drawer)
+		{
+			drawer_ = std::move(drawer);
+		}
+
+		void draw()
+		{
+			if (drawer_)
+			{
+				drawer_->drawAll(*this);
+			}
 		}
 
 		Status process();
@@ -90,14 +104,15 @@ namespace lib3dfin
 		void exportTabularData() const;
 
 	  private:
-		fs::path        output_basepath_{fs::current_path() / "3DFin"};
-		Params          params_;
-		ProjectMeta     project_meta_;
-		PointCloud3     point_cloud_;
-		Eigen::VectorXd z0_;
-		Stripe          stripe_;
-		DTMData         dtm_;
-		TreeData        tree_data_;
+		fs::path                   output_basepath_{fs::current_path() / "3DFin"};
+		Params                     params_;
+		ProjectMeta                project_meta_;
+		PointCloud3                point_cloud_;
+		Eigen::VectorXd            z0_;
+		Stripe                     stripe_;
+		DTMData                    dtm_;
+		TreeData                   tree_data_;
+		std::unique_ptr<TDFDrawer> drawer_;
 	};
 
 } // namespace lib3dfin

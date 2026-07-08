@@ -24,7 +24,6 @@
 #include <optional>
 
 class cc3DFinDlg;
-class cc3DFinDrawer;
 
 //! 3DFin qCC plugin
 class cc3DFin : public QObject
@@ -54,7 +53,6 @@ class cc3DFin : public QObject
 
   private:
 	//! Default action
-	QAction*                   m_action;
-	std::unique_ptr<ccHObject> m_base_group{nullptr};
-	ccPointCloud*              m_currentCloud{nullptr};
+	QAction*      m_action;
+	ccPointCloud* m_currentCloud{nullptr};
 };

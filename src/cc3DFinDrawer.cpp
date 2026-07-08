@@ -43,16 +43,16 @@
 // ccCoreLib
 #include <ScalarField.h>
 
-cc3DFinDrawer::cc3DFinDrawer(ccPointCloud* sourceCloud)
+cc3DFinDrawer::cc3DFinDrawer(ccPointCloud* sourceCloud, ccHObject* group)
     : m_source(sourceCloud)
+    , m_group(group)
 {
 }
 
-std::unique_ptr<ccHObject> cc3DFinDrawer::drawAll(const lib3dfin::TDFProcessing& result)
+void cc3DFinDrawer::drawAll(const lib3dfin::TDFProcessing& result)
 {
 	assert(m_source);
-
-	m_group = std::make_unique<ccHObject>(m_source->getName() + "_3DFIn");
+	assert(m_group);
 
 	const auto& stemIndicator = result.getStemIndicator();
 	const auto& z0Out         = result.getZ0();
@@ -71,8 +71,6 @@ std::unique_ptr<ccHObject> cc3DFinDrawer::drawAll(const lib3dfin::TDFProcessing&
 	drawAxis(treeData.tree_descriptors);
 	exportEnrichedCloud(treeData, z0Out);
 	exportStripe(stemIndicator);
-
-	return std::move(m_group);
 }
 
 void cc3DFinDrawer::drawDTM(const lib3dfin::DTMData& dtm)
