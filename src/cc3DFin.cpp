@@ -192,10 +192,10 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 
 	std::vector<double> z0Vec;
 
-	// TODO(RJ): encapsulation of the UI operations
-	if (dialog.compute_height_normalization_chk->checkState() == Qt::CheckState::Unchecked)
+	auto maybeZ0 = dialog.getZ0FieldName();
+	if (maybeZ0.has_value())
 	{
-		const auto z0Name = dialog.z0_name_cbx->currentText().toStdString();
+		const auto z0Name = maybeZ0.value();
 		const auto z0Id   = m_currentCloud->getScalarFieldIndexByName(z0Name);
 		if (z0Id != -1)
 		{
@@ -277,8 +277,6 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 		}
 
 		tdfProcessing->exportTabularData();
-
-		 std::make_unique<ccHObject>();
 
 		cc3DFinDrawer drawer(m_currentCloud);
 		m_base_group = drawer.drawAll(*tdfProcessing);

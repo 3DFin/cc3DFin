@@ -229,6 +229,13 @@ std::optional<fs::path> cc3DFinDlg::checkBaseOutputValidity(const QString& baseN
 		return std::nullopt;
 }
 
+std::optional<std::string> cc3DFinDlg::getZ0FieldName() const
+{
+	if (compute_height_normalization_chk->isChecked())
+		return std::nullopt;
+	return z0_name_cbx->currentText().toStdString();
+}
+
 lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 {
 	// Collect params from the GUI
