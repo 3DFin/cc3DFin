@@ -17,7 +17,7 @@ It contains several improvements over the Python version:
 Notable regressions w.r.t [3DFin](https://github.com/3DFin/3DFin) Python version (TODOs)
 
 - No CLI / Standalone. In the long run `lib3DFin` is meant to be pulled off this monolithic repo to live its own life outside `CloudCompare` ;).
-- No configuration file management. A port of 3DFin ini config file in toml/yaml is planned
+- No configuration file management. A port of 3DFin ini config file in toml/yaml is planned.
 - Minimal / Incomplete / non-existent code documentation. Global code architecture will evolve quickly.
 
 # Structure, code organization and dependencies
@@ -26,11 +26,11 @@ Most computation logic lives inside the `lib3DFin` directory. Computation algori
 Dependencies are all included as subrepository inside `lib3DFin/third_party`, most of them are header only:
 
 - [Eigen](https://gitlab.com/libeigen/eigen), The base linear algebra library.
-- [CSF-3DFin](https://github.com/3DFin/CSF-3DFin) our fork of [CSF](https://github.com/jianboqi/CSF) that include backport from CC's CSF improvements
+- [CSF-3DFin](https://github.com/3DFin/CSF-3DFin) our fork of [CSF](https://github.com/jianboqi/CSF) that include backport from CC's CSF improvements.
 - [nanoflann](https://github.com/jlblancoc/nanoflann) for fast KNN queries.
 - [taskflow](https://github.com/taskflow/taskflow) a cross platform and convenient parallel computation library.
 - [dset](https://github.com/wjakob/dset), header only union-find algorithm.
-- [OpenXLSX](https://codeberg.org/lars_uffmann/OpenXLSX), Optional, needed for xlsx report generations. Overkill for our needs. planned to be replaced by a simpler template + zip alternative.
+- [OpenXLSX](https://codeberg.org/lars_uffmann/OpenXLSX), Optional, needed for xlsx report generations. Overkill for our needs. Planned to be replaced by a simpler template + zip alternative.
 
 # Compilation
 
@@ -47,7 +47,7 @@ git clone --recurse-submodules https://github.com/3DFin/cc3DFin
 
 Recommended `cmake` flags:
 
-besides the obvious `PLUGIN_STANDARD_3DFIN=ON` ton enable cc3DFin plugin, some care should be taken to properly compile `XLSX` support.
+besides the obvious `PLUGIN_STANDARD_3DFIN=ON` to enable cc3DFin plugin, some care should be taken to properly compile `XLSX` support.
 
 ```
   3DFin_EXPORT_XLSX=1
@@ -57,7 +57,7 @@ besides the obvious `PLUGIN_STANDARD_3DFIN=ON` ton enable cc3DFin plugin, some c
 
 # Usage
 
-For usage please refers to the [documentation](https://github.com/3DFin/3DFin/blob/main/src/three_d_fin/documentation/documentation.pdf) and the [Tutorial](https://github.com/3DFin/3DFin_Tutorial) that should help you to get started. he GUI screenshots may differ slightly from the current state of `cc3DFin` but it still cover 99% of its features.
+For usage please refers to the [documentation](https://github.com/3DFin/3DFin/blob/main/src/three_d_fin/documentation/documentation.pdf) and the [Tutorial](https://github.com/3DFin/3DFin_Tutorial) that should help you to get started. The GUI screenshots may differ slightly from the current state of `cc3DFin` but it still cover 99% of its features.
 
 # Citing 3DFin
 
