@@ -49,7 +49,7 @@ if (PLUGIN_STANDARD_3DFIN)
 
 	set_target_properties(${PROJECT_NAME} PROPERTIES AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/ui)
 
-	add_subdirectory(lib3DFin)
+	add_subdirectory(lib3DFin EXCLUDE_FROM_ALL)
 
 	target_link_libraries(${PROJECT_NAME} 3DFin)
 endif()
