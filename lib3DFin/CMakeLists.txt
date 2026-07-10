@@ -4,12 +4,15 @@ project(3DFin VERSION 0.1
 	DESCRIPTION "3DFin lib"
 	LANGUAGES CXX)
 
+option(3DFin_BUILD_SHARED "Build 3DFin as a shared library" OFF)
+option(3DFin_EXPORT_XLSX "Build 3DFin with XLSX support" OFF)
+option(3DFin_INSTALL_LIBS "Install 3DFin and third party libs (should be off in plugin context)" ON)
+
 if (${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
 	set(3DFin_MAIN_PROJECT ON)
 endif()
 
-option(3DFin_BUILD_SHARED "Build 3DFin as a shared library" OFF)
-option(3DFin_EXPORT_XLSX "Build 3DFin with XLSX support" OFF)
+
 
 # Define the library target
 if (3DFin_BUILD_SHARED)
@@ -43,7 +46,7 @@ if(Eigen3_FOUND)
 	message(STATUS "[lib3DFin] Using external Eigen")
 	message(STATUS "eigen found in ${EIGEN3_INCLUDE_DIRS}")
 else()
-	add_subdirectory(third_party/eigen EXCLUDE_FROM_ALL)
+	add_subdirectory(third_party/eigen)
 	set(3DFin_USE_INTERNAL_EIGEN ON)
 	message(STATUS "[lib3DFin] Using internal Eigen")
 endif()
@@ -53,7 +56,7 @@ if(NOT TARGET nanoflann::nanoflann)
 	find_package(nanoflann QUIET)
 	if(NOT nanoflann_FOUND)
 		message(STATUS "Using internal nanoflann")
-		add_subdirectory(third_party/nanoflann EXCLUDE_FROM_ALL)
+		add_subdirectory(third_party/nanoflann)
 	endif()
 endif()
 
@@ -62,16 +65,16 @@ endif()
 set(TF_BUILD_TESTS OFF CACHE BOOL "Taskflow: Enables builds of tests" FORCE)
 set(TF_BUILD_EXAMPLES OFF CACHE BOOL "Taskflow: Enables builds of examples" FORCE)
 
-# TODO improve drawing interface in order to make Eigen3 private
-add_subdirectory(third_party/taskflow EXCLUDE_FROM_ALL)
+add_subdirectory(third_party/taskflow)
 
-# csf
+# CSF
 add_subdirectory(third_party/CSF-3DFin)
 
 # spdlog
 add_subdirectory(third_party/spdlog)
-#find_package(spdlog REQUIRED)
+# find_package(spdlog REQUIRED)
 
+# TODO improve drawing interface in order to make Eigen3 private
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen spdlog::spdlog PRIVATE nanoflann::nanoflann Taskflow::Taskflow CSF::CSF)
 # XLSX
 if(3DFin_EXPORT_XLSX)
@@ -95,24 +98,23 @@ set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 add_subdirectory(include)
 add_subdirectory(src)
 
-install(
-	TARGETS ${PROJECT_NAME}
-	EXPORT ${PROJECT_NAME}Targets
-	DESTINATION lib
-)
-install(
-	TARGETS spdlog
-	EXPORT ${PROJECT_NAME}Targets
-	DESTINATION lib
-)
-if(3DFin_USE_INTERNAL_EIGEN)
 	install(
-		TARGETS eigen
+		TARGETS ${PROJECT_NAME}
 		EXPORT ${PROJECT_NAME}Targets
 		DESTINATION lib
 	)
-endif()
-
+	install(
+		TARGETS spdlog
+		EXPORT ${PROJECT_NAME}Targets
+		DESTINATION lib
+	)
+	if(3DFin_USE_INTERNAL_EIGEN)
+		install(
+			TARGETS eigen
+			EXPORT ${PROJECT_NAME}Targets
+			DESTINATION lib
+		)
+	endif()
 # Create and install CMake config files
 include(CMakePackageConfigHelpers)
 

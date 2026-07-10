@@ -34,8 +34,9 @@ Dependencies are all included as subrepository inside `lib3DFin/third_party`, mo
 
 # Compilation
 
-Pull this repository in `CloudCompare/plugins/private`
+The plugin requires at least `CloudCompare` 2.14 and a `C++20` compatible compiler. 
 
+Pull this repository in `CloudCompare/plugins/private`.
 ```
 git clone --recurse-submodules https://github.com/3DFin/cc3DFin
 ```
@@ -43,6 +44,7 @@ git clone --recurse-submodules https://github.com/3DFin/cc3DFin
 `cmake` options
 
 `3DFin_EXPORT_XLSX` Enable to generate an `XLSX` report.
+
 `3DFin_BUILD_SHARED` Enable to build 3DFin as a shared library (not fully validated and recommended to keep disabled, especially in Plugin context).
 
 Recommended `cmake` flags:
@@ -52,7 +54,6 @@ besides the obvious `PLUGIN_STANDARD_3DFIN=ON` to enable cc3DFin plugin, some ca
 ```
   3DFin_EXPORT_XLSX=1
   CMAKE_POLICY_VERSION_MINIMUM=3.5 # an OpenXLSX submodule require and old version of cmake
-  FORCE_FETCH_ALL=1 # force fetch all OpenXLSX dependencies
 ```
 
 # Usage
