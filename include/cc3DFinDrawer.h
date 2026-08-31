@@ -37,6 +37,7 @@ namespace lib3dfin
 	class TDFProcessing;
 }
 
+//! Drawer implementation for cc3DFin.
 class cc3DFinDrawer : public lib3dfin::TDFDrawer
 {
   public:

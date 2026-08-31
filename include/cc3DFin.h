@@ -40,7 +40,7 @@ class cc3DFin : public QObject
 	explicit cc3DFin(QObject* parent = nullptr);
 	~cc3DFin() override = default;
 
-	// Inherited from ccStdPluginInterface
+	//= Inherited from ccStdPluginInterface
 	void            onNewSelection(const ccHObject::Container& selectedEntities) override;
 	QList<QAction*> getActions() override;
 

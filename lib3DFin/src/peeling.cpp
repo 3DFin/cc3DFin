@@ -60,7 +60,7 @@ namespace lib3dfin
                   kd_tree.index_->radiusSearchCustomCallback(stripe.row(point_id).data(), radius_result_set);
 
               // not enough point, no feature computation
-              if (num_found < 2) return;
+              if (num_found < 3) return;
 
               // partial sort for max_knn
               if (num_found > max_knn)
