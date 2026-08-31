@@ -31,6 +31,7 @@ namespace lib3dfin
 
 	using CSFGrid               = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 	using CSFGridMapping        = Eigen::Map<CSFGrid>;
+	//! in order to map / grid access only z Value in a xyz point cloud.
 	using CSFGridMappingStride3 = Eigen::Map<CSFGrid, Eigen::Unaligned, Eigen::InnerStride<3>>;
 
 	HeightNormalization::HeightNormalization(const PointCloud3&  point_cloud,
@@ -283,9 +284,12 @@ namespace lib3dfin
 		Eigen::VectorXd depth_map_result = depth_map;
 		CSFGridMapping  cur_mat(depth_map.data(), height_, width_);
 		CSFGridMapping  result_mat(depth_map_result.data(), height_, width_);
+
+		// We force to keep boundary constant
+		// This avoid shrinking of the DTM (unlikely since we only work on the z dim / in 2.5D)
 		for (size_t num_iter = 0; num_iter < max_num_iter; ++num_iter)
 		{
-			for (Eigen::Index y = 1; y < height_ - 1; ++y) // Keep boundary constant (Dirichlet)
+			for (Eigen::Index y = 1; y < height_ - 1; ++y)
 			{
 				for (Eigen::Index x = 1; x < width_ - 1; ++x)
 				{
@@ -357,7 +361,7 @@ namespace lib3dfin
 			    {
 				    heights[j] = dtm_(neighbors[j], 2);
 			    }
-				// N_Neighbors is always odd
+				// N_Neighbors is 15, so always odd...
 			    std::nth_element(heights, heights + HALF_N_NEIGHBORS, heights + N_NEIGHBORS);
 
 			    const double median_z = heights[HALF_N_NEIGHBORS];
