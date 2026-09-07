@@ -163,30 +163,30 @@ void cc3DFinDlg::populateFields()
 			if (lineEdit)
 			{
 				lineEdit->setText(value.toString());
-				if (value.type() == QVariant::Double)
+				if (value.metaType() == QMetaType(QMetaType::Double))
 				{
 					auto validator = std::make_unique<QDoubleValidator>(widget);
 					validator->setLocale(QLocale::c());
-					if (field.topValue.type() == QVariant::Double)
+					if (field.topValue.metaType() == QMetaType(QMetaType::Double))
 					{
 						validator->setTop(field.topValue.toDouble());
 					}
-					if (field.bottomValue.type() == QVariant::Double)
+					if (field.bottomValue.metaType() == QMetaType(QMetaType::Double))
 					{
 						validator->setBottom(field.bottomValue.toDouble());
 					}
 					connect(lineEdit, &QLineEdit::textChanged, this, &cc3DFinDlg::onTextChanged);
 					lineEdit->setValidator(validator.release());
 				}
-				else if (value.type() == QVariant::Int)
+				else if (value.metaType() == QMetaType(QMetaType::Int))
 				{
 					auto validator = std::make_unique<QIntValidator>(widget);
 					validator->setLocale(QLocale::c());
-					if (field.topValue.type() == QVariant::Int)
+					if (field.topValue.metaType() == QMetaType(QMetaType::Int))
 					{
 						validator->setTop(field.topValue.toInt());
 					}
-					if (field.bottomValue.type() == QVariant::Int)
+					if (field.bottomValue.metaType() == QMetaType(QMetaType::Int))
 					{
 						validator->setBottom(field.bottomValue.toInt());
 					}
