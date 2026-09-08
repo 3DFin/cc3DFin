@@ -76,27 +76,29 @@ void cc3DFinDrawer::drawAll(const lib3dfin::TDFProcessing& result)
 void cc3DFinDrawer::drawDTM(const lib3dfin::DTMData& dtm)
 {
 
-	auto& triIds   = dtm.tri_ids;
-	auto& dtmMask  = dtm.dtm_mask;
-	auto& dtmCloud = dtm.dtm;
+	const auto& triIds   = dtm.tri_ids;
+	const auto& dtmMask  = dtm.dtm_mask;
+	const auto& dtmCloud = dtm.dtm;
 
-	ccPointCloud* fullVertices     = new ccPointCloud("DTM vertices");
-	ccPointCloud* filteredVertices = new ccPointCloud("DTM vertices");
+	auto* fullVertices     = new ccPointCloud("DTM vertices");
+	auto* filteredVertices = new ccPointCloud("DTM vertices");
 
 	int   maskSfId = fullVertices->addScalarField("Invalid ground");
 	auto* maskSf   = fullVertices->getScalarField(maskSfId);
 
-	ccMesh* fullMesh = new ccMesh(fullVertices);
+	auto* fullMesh = new ccMesh(fullVertices);
 	fullMesh->setName("DTM mesh");
 	fullMesh->addChild(fullVertices);
-
-	ccMesh* filteredMesh = new ccMesh(filteredVertices);
-	filteredMesh->setName("DTM mesh (filtered)");
-	filteredMesh->addChild(filteredVertices);
-
 	fullMesh->copyGlobalShiftAndScale(*m_source);
 	fullVertices->copyGlobalShiftAndScale(*m_source);
 	fullVertices->setEnabled(false);
+
+	auto* filteredMesh = new ccMesh(filteredVertices);
+	filteredMesh->setName("DTM mesh (filtered)");
+	filteredMesh->addChild(filteredVertices);
+	filteredMesh->copyGlobalShiftAndScale(*m_source);
+	filteredVertices->copyGlobalShiftAndScale(*m_source);
+
 
 	if (!fullVertices->reserve(dtmCloud.size()) || !filteredVertices->reserve(dtmCloud.size())
 	    || !fullMesh->reserve(triIds.size() / 3) || !filteredMesh->reserve(triIds.size() / 3))
@@ -114,8 +116,9 @@ void cc3DFinDrawer::drawDTM(const lib3dfin::DTMData& dtm)
 	size_t valid_point_id = 0;
 	for (size_t point_id = 0; point_id < dtmCloud.rows(); point_id++)
 	{
-		const auto& point = dtmCloud.row(point_id);
-		CCVector3   ccPoint(point.x(), point.y(), point.z());
+		const auto& point = dtmCloud.row(static_cast<Eigen::Index>(point_id));
+		const CCVector3 ccPoint = CCVector3d(point.x(), point.y(), point.z()).toFloat();
+
 		fullVertices->addPoint(ccPoint);
 		maskSf->addElement(static_cast<double>(!dtmMask[point_id]));
 
@@ -199,7 +202,7 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 				                            f_height});
 
 				// Set scalar field values
-				tree_id_sf->addElement(tree_id);
+				tree_id_sf->addElement(static_cast<double>(tree_id));
 				radius_sf->addElement(circle.radius);
 				height_sf->addElement(height);
 				status_sf->addElement(static_cast<double>(circle_data.status));
@@ -212,14 +215,14 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 				for (uint32_t i = 0; i < num_circle_points; ++i)
 				{
 					const double angle = 2.0 * M_PI * i / num_circle_points;
-					const double x     = circle.center.x() + circle.radius * cos(angle);
-					const double y     = circle.center.y() + circle.radius * sin(angle);
+					const double x     = circle.center.x() + (circle.radius * cos(angle));
+					const double y     = circle.center.y() + (circle.radius * sin(angle));
 
 					circle_points_pc->addPoint({static_cast<PointCoordinateType>(x),
 					                            static_cast<PointCoordinateType>(y),
 					                            f_height});
 
-					tree_id_sf->addElement(tree_id);
+					tree_id_sf->addElement(static_cast<double>(tree_id));
 					radius_sf->addElement(circle.radius);
 					height_sf->addElement(height);
 					status_sf->addElement(static_cast<double>(circle_data.status));
@@ -286,7 +289,7 @@ void cc3DFinDrawer::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>
 	auto* tree_locations = new ccPointCloud("Tree Locations");
 	tree_locations->copyGlobalShiftAndScale(*m_source);
 
-	tree_locations->setPointSize(8);
+	tree_locations->setPointSize(TreePointSize);
 	int    id_dbh  = tree_locations->addScalarField("dbh");
 	auto*  dbh_sf  = tree_locations->getScalarField(id_dbh);
 	size_t tree_id = 0;
@@ -314,7 +317,7 @@ void cc3DFinDrawer::drawTreeLocators(const std::vector<lib3dfin::TreeDescriptor>
 		++tree_id;
 	}
 	dbh_sf->computeMinAndMax();
-	tree_locations->setColor(255, 0, 255);
+	tree_locations->setColor(TreePointColor);
 	tree_locations->toggleColors();
 	m_group->addChild(tree_locations);
 }
@@ -323,13 +326,13 @@ void cc3DFinDrawer::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>&
 {
 	auto* tree_heights = new ccPointCloud("Highest points");
 	tree_heights->copyGlobalShiftAndScale(*m_source);
-	tree_heights->setPointSize(8);
+	tree_heights->setPointSize(TreePointSize);
 	int    id_z0       = tree_heights->addScalarField("z0");
 	auto*  z0_sf       = tree_heights->getScalarField(id_z0);
 	int    id_deviated = tree_heights->addScalarField("deviated");
 	auto*  deviated_sf = tree_heights->getScalarField(id_deviated);
 	size_t tree_id     = 0;
-	tree_heights->setPointSize(8);
+	tree_heights->setPointSize(TreePointSize);
 
 	// add labels with z0 values
 	for (const auto& desc : tree_descriptors)
@@ -350,7 +353,7 @@ void cc3DFinDrawer::drawTreeHeights(const std::vector<lib3dfin::TreeDescriptor>&
 	}
 	z0_sf->computeMinAndMax();
 	deviated_sf->computeMinAndMax();
-	tree_heights->setColor(255, 0, 255);
+	tree_heights->setColor(TreePointColor);
 	tree_heights->toggleColors();
 	m_group->addChild(tree_heights);
 }
@@ -436,12 +439,12 @@ void cc3DFinDrawer::exportStripe(const lib3dfin::ArrayClusterIndicator& stem_ind
 		return;
 	}
 
-	for (size_t i = 0; i < stem_indicator.size(); i++)
+	for (Eigen::Index point_id = 0; point_id < stem_indicator.size(); point_id++)
 	{
-		auto stem_id = stem_indicator(i);
+		auto stem_id = stem_indicator(point_id);
 		if (stem_id >= 0)
 		{
-			stripe_cloud->addPoint(*m_source->getPoint(i));
+			stripe_cloud->addPoint(*m_source->getPoint(point_id));
 			tree_id_sf->addElement(stem_id);
 		}
 	}

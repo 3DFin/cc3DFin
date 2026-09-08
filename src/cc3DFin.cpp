@@ -125,15 +125,17 @@ void cc3DFin::do3DFinAction()
 	{
 		const CCCoreLib::ScalarField* scalarField = m_currentCloud->getScalarField(i);
 		if (scalarField != nullptr)
+		{
 			scalarFieldNames.push_back(QString::fromStdString(scalarField->getName()));
+		}
 	}
 
 	m_currentCloud->setEnabled(false);
 
 	cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
-	int  maxLines = 2000;
-	auto logger   = spdlog::qt_color_logger_mt("3DFin", tdfDlg.logTextEdit, maxLines);
+	constexpr int spdlogMaxLines = 2000;
+	auto          logger   = spdlog::qt_color_logger_mt("3DFin", tdfDlg.logTextEdit, spdlogMaxLines);
 	logger->set_pattern("[%T] %^[%L]%$ %v");
 	spdlog::set_default_logger(logger);
 
@@ -141,7 +143,9 @@ void cc3DFin::do3DFinAction()
 	connect(tdfDlg.compute_btn, &QPushButton::clicked, [this, &tdfDlg]
 	        {
 				if(!tdfDlg.checkFieldsValidity())
-				    return;
+				{
+					return;
+				}
 				const auto params    = tdfDlg.get3DFinParameters();
 				tdfDlg.setComputationMode(true);
 		        compute3DFin(params, tdfDlg); });
@@ -167,11 +171,12 @@ void cc3DFin::initCustomColorScale()
 	ccColorScale::Shared customColorScale = ccColorScale::Create("3DFin");
 	customColorScale->setUuid(tdf::COLOR_SCALE_UUID);
 	customColorScale->setRelative();
-
+	// NOLINTBEGIN
 	customColorScale->insert(ccColorScaleElement(0., {91, 155, 213}));
 	customColorScale->insert(ccColorScaleElement(1, {237, 125, 49}));
 	customColorScale->insert(ccColorScaleElement(0.28571428571, {112, 173, 71}));
 	customColorScale->insert(ccColorScaleElement(0.642857142857, {255, 192, 0}));
+	// NOLINTEND
 
 	ccColorScalesManager::GetUniqueInstance()->addScale(customColorScale);
 }
@@ -192,7 +197,7 @@ std::optional<Eigen::VectorXd> cc3DFin::loadZ0Values(const std::string& sfName) 
 		Eigen::VectorXd values(sf->size());
 
 		// copy the scalar_field to double
-		for (size_t svId = 0; svId < sf->size(); ++svId)
+		for (unsigned svId = 0; svId < sf->size(); ++svId)
 		{
 			values(svId) = sf->getValue(svId);
 		}
@@ -238,12 +243,12 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 
 	// Convert Cloud GS into lib3DFin "exchange" format
 	lib3dfin::GlobalShift tdfGlobalShift{
-	    m_currentCloud->getGlobalShift().x,
-	    m_currentCloud->getGlobalShift().y,
-	    m_currentCloud->getGlobalShift().z,
-	    m_currentCloud->getGlobalScale()};
+		.x_shift = m_currentCloud->getGlobalShift().x,
+	    .y_shift = m_currentCloud->getGlobalShift().y,
+	    .z_shift = m_currentCloud->getGlobalShift().z,
+	    .scale = m_currentCloud->getGlobalScale()};
 
-	const auto tdfPointCloud = loadPointCloudCoordinates();
+	auto tdfPointCloud = loadPointCloudCoordinates();
 
 	if (!tdfPointCloud.has_value())
 	{
@@ -257,7 +262,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 	auto maybeZ0 = dialog.getZ0FieldName();
 	if (maybeZ0.has_value())
 	{
-		const auto z0Vec = loadZ0Values(maybeZ0.value());
+		auto z0Vec = loadZ0Values(maybeZ0.value());
 		if (!z0Vec.has_value())
 		{
 			return;

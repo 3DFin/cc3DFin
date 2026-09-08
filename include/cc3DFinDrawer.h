@@ -28,9 +28,6 @@
 #include <lib3DFin/interface.hpp>
 #include <lib3DFin/types.hpp>
 
-// StdLib
-#include <memory>
-
 class ccHObject;
 namespace lib3dfin
 {
@@ -55,4 +52,7 @@ class cc3DFinDrawer : public lib3dfin::TDFDrawer
 
 	ccPointCloud* m_source;
 	ccHObject*    m_group;
+
+	static constexpr unsigned TreePointSize = 8;
+	static constexpr ccColor::Rgb TreePointColor{255, 0, 255};
 };

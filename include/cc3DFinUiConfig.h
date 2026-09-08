@@ -68,25 +68,10 @@ namespace tdf
 
 	  public:
 		//! Get all ui fields with default values populated from lib3DFin Params struct
-		static const std::unordered_map<QString, UiField> getAllFieldsFromLib3DFin();
+		static std::unordered_map<QString, UiField> getAllFieldsFromLib3DFin();
 
 		//! Get field configurations for a specific group
-		static const std::vector<UiField> getFieldsByGroup(const QString& group);
-
-		//! Get all field groups
-		static const std::vector<FieldGroup>& getAllGroups();
-
-		//! Get basic fields
-		static const std::vector<UiField> getBasicFields();
-
-		//! Get advanced fields
-		static const std::vector<UiField> getAdvancedFields();
-
-		//! Get expert fields
-		static const std::vector<UiField> getExpertFields();
-
-		//! Get misc. fields
-		static const std::vector<UiField> getMiscFields();
+		static std::vector<UiField> getFieldsByGroup(const QString& group);
 
 		//! Find a field by name
 		static const UiField* findField(const QString& name);

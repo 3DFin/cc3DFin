@@ -45,14 +45,13 @@ class cc3DFin : public QObject
 	QList<QAction*> getActions() override;
 
   private:
-	void                                 initCustomColorScale();
+	static void initCustomColorScale();
+
 	void                                 do3DFinAction();
 	void                                 compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog);
-	std::optional<Eigen::VectorXd>       loadZ0Values(const std::string& sfName) const;
-	std::optional<lib3dfin::PointCloud3> loadPointCloudCoordinates() const;
+	[[nodiscard]] std::optional<Eigen::VectorXd>       loadZ0Values(const std::string& sfName) const;
+	[[nodiscard]] std::optional<lib3dfin::PointCloud3> loadPointCloudCoordinates() const;
 
-  private:
-	//! Default action
 	QAction*      m_action;
 	ccPointCloud* m_currentCloud{nullptr};
 };

@@ -121,7 +121,7 @@ namespace tdf
 	    {"axis_downstep", "Axis downstep from stripe center", "From the stripe centroid, how much (downwards direction) will the drawn axes extend.\nBasically, this parameter controls from where will the axes be drawn.", "meters", 0.5, 0.0 + std::numeric_limits<double>::epsilon(), QVariant(), true, "expert"},
 	    {"axis_upstep", "Axis upstep from stripe center", "From the stripe centroid, how much (upwards direction) will the drawn axes extend.\nBasically, this parameter controls how long will the drawn axes be.", "meters", 10.0, 0.0 + std::numeric_limits<double>::epsilon(), QVariant(), true, "expert"},
 	    {"denoise_resolution", "(x, y, z) voxel resolution", "(x, y, z) voxel resolution during denoising.\nNote that the whole point cloud is voxelated.", "meters", 0.15, 0.0 + std::numeric_limits<double>::epsilon(), QVariant(), true, "expert"},
-	    {"denoise_minimum_points", "Minimum number of points", "Clusters with size smaller than this value will be regarded as noise and thus eliminated.", "", 2, int(1), QVariant(), true, "expert"},
+	    {"denoise_minimum_points", "Minimum number of points", "Clusters with size smaller than this value will be regarded as noise and thus eliminated.", "", 2, 1, QVariant(), true, "expert"},
 	    {"dtm_smooth_laplacian_lambda", "DTM smoothing strength", "lambda parameter of laplacian smoothing applied to the DTM, should be approx. [0.1;0.2]", "", 0.125, 0.0 + std::numeric_limits<double>::epsilon(), 1.0, true, "expert"}};
 
 	// Miscellaneous fields
@@ -157,7 +157,9 @@ namespace tdf
 			auto                                 addFields = [&map](const std::vector<UiField>& fields)
 			{
 				for (const auto& field : fields)
+				{
 					map[field.name] = field;
+				}
 			};
 			addFields(BASIC_FIELDS);
 			addFields(ADVANCED_FIELDS);
@@ -168,40 +170,25 @@ namespace tdf
 		return ALL_FIELDS;
 	}
 
-	const std::vector<UiField> UiConfig::getFieldsByGroup(const QString& group)
+	std::vector<UiField> UiConfig::getFieldsByGroup(const QString& group)
 	{
 		if (group == "basic")
+		{
 			return BASIC_FIELDS;
-		else if (group == "advanced")
+		}
+		if (group == "advanced")
+		{
 			return ADVANCED_FIELDS;
-		else if (group == "expert")
+		}
+		if (group == "expert")
+		{
 			return EXPERT_FIELDS;
-		else if (group == "misc")
+		}
+		if (group == "misc")
+		{
 			return MISC_FIELDS;
-		else
-			return {};
-	}
-
-	const std::vector<FieldGroup>& UiConfig::getAllGroups()
-	{
-		return FIELD_GROUPS;
-	}
-
-	const std::vector<UiField> UiConfig::getBasicFields()
-	{
-		return BASIC_FIELDS;
-	}
-	const std::vector<UiField> UiConfig::getAdvancedFields()
-	{
-		return ADVANCED_FIELDS;
-	}
-	const std::vector<UiField> UiConfig::getExpertFields()
-	{
-		return EXPERT_FIELDS;
-	}
-	const std::vector<UiField> UiConfig::getMiscFields()
-	{
-		return MISC_FIELDS;
+		}
+		return {};
 	}
 
 	const UiField* UiConfig::findField(const QString& name)
@@ -216,6 +203,7 @@ namespace tdf
 		return findField(name) != nullptr;
 	}
 
+	 // NOLINTBEGIN
 	void UiConfig::populateFieldFromLib3DFin(UiField& field, const lib3dfin::Params& libParams)
 	{
 		// Map UI field names to Lib3DFin parameter values
@@ -366,8 +354,8 @@ namespace tdf
 		// Note: export_txt doesn't have a direct mapping in Lib3DFin Params
 		// as it's a UI-specific setting for output format
 	}
-
-	const std::unordered_map<QString, UiField> UiConfig::getAllFieldsFromLib3DFin()
+ 	// NOLINTEND
+	std::unordered_map<QString, UiField> UiConfig::getAllFieldsFromLib3DFin()
 	{
 		const lib3dfin::Params               libParams{};
 		std::unordered_map<QString, UiField> fields;

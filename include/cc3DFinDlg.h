@@ -52,20 +52,21 @@ class cc3DFinDlg : public QDialog
 	std::optional<fs::path>    checkBaseOutputValidity(const QString& baseName);
 	std::optional<std::string> getZ0FieldName() const;
 
-  protected: //! Methods
+  protected:
+  	//! Methods
 	void populateFields();
 	void populateSfCombo();
 	void populateToolTipAndLabel(const tdf::UiField& field, QWidget* widget);
 	void closeEvent(QCloseEvent* event) override;
 
-  protected: //! Slots
+  	//! Slots
 	void        askOutputPath();
 	void        showExpertDialog();
 	void        onTextChanged();
 	static void showDocumentation();
 	static void showTutorial();
 
-  protected: //! Members
+	//! Members
 	const QStringList&                        m_scalarFields;
 	std::unordered_map<QString, tdf::UiField> m_fields;
 	QSet<QLineEdit*>                          m_InvalidEditFields;

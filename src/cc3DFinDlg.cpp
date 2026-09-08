@@ -96,8 +96,10 @@ void cc3DFinDlg::closeEvent(QCloseEvent* event)
 void cc3DFinDlg::onTextChanged()
 {
 	auto* lineEdit = qobject_cast<QLineEdit*>(sender());
-	if (!lineEdit)
+	if (lineEdit == nullptr)
+	{
 		return;
+	}
 
 	if (lineEdit->hasAcceptableInput())
 	{
@@ -120,9 +122,9 @@ void cc3DFinDlg::populateFields()
 
 	for (const auto [fieldName, field] : m_fields)
 	{
-		QWidget* widget = nullptr;
+		auto* widget = findChild<QWidget*>(fieldName + "_rb_1");
 		// handle "corner cases" first
-		if ((widget = findChild<QWidget*>(fieldName + "_rb_1")))
+		if (widget != nullptr)
 		{
 			auto* rb1 = qobject_cast<QRadioButton*>(widget);
 			auto* rb2 = qobject_cast<QRadioButton*>(findChild<QWidget*>(fieldName + "_rb_2"));
@@ -142,10 +144,12 @@ void cc3DFinDlg::populateFields()
 				ccLog::PrintDebug("[3DFin] fail to configure export field");
 			}
 		}
-		else if ((widget = findChild<QWidget*>(fieldName + "_chk")) != nullptr)
+		else if (findChild<QWidget*>(fieldName + "_chk") != nullptr)
 		{
+			widget = findChild<QWidget*>(fieldName + "_chk");
 			populateToolTipAndLabel(field, widget);
-			if (auto* checkBox = qobject_cast<QCheckBox*>(widget))
+			auto* checkBox = qobject_cast<QCheckBox*>(widget);
+			if (checkBox != nullptr)
 			{
 				checkBox->setChecked(field.defaultValue.toBool());
 			}
@@ -154,13 +158,14 @@ void cc3DFinDlg::populateFields()
 				ccLog::PrintDebug("[3DFin] fail to configure checkbox field :" + fieldName);
 			}
 		}
-		else if ((widget = findChild<QWidget*>(fieldName + "_in")))
+		else if (findChild<QWidget*>(fieldName + "_in") != nullptr)
 		{
+			widget = findChild<QWidget*>(fieldName + "_in");
 			populateToolTipAndLabel(field, widget);
 
 			const auto& value    = field.defaultValue;
-			QLineEdit*  lineEdit = qobject_cast<QLineEdit*>(widget);
-			if (lineEdit)
+			auto*  lineEdit = qobject_cast<QLineEdit*>(widget);
+			if (lineEdit != nullptr)
 			{
 				lineEdit->setText(value.toString());
 				if (value.metaType() == QMetaType(QMetaType::Double))
@@ -219,20 +224,25 @@ std::optional<fs::path> cc3DFinDlg::checkBaseOutputValidity(const QString& baseN
 	fs::path outPath = fs::path(output_dir_in->text().toStdString()) / fs::path(baseName.toStdString()).stem();
 
 	if (!fs::exists(fs::path(outPath.string() + ".xlsx")))
+	{
 		return outPath;
+	}
 
 	auto userchoice = QMessageBox::question(this, "", "Results of previous computations exists in " + output_dir_in->text() + " do you want to ovewrite?");
 
 	if (userchoice == QMessageBox::Yes)
+	{
 		return outPath;
-	else
-		return std::nullopt;
+	}
+	return std::nullopt;
 }
 
 std::optional<std::string> cc3DFinDlg::getZ0FieldName() const
 {
 	if (compute_height_normalization_chk->isChecked())
+	{
 		return std::nullopt;
+	}
 	return z0_name_cbx->currentText().toStdString();
 }
 
@@ -373,7 +383,7 @@ void cc3DFinDlg::populateSfCombo()
 	{
 		compute_height_normalization_chk->setChecked(true);
 	}
-	if (sfComboField)
+	if (sfComboField != nullptr)
 	{
 		z0_name_lbl->setToolTip(sfComboField->description);
 		z0_name_cbx->setToolTip(sfComboField->description);
@@ -388,7 +398,9 @@ void cc3DFinDlg::populateToolTipAndLabel(const tdf::UiField& field, QWidget* wid
 	{
 		auto* label = findChild<QLabel*>(field.name + "_lbl");
 		if (label != nullptr)
+		{
 			label->setToolTip(tooltip);
+		}
 	}
 
 	const auto& hint      = field.hint;
