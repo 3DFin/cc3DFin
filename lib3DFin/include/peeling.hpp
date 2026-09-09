@@ -123,7 +123,7 @@ namespace lib3dfin
 			    executor);
 		}
 
-	  public: // methods
+		// methods
 		explicit TreePeeler(
 		    const PointCloud3&               point_cloud,
 		    const Eigen::VectorXd&           z0,
@@ -132,10 +132,11 @@ namespace lib3dfin
 		    tf::Executor&                    executor);
 		ArrayClusterIndicator peel();
 
-	  private: // methods
+	  private:
+		// methods
 		ArrayClusterIndicator verticalityClustering(const ArrayClusterIndicator& stripe_indicator);
 
-	  private: // members
+		// members
 		const PointCloud3&               point_cloud_;
 		const Eigen::VectorXd&           z0_;
 		const Eigen::Index               num_points_;

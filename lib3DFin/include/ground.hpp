@@ -21,9 +21,10 @@ namespace lib3dfin
 
 		static std::pair<bool, double> checkHeightNormDiscrepancy(const PointCloud3& point_cloud, const Eigen::VectorXd& z0, double original_area, tf::Executor& executor, double res_xy = 1.0, double z_min = -0.1, double z_max = 0.15, double threshold = 0.1);
 
-		const DTMData exportDTM() const;
+		[[nodiscard]] DTMData exportDTM() const;
 
-	  private: // methods
+	  private:
+		// methods
 		PointCloud3 denoiseCloud();
 		void        generateDTM(const PointCloud3& dtm_point_cloud);
 		void        cleanDTMmad();
@@ -31,13 +32,13 @@ namespace lib3dfin
 		void        smoothDTMLaplacian();
 		void        normalizeGrid();
 
-	  private: // members
+		// members
 		const PointCloud3& point_cloud_;
 		const GroundParams params_;
 		PointCloud3        dtm_;
 		std::vector<bool>  mask_;
-		size_t             width_{0};
-		size_t             height_{0};
+		Eigen::Index       width_{0};
+		Eigen::Index       height_{0};
 		tf::Executor&      executor_;
 	};
 

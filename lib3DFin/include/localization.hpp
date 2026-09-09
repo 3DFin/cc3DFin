@@ -7,6 +7,9 @@
 #include "config.hpp"
 #include "types.hpp"
 
+// std
+#include <array>
+
 // taskflow
 #include <taskflow/taskflow.hpp>
 
@@ -18,17 +21,22 @@ namespace lib3dfin
 		explicit LocalizationExtractor(const StemSectionParams& params, tf::Executor& executor);
 		void extract(TreeData& trees);
 
-	  private: // static methods
-		static std::pair<size_t, size_t> countValidSections(const CircleSections& circles, size_t lower, size_t upper);
+	  private:
 
-	  private: // methods
+		//static members
+		static constexpr size_t maxNumSections = 5;
+
+		// static methods
+		static std::array<int, maxNumSections> getNeighborhood(const TreeDescriptor& tree_descriptor, size_t dbh_id);
+
+
+		// methods
 		void              computeDBHSectionID();
 		void              computeDBHRangeIDs();
-		TreeLocatorResult axisLocation(const TreeDescriptor& tree_descriptor) const;
-		TreeLocatorResult dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles, const DBHSource& dbh_source) const;
+		[[nodiscard]] TreeLocatorResult axisLocation(const TreeDescriptor& tree_descriptor) const;
+		[[nodiscard]] TreeLocatorResult dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles, const DBHSource& dbh_source) const;
 		TreeLocatorResult treeLocator(const TreeDescriptor& tree_descriptor);
 
-	  private: // members
 		const StemSectionParams params_;
 		size_t                  num_sections_{0};
 		size_t                  bh_section_id_{0};

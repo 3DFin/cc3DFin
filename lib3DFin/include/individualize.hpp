@@ -30,7 +30,8 @@ namespace lib3dfin
 
 		TreeData individualize();
 
-	  private: // methods
+	  private:
+		// methods
 		TreeData computeAxesApproximate(
 		    const PointCloud3& voxelated_cloud);
 
@@ -38,7 +39,7 @@ namespace lib3dfin
 		    const PointCloud3& voxelated_cloud,
 		    TreeData&          axis_data) const;
 
-	  private: // variables
+		// variables
 		const PointCloud3&           point_cloud_;
 		const Stripe&                stripe_;
 		const Eigen::VectorXd&       z0_;

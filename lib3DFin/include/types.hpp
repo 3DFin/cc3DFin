@@ -7,16 +7,14 @@
 
 #include <Eigen/Dense>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+#include <numbers>
 
 namespace lib3dfin
 {
 
-	constexpr double RAD_TO_DEG = 180.0 / M_PI;
+	constexpr double RAD_TO_DEG = 180.0 / std::numbers::pi;
 
-	constexpr double DEG_TO_RAD = M_PI / 180.0;
+	constexpr double DEG_TO_RAD = std::numbers::pi / 180.0;
 
 	using PointCloud3 = Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
@@ -58,14 +56,14 @@ namespace lib3dfin
 		double radius{0.0};
 	};
 
-	enum class DBHSource
+	enum class DBHSource : int8_t
 	{
 		NOT_COMPUTED    = -2,
 		NOT_RELIABLE    = -1,
 		BHSECTION_OQ_OK = 0,          // Overall Quality (OQ) of the BHSection is OK
-		BHSECTION_NEIGHBOUR_SUPPORT,  // OQ of the BH Section is not OK, but one of the 4 neighbouring sections has a diameter that differ by less than a threshold
-		NEIGHBOURING_CONSISTENT_PAIR, // OQ of the BH Section is not OK, threshold test fail, but two neighboring non-zero sections differ by less than 8% (use the section from that consistent pair that is closest to the BHSection / 1.3 m)
-		CLOSEST_OQ_OK_NEIGHBOUR,      // All previous check failed, we take the closest neighbour with OQ Ok
+		BHSECTION_NEIGHBOUR_SUPPORT = 1,  // OQ of the BH Section is not OK, but one of the 4 neighbouring sections has a diameter that differ by less than a threshold
+		NEIGHBOURING_CONSISTENT_PAIR = 2, // OQ of the BH Section is not OK, threshold test fail, but two neighboring non-zero sections differ by less than 8% (use the section from that consistent pair that is closest to the BHSection / 1.3 m)
+		CLOSEST_OQ_OK_NEIGHBOUR = 3,      // All previous check failed, we take the closest neighbour with OQ Ok
 	};
 
 	struct TreeLocatorResult
@@ -91,16 +89,16 @@ namespace lib3dfin
 
 	struct CircleData
 	{
-		enum class Status
+		enum class Status : int8_t
 		{
 			NOT_COMPUTED      = -2,
 			NOT_ENOUGH_POINTS = -1,
 			SUCCESS           = 0,
-			TILT_OUTLIER,
-			DIAMETER_TOO_SMALL,
-			DIAMETER_TOO_LARGE,
-			TOO_MANY_POINTS_INNER,
-			NOT_ENOUGH_SECTOR_COVERAGE,
+			TILT_OUTLIER = 1,
+			DIAMETER_TOO_SMALL = 2,
+			DIAMETER_TOO_LARGE = 3,
+			TOO_MANY_POINTS_INNER = 4,
+			NOT_ENOUGH_SECTOR_COVERAGE = 5,
 		};
 
 		Circle   circle{};
@@ -178,7 +176,7 @@ namespace lib3dfin
 		TreeAxis                axis;
 		TreeDims                dims;
 		TreeLocation            location;
-		std::vector<CircleData> circle_data{};
+		std::vector<CircleData> circle_data;
 	};
 
 	struct TreeData

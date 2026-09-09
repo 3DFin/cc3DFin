@@ -18,8 +18,8 @@ namespace lib3dfin
 			{
 				return {0., 0.};
 			}
-			const size_t max_id       = std::ceil(data_vector.size() * bounds[1]);
-			const size_t num_elements = max_id + 1;
+			const Eigen::Index max_id       = std::ceil(static_cast<double>(data_vector.size()) * bounds[1]);
+			const Eigen::Index num_elements = max_id + 1;
 
 			// Create a deep copy to sort the data
 			Eigen::VectorXd partial_data_sorted(num_elements);
@@ -28,11 +28,11 @@ namespace lib3dfin
 			std::array<double, 2> result{0., 0.};
 
 			// compute with linear interpolation (it's the default in numpy)
-			for (size_t id_bound = 0; id_bound < 2; ++id_bound)
+			for (Eigen::Index id_bound = 0; id_bound < 2; ++id_bound)
 			{
 				const double id_pos   = bounds[id_bound] * (data_vector.size() - 1);
-				const size_t id_left  = static_cast<size_t>(std::floor(id_pos));
-				const size_t id_right = static_cast<size_t>(std::ceil(id_pos));
+				const Eigen::Index id_left  = static_cast<Eigen::Index>(std::floor(id_pos));
+				const Eigen::Index id_right = static_cast<Eigen::Index>(std::ceil(id_pos));
 
 				if (id_left == id_right)
 				{
@@ -41,7 +41,7 @@ namespace lib3dfin
 				}
 
 				const double weight = id_pos - id_left;
-				result[id_bound]    = partial_data_sorted(id_left) * (1.0 - weight) + partial_data_sorted(id_right) * weight;
+				result[id_bound]    = (partial_data_sorted(id_left) * (1.0 - weight)) + (partial_data_sorted(id_right) * weight);
 			}
 			return result;
 		}
@@ -55,8 +55,8 @@ namespace lib3dfin
 
 		const double iqr = quartiles[1] - quartiles[0];
 
-		const double lower_bound = quartiles[0] - iqr * n_range;
-		const double upper_bound = quartiles[1] + iqr * n_range;
+		const double lower_bound = quartiles[0] - (iqr * n_range);
+		const double upper_bound = quartiles[1] + (iqr * n_range);
 
 		return (data_vector.array() < lower_bound || data_vector.array() > upper_bound);
 	}

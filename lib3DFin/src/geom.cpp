@@ -13,8 +13,9 @@ namespace lib3dfin
 	    const Vec3&   axis_dir,
 	    const Plane3& plane)
 	{
+		constexpr float nearParallelThreshold = 1e-5;
 		const double denom = plane.normal().dot(axis_dir);
-		if (std::abs(denom) < 1e-8)
+		if (std::abs(denom) < nearParallelThreshold)
 		{
 			return std::nullopt;
 		}
@@ -32,12 +33,16 @@ namespace lib3dfin
 		Plane3     bottom_plane(Vec3(0, 0, 1), bottom_pos);
 		const auto bottom_inter = vector_plane_intersection(axis_pos, axis_dir, bottom_plane);
 		if (bottom_inter == std::nullopt)
+		{
 			return std::nullopt;
+		}
 
 		Plane3     top_plane(Vec3(0, 0, -1), top_pos);
 		const auto top_inter = vector_plane_intersection(axis_pos, axis_dir, top_plane);
 		if (top_inter == std::nullopt)
+		{
 			return std::nullopt;
+		}
 		return std::make_pair(bottom_inter.value(), top_inter.value());
 	}
 
@@ -50,7 +55,9 @@ namespace lib3dfin
 	{
 		const auto maybe_range = axis_bb_intersection(axis_pos, axis_dir, bb_min, bb_max);
 		if (maybe_range == std::nullopt)
-			return PointCloud3(0, 3);
+		{
+			return {0, 3};
+		}
 
 		const auto& bottom_point   = maybe_range.value().first;
 		const auto& top_point      = maybe_range.value().second;

@@ -17,6 +17,9 @@
 #include <taskflow/algorithm/for_each.hpp>
 #include <taskflow/taskflow.hpp>
 
+// StdLib
+#include <numbers>
+
 namespace lib3dfin
 {
 
@@ -161,7 +164,7 @@ namespace lib3dfin
 			const PointCloud3& axis_pointcloud                            = vec_axis_point_clouds[valid_tree_number];
 			const auto         axis_num_points                            = axis_pointcloud.rows();
 			concat_axis_point_cloud.block(padding, 0, axis_num_points, 3) = axis_pointcloud;
-			axis_indicator.segment(padding, axis_num_points).setConstant(axis_id);
+			axis_indicator.segment(padding, axis_num_points).setConstant(static_cast<int32_t>(axis_id));
 			padding += axis_num_points;
 		}
 		vec_axis_point_clouds.clear();
@@ -202,7 +205,7 @@ namespace lib3dfin
 		PointCloud3        large_voxels_cloud;
 		VecIndex<uint32_t> vox_to_large_vox;
 		std::tie(large_voxels_cloud, vox_to_large_vox) = voxelize(voxelated_cloud, params_.resolution_height, params_.resolution_height, executor_, true);
-		const double eps                               = (params_.resolution_height * std::sqrt(3)) + 1e-6;
+		const double eps                               = (params_.resolution_height * std::numbers::sqrt3) + 1e-6;
 		const auto   cluster_labels                    = connected_components(large_voxels_cloud, eps, 2, executor_);
 
 		// Count clusters
@@ -229,16 +232,22 @@ namespace lib3dfin
 			double       max_z    = std::numeric_limits<double>::lowest();
 			Eigen::Index max_z_id = 0;
 			const auto   tree_id  = tree_descriptor.tree_id;
-			for (size_t voxel_id = 0; voxel_id < voxelated_cloud.rows(); ++voxel_id)
+			for (Eigen::Index voxel_id = 0; voxel_id < voxelated_cloud.rows(); ++voxel_id)
 			{
 				const auto point_tree_id = axis_data.tree_cluster_indicator[voxel_id];
 				if (point_tree_id != tree_id)
+				{
 					continue;
+				}
 				const auto large_vox_id = vox_to_large_vox(voxel_id);
-				if (!valid_clusters.count(cluster_labels[large_vox_id]))
+				if (!valid_clusters.contains(cluster_labels[large_vox_id]))
+				{
 					continue;
+				}
 				if (axis_data.axis_distance[voxel_id] > params_.height_distance_from_axis)
+				{
 					continue;
+				}
 
 				if (voxelated_cloud(voxel_id, 2) > max_z)
 				{

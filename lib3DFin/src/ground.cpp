@@ -23,6 +23,7 @@
 
 // System
 #include <cstddef>
+#include <numbers>
 
 #define HN3DFIN_BARYCENTRIC_INTERPOLATION
 
@@ -71,10 +72,12 @@ namespace lib3dfin
 		}
 
 		constexpr size_t N_NEIGHBORS = 3;
-		const size_t     n_points    = static_cast<size_t>(point_cloud_.rows());
+		const auto     n_points    = point_cloud_.rows();
 
 		if (n_points < N_NEIGHBORS)
+		{
 			throw std::runtime_error("Input DTM too small (less than 3 points).");
+		}
 
 		Eigen::VectorXd normalized_heights(n_points);
 		using kd_tree_t         = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2, 2, nanoflann::metric_L2_Simple>;
@@ -95,7 +98,7 @@ namespace lib3dfin
 #endif
 
 		taskflow.for_each_index(
-		    size_t(0), n_points, size_t(1), [&](size_t i)
+		    Eigen::Index(0), n_points, Eigen::Index(1), [&](Eigen::Index i)
 		    {
 			const int    worker_id = executor_.this_worker_id();
 			const size_t offset    = worker_id * N_NEIGHBORS;
@@ -128,7 +131,7 @@ namespace lib3dfin
            	double u = 1.0 - uv(0) - uv(1);
            	double v = uv(0);
            	double w = uv(1);
-           	double weighted_z = u * dtm_(indices[0], 2) + v * dtm_(indices[1], 2)  + w * dtm_(indices[2], 2);
+           	double weighted_z = (u * dtm_(indices[0], 2)) + (v * dtm_(indices[1], 2))  + (w * dtm_(indices[2], 2));
 #else // 3DFIN_IDW_INTERPOLATION
 
             // Convert squared distances to actual distances and compute weights
@@ -160,7 +163,7 @@ namespace lib3dfin
 	{
 		const auto [voxel_cloud, cloud_to_vox] = voxelize(point_cloud_, params_.denoise_resolution, params_.denoise_resolution, executor_, true);
 
-		const auto cluster_labels = connected_components(voxel_cloud, params_.denoise_resolution * std::sqrt(3.0) + 1e-6, params_.denoise_minimum_points, executor_);
+		const auto cluster_labels = connected_components(voxel_cloud, (params_.denoise_resolution * std::numbers::sqrt3) + 1e-6, params_.denoise_minimum_points, executor_);
 
 		// Count occurrences of each cluster label
 		std::unordered_map<int32_t, uint32_t> label_counts;
@@ -169,7 +172,7 @@ namespace lib3dfin
 			++label_counts[cluster_labels[id_vox]];
 		}
 
-		if (label_counts.size() == 1 && label_counts.count(NO_CLUSTER_ID))
+		if (label_counts.size() == 1 && label_counts.contains(NO_CLUSTER_ID))
 		{
 			throw std::runtime_error("No valid clusters found.");
 		}
@@ -193,7 +196,7 @@ namespace lib3dfin
 		for (Eigen::Index point_id = 0; point_id < point_cloud_.rows(); ++point_id)
 		{
 			const auto& voxel_id = cloud_to_vox(point_id);
-			if (large_clusters.count(cluster_labels[voxel_id]))
+			if (large_clusters.contains(cluster_labels[voxel_id]))
 			{
 				valid_indices.push_back(point_id);
 			}
@@ -201,7 +204,7 @@ namespace lib3dfin
 
 		// Build filtered cloud
 		PointCloud3 clust_cloud(valid_indices.size(), 3);
-		for (size_t i = 0; i < valid_indices.size(); ++i)
+		for (Eigen::Index i = 0; i < valid_indices.size(); ++i)
 		{
 			clust_cloud.row(i) = point_cloud_.row(valid_indices[i]);
 		}
@@ -236,7 +239,7 @@ namespace lib3dfin
 
 		dtm_ = PointCloud3(particles.size(), 3);
 		mask_.reserve(particles.size());
-		for (size_t particle_id = 0; particle_id < particles.size(); ++particle_id)
+		for (Eigen::Index particle_id = 0; particle_id < particles.size(); ++particle_id)
 		{
 			const auto& particle = particles[particle_id];
 			dtm_(particle_id, 0) = particle.initial_pos.f[0];
@@ -248,9 +251,10 @@ namespace lib3dfin
 
 	void HeightNormalization::smoothDTMmedian()
 	{
+		constexpr size_t num_neighbors = 9;
 		spdlog::info("[HeighNorm] smooth DTM using 3x3 Median filter");
 		// Apply 3x3 median filter to inner cells
-		std::vector<double>   window(9, 0.0);
+		std::vector<double>   window(num_neighbors, 0.0);
 		CSFGridMappingStride3 depth_map(dtm_.data() + 2, height_, width_);
 		for (Eigen::Index y = 1; y < height_ - 1; ++y)
 		{
@@ -300,12 +304,14 @@ namespace lib3dfin
 						for (int dx = -1; dx <= 1; ++dx)
 						{
 							if (dy == 0 && dx == 0)
+							{
 								continue;
+							}
 							lscore += cur_mat(y + dy, x + dx);
 						}
 					}
 					lscore -= cardinality * cur_mat(y, x);
-					result_mat(y, x) = cur_mat(y, x) + lambda * lscore;
+					result_mat(y, x) = cur_mat(y, x) + (lambda * lscore);
 				}
 			}
 			depth_map = depth_map_result;
@@ -320,15 +326,18 @@ namespace lib3dfin
 		constexpr size_t HALF_N_NEIGHBORS = N_NEIGHBORS / 2;
 		constexpr double MAD_FACTOR       = 2.0;
 
-		const size_t n_points = static_cast<size_t>(dtm_.rows());
+		const Eigen::Index n_points = dtm_.rows();
 
 		if (n_points < N_NEIGHBORS)
+		{
 			throw std::runtime_error("Input DTM too small (less than 15 points).");
+		}
 
 		if (n_points == N_NEIGHBORS)
+		{
 			spdlog::warn("[HeighNorm] Input DTM has exactly 15 points.");
+		}
 
-		const size_t half_n_points = n_points / 2;
 
 		using kd_tree_t         = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2, 2, nanoflann::metric_L2_Simple>;
 		const PointCloud2& dtm2 = dtm_.leftCols<2>();
@@ -344,7 +353,7 @@ namespace lib3dfin
 		std::vector<double>       heights_buffer(N_NEIGHBORS * num_workers);
 
 		taskflow.for_each_index(
-		    size_t(0), n_points, size_t(1), [&](size_t i)
+		    Eigen::Index(0), n_points, Eigen::Index(1), [&](Eigen::Index i)
 		    {
 			    // Get current worker ID and calculate offset into pre-allocated vectors
 			    const int worker_id = executor_.this_worker_id();
@@ -371,6 +380,7 @@ namespace lib3dfin
 		executor_.run(taskflow).get();
 
 		// Compute MAD (median of absolute deviations)
+		const Eigen::Index half_n_points = n_points / 2;
 		Eigen::VectorXd abs_devs_copy = abs_devs;
 
 		double mad = 0.0;
@@ -395,13 +405,15 @@ namespace lib3dfin
 		for (Eigen::Index point_id = 0; point_id < dtm_.rows(); ++point_id)
 		{
 			if (clean_indicator(point_id))
+			{
 				clean_points.row(clean_id++) = dtm_.row(point_id);
+			}
 		}
 
 		dtm_ = std::move(clean_points);
 	}
 
-	const DTMData HeightNormalization::exportDTM() const
+	DTMData HeightNormalization::exportDTM() const
 	{
 		std::vector<size_t> tri_indices;
 		const size_t        num_triangles = (width_ - 1) * (height_ - 1) * 2;
@@ -415,7 +427,7 @@ namespace lib3dfin
 		{
 			for (size_t y = 0; y < height_ - 1; ++y)
 			{
-				size_t A = y * width_ + x;
+				size_t A = (y * width_) + x;
 				size_t B = A + 1;
 				size_t D = A + width_;
 				size_t C = D + 1;
@@ -464,7 +476,7 @@ namespace lib3dfin
 		const auto [voxel_cloud, _] = voxelize(pseudo_ground_cloud, res_xy, res_z, executor, false);
 
 		//   # Area of the voxelated ground slice (n of voxels * area of voxel base)
-		double slice_area = voxel_cloud.rows() * res_xy * res_xy;
+		double slice_area = static_cast<double>(voxel_cloud.rows()) * res_xy * res_xy;
 
 		double threshold_difference = threshold * original_area;
 

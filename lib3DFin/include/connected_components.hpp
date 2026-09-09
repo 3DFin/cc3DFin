@@ -11,5 +11,5 @@
 
 namespace lib3dfin
 {
-	std::vector<int32_t> connected_components(const PointCloud3& xyz, const double eps, const uint32_t min_samples, tf::Executor& executor);
+	std::vector<int32_t> connected_components(const PointCloud3& xyz, double eps, uint32_t min_samples, tf::Executor& executor);
 } // namespace lib3dfin

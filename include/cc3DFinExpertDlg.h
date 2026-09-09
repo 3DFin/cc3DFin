@@ -40,5 +40,5 @@ class cc3DFinExpertDlg : public QDialog
 	}
 
 	//! Destructor
-	virtual ~cc3DFinExpertDlg() override = default;
+	~cc3DFinExpertDlg() override = default;
 };
