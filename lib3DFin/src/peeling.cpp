@@ -60,7 +60,9 @@ namespace lib3dfin
                   kd_tree.index_->radiusSearchCustomCallback(stripe.row(point_id).data(), radius_result_set);
 
               // not enough point, no feature computation
-              if (num_found < 3) return;
+              if (num_found < 3) {
+              	return;
+              }
 
               // partial sort for max_knn
               if (num_found > max_knn)
@@ -93,7 +95,7 @@ namespace lib3dfin
 	{
 		if (initial_state == nullptr)
 		{
-			initial_state_.reset(new FilterPredicate);
+			initial_state_ = std::make_unique<FilterPredicate>();
 		}
 		else
 		{
@@ -154,7 +156,7 @@ namespace lib3dfin
 		const ArrayMask       valid_vox_mask   = vert_values.array() > params_.verticality_threshold;
 		auto                  num_valid_voxels = valid_vox_mask.count();
 
-		if (!num_valid_voxels)
+		if (num_valid_voxels == 0)
 		{
 			throw std::runtime_error("No vertical clusters found. Try to decrease threshold or voxel size.");
 		}
@@ -181,8 +183,8 @@ namespace lib3dfin
 		spdlog::info("[Peeling] Clustering...");
 
 		// TODO(RJ): this does not handle anisotropy in the voxelization...
-		// this is already the case in the original implementation...
-		const double eps            = params_.resolution_xy * std::sqrt(3.0) + 1e-6;
+		// this was already the case in the original implementation...
+		const double eps            = (params_.resolution_xy * std::numbers::sqrt3) + 1e-6;
 		const auto   cluster_labels = connected_components(vox_filtered_stripe, eps, 2, executor_);
 
 		// Count clusters
@@ -192,7 +194,7 @@ namespace lib3dfin
 			++label_counts[cluster_labels[filtered_voxel_id]];
 		}
 
-		if (label_counts.size() == 1 && label_counts.count(NO_CLUSTER_ID))
+		if (label_counts.size() == 1 && label_counts.contains(NO_CLUSTER_ID))
 		{
 			throw std::runtime_error("No valid clusters found.");
 		}
@@ -223,17 +225,23 @@ namespace lib3dfin
 		for (Eigen::Index base_id = 0; base_id < num_points_; ++base_id)
 		{
 			if (stripe_indicator(base_id) == NO_CLUSTER_ID)
+			{
 				continue;
+			}
 
 			auto voxel_id = stripe_cloud_to_vox(stripe_id++);
 			if (!valid_vox_mask(voxel_id))
+			{
 				continue;
+			}
 
 			auto filtered_voxel_id = vox_to_filtered_vox(voxel_id);
 			auto cluster_id        = cluster_labels[filtered_voxel_id];
 
-			if (large_clusters.count(cluster_id))
+			if (large_clusters.contains(cluster_id))
+			{
 				new_stripe_indicator(base_id) = cluster_id;
+			}
 		}
 
 		auto   t_end          = std::chrono::high_resolution_clock::now();

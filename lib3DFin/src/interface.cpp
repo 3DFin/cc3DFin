@@ -25,7 +25,7 @@ namespace lib3dfin
 
 	TDFProcessing::TDFProcessing(std::span<const double> cloud_data)
 	{
-		point_cloud_ = Eigen::Map<const PointCloud3>(cloud_data.data(), cloud_data.size() / 3, 3);
+		point_cloud_ = Eigen::Map<const PointCloud3>(cloud_data.data(), static_cast<Eigen::Index>(cloud_data.size() / 3), 3);
 	}
 
 	TDFProcessing::TDFProcessing(PointCloud3 point_cloud)
@@ -36,7 +36,7 @@ namespace lib3dfin
 	void TDFProcessing::setExternalZ0(std::span<const double> z0_data)
 	{
 		assert(z0_data.size() == point_cloud_.rows());
-		z0_ = Eigen::Map<const Eigen::VectorXd>(z0_data.data(), z0_data.size());
+		z0_ = Eigen::Map<const Eigen::VectorXd>(z0_data.data(), static_cast<Eigen::Index>(z0_data.size()));
 	}
 
 	void TDFProcessing::setExternalZ0(Eigen::VectorXd z0)
@@ -161,7 +161,7 @@ namespace lib3dfin
 		localization_extractor.extract(tree_data_);
 
 		const auto stop_total = std::chrono::steady_clock::now();
-		spdlog::info("End of 3DFin computation. Found {0:} Trees. Total time: {1:.2f} s", tree_data_.tree_descriptors.size(), std::chrono::duration_cast<std::chrono::milliseconds>(stop_total - start_total).count() / 1000.0);
+		spdlog::info("End of 3DFin computation. Found {0:} Trees. Total time: {1:.2f} s", tree_data_.tree_descriptors.size(), std::chrono::duration<double>(stop_total - start_total).count());
 		return Status::Success;
 	}
 

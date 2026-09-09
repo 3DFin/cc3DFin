@@ -13,8 +13,8 @@ namespace lib3dfin
 {
 	std::tuple<PointCloud3, VecIndex<uint32_t>> voxelize(
 	    const PointCloud3& xyz,
-	    const double       res_xy,
-	    const double       res_z,
+	    double       res_xy,
+	    double       res_z,
 	    tf::Executor&      executor,
-	    const bool         verbose);
+	    bool         verbose);
 } // namespace lib3dfin

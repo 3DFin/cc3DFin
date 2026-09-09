@@ -72,8 +72,10 @@ namespace lib3dfin
 		for (uint32_t i = 0; i < num_points; ++i)
 		{
 			const uint32_t root = uf.find(i);
-			if (cluster_id.count(root) == 0)
+			if (!cluster_id.contains(root))
+			{
 				cluster_id[root] = current_label++;
+			}
 			labels[i] = cluster_id[root];
 		}
 

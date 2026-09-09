@@ -18,6 +18,7 @@
 
 // stdlib
 #include <cassert>
+#include <numbers>
 
 namespace lib3dfin
 {
@@ -42,7 +43,7 @@ namespace lib3dfin
 		// iterate over the trees
 		for (auto& tree : trees.tree_descriptors)
 		{
-			const auto         tree_mask          = (section_indicator_.array() == tree.tree_id);
+			const auto         tree_mask          = (section_indicator_.array() == static_cast<int>(tree.tree_id));
 			const Eigen::Index number_points_tree = tree_mask.count();
 
 			PointCloud3  tree_cloud(number_points_tree, 3);
@@ -60,8 +61,8 @@ namespace lib3dfin
 
 			tf::Taskflow taskflow;
 			auto         compute_section = taskflow.for_each_index(Eigen::Index(0), static_cast<Eigen::Index>(num_sections_), Eigen::Index(1), [&](Eigen::Index section_id)
-			                                                       {
-				const auto section_start = params_.stem_minimum_height + section_id * params_.stem_section_interval;
+                                                           {
+				const auto section_start = params_.stem_minimum_height + (static_cast<double>(section_id) * params_.stem_section_interval);
 				const auto section_end   = section_start + params_.stem_section_thickness;
 				auto&      cur_circle    = circles[section_id];
 				cur_circle.z0            = section_start;
@@ -177,14 +178,18 @@ namespace lib3dfin
 			// Check radial constraint using squared distances
 			const double r_sq = red_point.squaredNorm();
 			if (r_sq < R_min_sq || r_sq > R_max_sq)
+			{
 				continue;
+			}
 
 			// Check angular constraint
 			double angle = std::atan2(red_point.y(), red_point.x());
 			if (angle < 0)
-				angle += 2.0 * M_PI;
+			{
+				angle += 2.0 * std::numbers::pi;
+			}
 
-			const uint32_t sector         = static_cast<uint32_t>(std::floor(angle * inv_sector_size));
+			const auto     sector         = static_cast<uint32_t>(std::floor(angle * inv_sector_size));
 			const uint32_t clamped_sector = std::min(sector, params_.stem_section_sector_count - 1); // be sure we don't exceed the maximum sector index
 
 			sector_occupancy_indicator[clamped_sector] = true;
@@ -200,8 +205,8 @@ namespace lib3dfin
 
 	// tilt detection for all sections of a given stem
 	void SectionExtractor::tiltDetection(CircleSections& circles,
-	                                     const double    abs_weight_factor,
-	                                     const double    rel_weight_factor) const
+	                                     double          abs_weight_factor,
+	                                     double          rel_weight_factor) const
 	{
 		std::vector<size_t> valid_ids;
 		valid_ids.reserve(circles.size());
@@ -217,12 +222,14 @@ namespace lib3dfin
 		const size_t num_valid_sections = valid_ids.size();
 
 		if (num_valid_sections == 0)
+		{
 			return;
+		}
 
 		// compute outlier weights
 		// vs. the original implementation, num_valid_sections - 1  is the correct way to compute outlier weights
 		// because the current section (i==j) can't be an outlier to itself.
-		const double total_weight  = (num_valid_sections - 1) * rel_weight_factor + abs_weight_factor;
+		const double total_weight  = (static_cast<double>((num_valid_sections - 1)) * rel_weight_factor) + abs_weight_factor;
 		const double abs_outlier_w = abs_weight_factor / total_weight;
 		const double rel_outlier_w = rel_weight_factor / total_weight;
 
@@ -230,9 +237,9 @@ namespace lib3dfin
 		Eigen::MatrixXd tilt_matrix(num_valid_sections, num_valid_sections);
 		tilt_matrix.diagonal().setZero(); // Initialize diagonal to zero
 
-		for (size_t i = 0; i < num_valid_sections; ++i)
+		for (Eigen::Index i = 0; i < num_valid_sections; ++i)
 		{
-			for (size_t j = i + 1; j < num_valid_sections; ++j)
+			for (Eigen::Index j = i + 1; j < num_valid_sections; ++j)
 			{
 				const double height_difference = std::abs(circles[valid_ids[i]].z0 - circles[valid_ids[j]].z0);
 				const double planar_distance   = (circles[valid_ids[i]].circle.center - circles[valid_ids[j]].circle.center).norm();
@@ -253,8 +260,10 @@ namespace lib3dfin
 
 		for (size_t k = 0; k < num_valid_sections; ++k)
 		{
-			if (abs_outliers_mask(k))
+			if (abs_outliers_mask(static_cast<Eigen::Index>(k)))
+			{
 				circles[valid_ids[k]].outlier_probability += abs_outlier_w;
+			}
 		}
 
 		// relative outliers
@@ -263,9 +272,11 @@ namespace lib3dfin
 		// this is clearer, more logical and efficient.
 		// We need at least 2 sections to compute the IQR.
 		if (num_valid_sections < 2)
+		{
 			return;
+		}
 
-		for (size_t valid_section_id = 0; valid_section_id < num_valid_sections; ++valid_section_id)
+		for (Eigen::Index valid_section_id = 0; valid_section_id < num_valid_sections; ++valid_section_id)
 		{
 			// Create vector of all other sections' tilt values
 			Eigen::VectorXd           other_sections(num_valid_sections - 1);
@@ -273,7 +284,7 @@ namespace lib3dfin
 			tilt_indices.reserve(num_valid_sections - 1);
 
 			Eigen::Index consecutive_id = 0;
-			for (size_t other_section_id = 0; other_section_id < num_valid_sections; ++other_section_id)
+			for (Eigen::Index other_section_id = 0; other_section_id < num_valid_sections; ++other_section_id)
 			{
 				if (other_section_id != valid_section_id)
 				{
@@ -287,7 +298,7 @@ namespace lib3dfin
 			const auto rel_outliers_mask = interquartile_range(other_sections);
 
 			// Apply weights only to the outlier sections
-			for (size_t other_section_id = 0; other_section_id < rel_outliers_mask.size(); ++other_section_id)
+			for (Eigen::Index other_section_id = 0; other_section_id < rel_outliers_mask.size(); ++other_section_id)
 			{
 				if (rel_outliers_mask(other_section_id))
 				{

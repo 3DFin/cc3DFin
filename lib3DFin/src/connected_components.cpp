@@ -17,7 +17,7 @@
 namespace lib3dfin
 {
 
-	std::vector<int32_t> connected_components(const PointCloud3& xyz, const double eps, const uint32_t min_samples, tf::Executor& executor)
+	std::vector<int32_t> connected_components(const PointCloud3& xyz, double eps, uint32_t min_samples, tf::Executor& executor)
 	{
 		using kd_tree_t = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud3, 3, nanoflann::metric_L2_Simple>;
 
@@ -26,7 +26,7 @@ namespace lib3dfin
 		kd_tree_t    kd_tree(3, xyz, 10, 0);
 		const double sq_search_radius = eps * eps;
 
-		const size_t n_points = static_cast<size_t>(xyz.rows());
+		const auto n_points = static_cast<size_t>(xyz.rows());
 
 		tf::Taskflow taskflow;
 
@@ -62,7 +62,9 @@ namespace lib3dfin
 		for (size_t curr_id = 0; curr_id < n_points; ++curr_id)
 		{
 			if (!is_core[curr_id])
+			{
 				continue;
+			}
 			for (const auto nn_id : nn_cells[curr_id])
 			{
 				if (is_core[nn_id] && curr_id > nn_id)
@@ -76,8 +78,11 @@ namespace lib3dfin
 		auto label_core = taskflow.for_each_index(
 		    size_t(0), n_points, size_t(1), [&](size_t curr_id)
 		    {
-            if (!is_core[curr_id]) return;
-            cluster_id[curr_id] = uf.find(curr_id); });
+            if (!is_core[curr_id])
+            {
+            	return;
+            }
+            cluster_id[curr_id] = static_cast<int32_t>(uf.find(static_cast<uint32_t>(curr_id))); });
 
 		// label other nodes as borders in //
 		// borders are attributed to their nearest cluster

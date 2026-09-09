@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 namespace lib3dfin
 {
 
-	enum class Status
+	enum class Status : uint8_t
 	{
 		Success = 0,
 		InvalidInput,
@@ -60,7 +60,7 @@ namespace lib3dfin
 			project_meta_.scale = global_shift.scale;
 		}
 
-		void setOutputPath(const fs::path output_basepath)
+		void setOutputPath(const fs::path& output_basepath)
 		{
 			output_basepath_ = output_basepath;
 		}
@@ -80,17 +80,17 @@ namespace lib3dfin
 
 		Status process();
 
-		const TreeData& getTreeData() const
+		[[nodiscard]] const TreeData& getTreeData() const
 		{
 			return tree_data_;
 		};
 
-		const Eigen::VectorXd& getZ0() const
+		[[nodiscard]] const Eigen::VectorXd& getZ0() const
 		{
 			return z0_;
 		}
 
-		const ArrayClusterIndicator& getStemIndicator() const
+		[[nodiscard]] const ArrayClusterIndicator& getStemIndicator() const
 		{
 			return stripe_.cluster_indicator;
 		}

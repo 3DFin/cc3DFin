@@ -22,7 +22,7 @@ namespace lib3dfin
 
 		for (size_t section_id = 1; section_id < num_sections_; ++section_id)
 		{
-			const double section_height = params_.stem_minimum_height + section_id * params_.stem_section_interval;
+			const double section_height = params_.stem_minimum_height + (static_cast<double>(section_id) * params_.stem_section_interval);
 			const double diff           = std::abs(section_height - params_.DBH);
 			if (diff < min_diff)
 			{
@@ -53,7 +53,7 @@ namespace lib3dfin
 
 	void LocalizationExtractor::computeDBHRangeIDs()
 	{
-		lower_d_section_ = static_cast<size_t>(std::max(int(bh_section_id_ - 2), int(0)));
+		lower_d_section_ = static_cast<size_t>(std::max(int(bh_section_id_ - 2), 0));
 		upper_d_section_ = static_cast<size_t>(std::min(num_sections_ - 1, bh_section_id_ + 2));
 		total_sections_  = static_cast<size_t>(upper_d_section_ - lower_d_section_ + 1);
 	}
@@ -83,16 +83,18 @@ namespace lib3dfin
 		return result;
 	}
 
-	std::array<int, 5> getNeighborhood(const TreeDescriptor& tree_descriptor, const size_t dbh_id)
+	std::array<int, LocalizationExtractor::maxNumSections> LocalizationExtractor::getNeighborhood(const TreeDescriptor& tree_descriptor, const size_t dbh_id)
 	{
-		std::array<int, 5> indices{-1, -1, -1, -1, -1};
+		std::array<int, maxNumSections> indices{-1, -1, -1, -1, -1};
 
 		// assign -1 for OoB or status < sucess (i.e 0 diameter)
 		for (int offset = -2; offset <= 2; ++offset)
 		{
-			int id = dbh_id + offset;
+			int id = static_cast<int>(dbh_id) + offset;
 			if (id < 0 || id >= tree_descriptor.circle_data.size() || tree_descriptor.circle_data[id].status < CircleData::Status::SUCCESS)
+			{
 				continue;
+			}
 
 			indices[offset + 2] = id;
 		}
@@ -104,13 +106,17 @@ namespace lib3dfin
 	{
 		// Early return if DBH is not included in the range of admissible stem sizes
 		if (params_.stem_minimum_height >= params_.DBH || params_.stem_maximum_height <= params_.DBH)
+		{
 			return axisLocation(tree_descriptor); // Find the closest section to the DBH and its neighborhood
+		}
 
 		const auto& circle_data = tree_descriptor.circle_data;
 		// For these sections, only consider diameter values that are non-zero,
 		// it's true for status >= SUCCESS
 		if (circle_data[bh_section_id_].status == CircleData::Status::SUCCESS)
+		{
 			return dbhLocation(tree_descriptor, bh_section_id_, circle_data, DBHSource::BHSECTION_OQ_OK);
+		}
 
 		auto dbh_nn_info = getNeighborhood(tree_descriptor, bh_section_id_);
 
@@ -122,17 +128,21 @@ namespace lib3dfin
 		{
 			double bh_radius = circle_data[bh_section_id_].circle.radius;
 
-			for (size_t section_id = 0; section_id < 5; section_id++)
+			for (size_t section_id = 0; section_id < maxNumSections; section_id++)
 			{
 				int section_global_id = dbh_nn_info[section_id];
 				if (section_id == bh_local_id || section_global_id < 0)
+				{
 					continue;
+				}
 
 				double curr_radius = circle_data[section_global_id].circle.radius;
 				double diff        = std::abs(bh_radius - curr_radius);
 				double min_d       = std::min(bh_radius, curr_radius);
 				if (diff / min_d < threshold)
+				{
 					return dbhLocation(tree_descriptor, bh_section_id_, circle_data, DBHSource::BHSECTION_NEIGHBOUR_SUPPORT);
+				}
 			}
 		}
 
@@ -145,31 +155,39 @@ namespace lib3dfin
 		int                 best_quality  = -1;
 		double              best_diff     = std::numeric_limits<double>::max();
 
-		for (size_t i = 0; i < 5; i++)
+		for (size_t i = 0; i < maxNumSections; i++)
 		{
 			int i_global = dbh_nn_info[i];
 			if (i == bh_local_id || i_global < 0)
+			{
 				continue;
+			}
 
-			for (size_t j = i + 1; j < 5; j++)
+			for (size_t j = i + 1; j < maxNumSections; j++)
 			{
 				int j_global = dbh_nn_info[j];
 				if (j == bh_local_id || j_global < 0)
+				{
 					continue;
+				}
 
 				double radius_i = circle_data[i_global].circle.radius;
 				double radius_j = circle_data[j_global].circle.radius;
 				if (std::min(radius_i, radius_j) == 0)
+				{
 					continue;
+				}
 
 				double diff_ratio = std::abs(radius_i - radius_j) / std::min(radius_i, radius_j);
 				if (diff_ratio >= threshold)
+				{
 					continue;
+				}
 
 				double distance_i    = std::abs(circle_data[i_global].z0 - putative_dbh_z0);
 				double distance_j    = std::abs(circle_data[j_global].z0 - putative_dbh_z0);
 				double pair_distance = distance_i + distance_j;
-				int    quality       = (circle_data[i_global].status == CircleData::Status::SUCCESS) + (circle_data[j_global].status == CircleData::Status::SUCCESS);
+				int    quality       = static_cast<int>(circle_data[i_global].status == CircleData::Status::SUCCESS) + static_cast<int>(circle_data[j_global].status == CircleData::Status::SUCCESS);
 
 				// Multi criteria comparisons
 				bool is_better = false;
@@ -210,14 +228,16 @@ namespace lib3dfin
 
 		// Last
 		// Check for any neighboring section with Overall Quality = 1
-		int    best_neighbor       = -1;
-		double min_distance_to_dbh = std::numeric_limits<double>::max();
+		int              best_neighbor       = -1;
+		double           min_distance_to_dbh = std::numeric_limits<double>::max();
 
-		for (size_t i = 0; i < 5; i++)
+		for (size_t i = 0; i < maxNumSections; i++)
 		{
 			int global_id = dbh_nn_info[i];
 			if (i == bh_local_id || global_id < 0)
+			{
 				continue;
+			}
 
 			if (circle_data[global_id].status == CircleData::Status::SUCCESS)
 			{
