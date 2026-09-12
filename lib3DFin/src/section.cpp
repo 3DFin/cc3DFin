@@ -164,7 +164,7 @@ namespace lib3dfin
 	{
 		const double R_min_sq        = (circle_params.radius - params_.stem_section_circle_width) * (circle_params.radius - params_.stem_section_circle_width);
 		const double R_max_sq        = (circle_params.radius + params_.stem_section_circle_width) * (circle_params.radius + params_.stem_section_circle_width);
-		const double inv_sector_size = static_cast<double>(params_.stem_section_sector_count) / (2.0 * M_PI);
+		const double inv_sector_size = static_cast<double>(params_.stem_section_sector_count) / (2.0 * std::numbers::pi);
 
 		const Eigen::Index n_points = circle_cloud.rows();
 
