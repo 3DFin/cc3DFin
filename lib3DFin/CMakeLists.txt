@@ -41,7 +41,6 @@ endif()
 
 # Eigen Handling (taken and modified from OpenMVG)
 # Could be improved in case of exposition of Eigen in the public API
-find_package(Eigen3 3.3.4...5 NO_MODULE QUIET)
 if(Eigen3_FOUND)
 	message(STATUS "[lib3DFin] Using external Eigen")
 	message(STATUS "eigen found in ${EIGEN3_INCLUDE_DIRS}")
@@ -80,6 +79,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen spdlog::spdlog PRIVAT
 if(3DFin_EXPORT_XLSX)
 	set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "OpenXLSX: Enables builds of samples" FORCE)
 	set(OPENXLSX_BUILD_TESTS OFF CACHE BOOL "OpenXLSX: Enables builds of tests" FORCE)
+	set(FORCE_FETCH_ALL ON CACHE BOOL "OpenXLSX: Force fetching all dependencies" FORCE)
+	set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "OpenXLSX: Minimum CMake policy version (make minzip happy)" FORCE)
 
 	add_subdirectory(third_party/OpenXLSX)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE TDFIN_USES_OPENXLSX)
@@ -98,23 +99,23 @@ set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 add_subdirectory(include)
 add_subdirectory(src)
 
-	install(
+install(
 		TARGETS ${PROJECT_NAME}
 		EXPORT ${PROJECT_NAME}Targets
 		DESTINATION lib
 	)
-	install(
+install(
 		TARGETS spdlog
 		EXPORT ${PROJECT_NAME}Targets
 		DESTINATION lib
 	)
-	if(3DFin_USE_INTERNAL_EIGEN)
-		install(
+if(3DFin_USE_INTERNAL_EIGEN)
+	install(
 			TARGETS eigen
 			EXPORT ${PROJECT_NAME}Targets
 			DESTINATION lib
 		)
-	endif()
+endif()
 # Create and install CMake config files
 include(CMakePackageConfigHelpers)
 
