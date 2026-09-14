@@ -19,7 +19,7 @@
 
 // local
 #include "cc3DFinUiConfig.h"
-#include "ui_cc3dfindlg.h"
+#include "ui_cc3dfinDlg.h"
 
 // lib3dfin
 #include <lib3DFin/config.hpp>
