@@ -39,6 +39,7 @@ if (3DFin_BUILD_SHARED)
 	)
 endif()
 
+
 # Eigen Handling (taken and modified from OpenMVG)
 # Could be improved in case of exposition of Eigen in the public API
 if(Eigen3_FOUND)
@@ -82,7 +83,14 @@ if(3DFin_EXPORT_XLSX)
 	set(FORCE_FETCH_ALL ON CACHE BOOL "OpenXLSX: Force fetching all dependencies" FORCE)
 	set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "OpenXLSX: Minimum CMake policy version (make minzip happy)" FORCE)
 
+	# OpenXLSX warnings are very annoyings in debug, remove all.
 	add_subdirectory(third_party/OpenXLSX)
+	if( UNIX OR MINGW )
+		target_compile_options(OpenXLSX PRIVATE $<$<CONFIG:Debug>:-w>)
+	elseif(MSVC)
+		target_compile_options(OpenXLSX PRIVATE $<$<CONFIG:Debug>:/W0)
+	endif()
+
 	target_compile_definitions(${PROJECT_NAME} PRIVATE TDFIN_USES_OPENXLSX)
 	# All libs are private since we do not want to expose them in the public API
 	target_link_libraries(${PROJECT_NAME} PRIVATE OpenXLSX::OpenXLSX)
