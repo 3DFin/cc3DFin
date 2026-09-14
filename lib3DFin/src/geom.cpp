@@ -13,7 +13,7 @@ namespace lib3dfin
 	    const Vec3&   axis_dir,
 	    const Plane3& plane)
 	{
-		constexpr float nearParallelThreshold = 1e-5;
+		constexpr float nearParallelThreshold = 1e-5f;
 		const double denom = plane.normal().dot(axis_dir);
 		if (std::abs(denom) < nearParallelThreshold)
 		{
