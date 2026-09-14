@@ -18,7 +18,7 @@
 // ##########################################################################
 
 // local
-#include "ui_cc3dfinexpertdlg.h"
+#include "ui_cc3DFinExpertDlg.h"
 
 // QT
 #include <QDialog>
