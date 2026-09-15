@@ -88,7 +88,7 @@ if(3DFin_EXPORT_XLSX)
 	if( UNIX OR MINGW )
 		target_compile_options(OpenXLSX PRIVATE $<$<CONFIG:Debug>:-w>)
 	elseif(MSVC)
-		target_compile_options(OpenXLSX PRIVATE $<$<CONFIG:Debug>:/W0)
+		target_compile_options(OpenXLSX PRIVATE $<$<CONFIG:Debug>:/W0>)
 	endif()
 
 	target_compile_definitions(${PROJECT_NAME} PRIVATE TDFIN_USES_OPENXLSX)
