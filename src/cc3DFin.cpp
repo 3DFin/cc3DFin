@@ -121,9 +121,9 @@ void cc3DFin::do3DFinAction()
 
 	// Get scalar field names for plugin UI
 	QStringList scalarFieldNames;
-	for (int i = 0; i < m_currentCloud->getNumberOfScalarFields(); ++i)
+	for (unsigned i = 0; i < m_currentCloud->getNumberOfScalarFields(); ++i)
 	{
-		const CCCoreLib::ScalarField* scalarField = m_currentCloud->getScalarField(i);
+		const auto scalarField = m_currentCloud->getCCScalarField(i);
 		if (scalarField != nullptr)
 		{
 			scalarFieldNames.push_back(QString::fromStdString(scalarField->getName()));
@@ -190,7 +190,7 @@ std::optional<Eigen::VectorXd> cc3DFin::loadZ0Values(const std::string& sfName) 
 		return std::nullopt;
 	}
 
-	const auto* sf = m_currentCloud->getScalarField(sfId);
+	const auto sf = m_currentCloud->getCCScalarField(sfId);
 	try
 	{
 
