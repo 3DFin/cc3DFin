@@ -182,7 +182,7 @@ namespace lib3dfin
 		    {
 				    Eigen::Index                                         index{0};
 				    double sq_distance{0.0};
-					kd_tree.index_->knnSearch(voxelated_cloud.row(voxel_id).data(), 1, &index, &sq_distance);
+					auto _ = kd_tree.index_->knnSearch(voxelated_cloud.row(voxel_id).data(), 1, &index, &sq_distance);
 
 					if(sq_distance > sq_dmax)
 					{
@@ -210,9 +210,9 @@ namespace lib3dfin
 
 		// Count clusters
 		std::unordered_map<int32_t, uint32_t> label_counts;
-		for (size_t voxel_id = 0; voxel_id < cluster_labels.size(); ++voxel_id)
+		for (int cluster_label : cluster_labels)
 		{
-			++label_counts[cluster_labels[voxel_id]];
+			++label_counts[cluster_label];
 		}
 
 		// Find large clusters

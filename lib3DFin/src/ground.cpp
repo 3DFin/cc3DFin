@@ -108,7 +108,7 @@ namespace lib3dfin
 			double*       dists   = dists_buffer.data() + offset;
 			double*       weights = heights_buffer.data() + offset;
 
-			kd_tree.index_->knnSearch(point_cloud_.row(i).data(), N_NEIGHBORS, indices, dists);
+			auto _ = kd_tree.index_->knnSearch(point_cloud_.row(i).data(), N_NEIGHBORS, indices, dists);
 
 #ifdef HN3DFIN_BARYCENTRIC_INTERPOLATION
 
@@ -364,7 +364,7 @@ namespace lib3dfin
 			    double* dists = dists_buffer.data() + offset;
 			    double* heights = heights_buffer.data() + offset;
 
-			    kd_tree.index_->knnSearch(dtm2.row(i).data(), N_NEIGHBORS, neighbors, dists);
+			    auto _ = kd_tree.index_->knnSearch(dtm2.row(i).data(), N_NEIGHBORS, neighbors, dists);
 
 			    for (size_t j = 0; j < N_NEIGHBORS; ++j)
 			    {
@@ -443,9 +443,9 @@ namespace lib3dfin
 		}
 
 		return {
-		    dtm_,
-		    std::move(tri_indices),
-		    mask_,
+		    .dtm=dtm_,
+		    .tri_ids=std::move(tri_indices),
+		    .dtm_mask=mask_,
 		};
 	}
 

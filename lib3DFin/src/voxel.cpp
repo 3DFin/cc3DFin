@@ -3,6 +3,7 @@
 
 #include "voxel.hpp"
 
+#include <algorithm>
 #include <spdlog/spdlog.h>
 #include <taskflow/algorithm/for_each.hpp>
 #include <taskflow/algorithm/scan.hpp>
@@ -15,10 +16,10 @@ namespace lib3dfin
 
 	std::tuple<PointCloud3, VecIndex<uint32_t>> voxelize(
 	    const PointCloud3& xyz,
-	    double       res_xy,
-	    double       res_z,
+	    double             res_xy,
+	    double             res_z,
 	    tf::Executor&      executor,
-	    bool         verbose)
+	    bool               verbose)
 	{
 		// number of bit used to encode one dimension
 		constexpr uint64_t voxel_bits     = 21;
@@ -28,7 +29,9 @@ namespace lib3dfin
 		const auto start_total = std::chrono::high_resolution_clock::now();
 
 		if (verbose)
+		{
 			spdlog::info("[Voxelization] Grid size: {} x {} x {} m", res_xy, res_xy, res_z);
+		}
 
 		tf::Taskflow tf;
 
@@ -41,13 +44,15 @@ namespace lib3dfin
 			min_dim = xyz(0, id_dim);
 			for (Eigen::Index point_id = 1; point_id < num_points; ++point_id)
 			{
-				if (xyz(point_id, id_dim) < min_dim)
-					min_dim = xyz(point_id, id_dim);
+				min_dim = std::min(xyz(point_id, id_dim), min_dim);
 			};
 		};
 
-		// Parallel min coeff
-		double min_x, min_y, min_z;
+		// Parallel min coeff, init in the lambda
+		double min_x;
+		double min_y;
+		double min_z;
+
 		tf.emplace([&]()
 		           { min_one_dim(0, min_x); });
 		tf.emplace([&]()
@@ -72,9 +77,9 @@ namespace lib3dfin
 		std::vector<uint32_t> first_point_in_vox(num_points, 0);
 		first_point_in_vox[0] = 1;
 
-		std::vector<Eigen::Index>           sorted_indices(num_points);
-		std::vector<Eigen::Index>::iterator first_it_indices = sorted_indices.begin();
-		std::vector<Eigen::Index>::iterator end_it_indices   = sorted_indices.end();
+		std::vector<Eigen::Index> sorted_indices(num_points);
+		auto                      first_it_indices = std::begin(sorted_indices);
+		auto                      end_it_indices   = std::end(sorted_indices);
 		std::iota(first_it_indices, end_it_indices, 0);
 
 		// Create hashes
@@ -113,9 +118,9 @@ namespace lib3dfin
 		    });
 
 		// Precomputed shifts for each dimensional composant of a full hashed code
-		const double centroid_shift_x = min_vec(0) + res_xy / 2.0;
-		const double centroid_shift_y = min_vec(1) + res_xy / 2.0;
-		const double centroid_shift_z = min_vec(2) + res_z / 2.0;
+		const double centroid_shift_x = min_vec(0) + (res_xy / 2.0);
+		const double centroid_shift_y = min_vec(1) + (res_xy / 2.0);
+		const double centroid_shift_z = min_vec(2) + (res_z / 2.0);
 
 		auto fill_vox_pc = tf.for_each_index(
 		                         Eigen::Index(0), Eigen::Index(num_points), Eigen::Index(1), [&](const Eigen::Index point_id)
@@ -133,9 +138,9 @@ namespace lib3dfin
                                            const uint64_t y_code_val = (hash_val >> voxel_bits) & num_cells;
                                            const uint64_t x_code_val = hash_val & num_cells;
 
-                                           vox_pc(voxel_id, 0) = x_code_val * res_xy + centroid_shift_x;
-                                           vox_pc(voxel_id, 1) = y_code_val * res_xy + centroid_shift_y;
-                                           vox_pc(voxel_id, 2) = z_code_val * res_z + centroid_shift_z;
+                                           vox_pc(voxel_id, 0) = (x_code_val * res_xy) + centroid_shift_x;
+                                           vox_pc(voxel_id, 1) = (y_code_val * res_xy) + centroid_shift_y;
+                                           vox_pc(voxel_id, 2) = (z_code_val * res_z) + centroid_shift_z;
                                        } })
 		                       .name("fill_vox_pc");
 
