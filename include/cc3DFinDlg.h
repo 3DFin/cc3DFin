@@ -53,16 +53,17 @@ class cc3DFinDlg : public QDialog
 	//! Destructor
 	~cc3DFinDlg() override;
 
-	QPushButton* getComputeButton();
-
-	lib3dfin::Params           get3DFinParameters();
-	bool                       checkFieldsValidity();
+	[[nodiscard]] lib3dfin::Params           get3DFinParameters();
 	void                       setComputationMode(bool);
-	std::optional<fs::path>    checkBaseOutputValidity(const QString& baseName);
-	std::optional<std::string> getZ0FieldName() const;
+	[[nodiscard]] std::optional<fs::path>    checkBaseOutputValidity(const QString& baseName);
+	[[nodiscard]] std::optional<std::string> getZ0FieldName() const;
+
+  signals:
+	void computeRequested();
 
   protected:
 	//! Methods
+	[[nodiscard]] bool checkFieldsValidity();
 	void populateFields();
 	void populateSfCombo();
 	void populateToolTipAndLabel(const tdf::UiField& field, QWidget* widget);

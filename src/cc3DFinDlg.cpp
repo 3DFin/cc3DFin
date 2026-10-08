@@ -54,6 +54,12 @@ cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
 	m_ui->setupUi(this);
 
 	connect(m_ui->output_dir_btn, &QPushButton::clicked, this, &cc3DFinDlg::askOutputPath);
+	connect(m_ui->compute_btn, &QPushButton::clicked, this, [this]
+	        {
+		        if (checkFieldsValidity())
+		        {
+			        emit computeRequested();
+		        } });
 	connect(m_ui->tutorial_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showTutorial);
 	connect(m_ui->documentation_link_btn, &QPushButton::clicked, this, &cc3DFinDlg::showDocumentation);
 	connect(m_ui->expert_info_btn, &QPushButton::clicked, this, &cc3DFinDlg::showExpertDialog);
@@ -75,11 +81,6 @@ cc3DFinDlg::cc3DFinDlg(QWidget* parent, const QStringList& sfNames)
 cc3DFinDlg::~cc3DFinDlg()
 {
 	spdlog::drop("3DFin");
-}
-
-QPushButton* cc3DFinDlg::getComputeButton()
-{
-	return m_ui->compute_btn;
 }
 
 void cc3DFinDlg::setComputationMode(bool state)

@@ -41,7 +41,6 @@
 // Qt
 #include <QApplication>
 #include <QMainWindow>
-#include <QPushButton>
 #include <QtConcurrent>
 #include <QtGui>
 
@@ -124,16 +123,10 @@ void cc3DFin::do3DFinAction()
 	// Create 3DFin Dialog
 	cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
-	// Bind compute_btn clicked signal to our async computation task
-	connect(tdfDlg.getComputeButton(), &QPushButton::clicked, [this, &tdfDlg]
-	        {
-				if(!tdfDlg.checkFieldsValidity())
-				{
-					return;
-				}
-				const auto params    = tdfDlg.get3DFinParameters();
-				tdfDlg.setComputationMode(true);
-		        compute3DFin(params, tdfDlg); });
+	// emits computeRequested once fields are valid.
+	// We can delegate the computation to the compute3DFin method
+	connect(&tdfDlg, &cc3DFinDlg::computeRequested, this, [this, &tdfDlg]
+	        { compute3DFin(tdfDlg.get3DFinParameters(), tdfDlg); });
 
 	// Freeze CC UI to avoid bad surprise with concurrency
 	m_app->freezeUI(true);
@@ -224,6 +217,7 @@ std::optional<lib3dfin::PointCloud3> cc3DFin::loadPointCloudCoordinates() const
 void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 {
 	assert(m_currentCloud);
+	dialog.setComputationMode(true);
 	const QString cloudName     = m_currentCloud->getName();
 	auto          baseOutputDir = dialog.checkBaseOutputValidity(cloudName);
 	m_currentCloud->placeIteratorAtBeginning();
