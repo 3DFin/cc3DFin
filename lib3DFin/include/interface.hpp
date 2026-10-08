@@ -46,6 +46,10 @@ namespace lib3dfin
 		~TDFProcessing()                               = default;
 		TDFProcessing& operator=(const TDFProcessing&) = delete;
 
+		void setExportTabular(bool doExport)
+		{
+			doExportTabular = doExport;
+		}
 		void setExternalZ0(std::span<const double> z0_data);
 		void setExternalZ0(Eigen::VectorXd z0);
 
@@ -95,17 +99,17 @@ namespace lib3dfin
 			return stripe_.cluster_indicator;
 		}
 
-		const DTMData& getDTM() const
+		[[nodiscard]] const DTMData& getDTM() const
 		{
 			return dtm_;
 		}
 
-		// TODO catch xlsx exceptions
 		void exportTabularData() const;
 
 	  private:
 		fs::path                   output_basepath_{fs::current_path() / "3DFin"};
 		Params                     params_;
+		bool                       doExportTabular{false};
 		ProjectMeta                project_meta_;
 		PointCloud3                point_cloud_;
 		Eigen::VectorXd            z0_;

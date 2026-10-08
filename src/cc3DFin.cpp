@@ -258,7 +258,11 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 
 	tdfProcessing->setParams(params);
 	tdfProcessing->setGlobalShift(tdfGlobalShift);
-	tdfProcessing->setOutputPath(baseOutputDir.value());
+	if (baseOutputDir)
+	{
+		tdfProcessing->setExportTabular(true);
+		tdfProcessing->setOutputPath(baseOutputDir.value());
+	}
 
 	auto TdfFutureResult = QtConcurrent::run(
 	    [tdf = tdfProcessing.get()]

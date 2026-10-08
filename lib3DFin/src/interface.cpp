@@ -167,8 +167,12 @@ namespace lib3dfin
 
 	void TDFProcessing::exportTabularData() const
 	{
+
 #ifdef TDFIN_USES_OPENXLSX
-		export_xlsx(tree_data_, output_basepath_.string() + ".xlsx", project_meta_);
+		if (doExportTabular)
+		{
+			export_xlsx(tree_data_, output_basepath_.string() + ".xlsx", project_meta_);
+		}
 #endif
 		// else do nothing for now but maybe implement a CSV filter
 	}
