@@ -15,33 +15,31 @@
 // #                                                                        #
 // ##########################################################################
 
-#include "cc3DFinDrawer.h"
-
-// CCCore
-#include "CCGeom.h"
-
-// qCC
-#include "cc2DLabel.h"
-#include "ccColorScalesManager.h"
-#include "ccHObject.h"
-#include "ccLog.h"
-#include "ccMesh.h"
-#include "ccPointCloud.h"
-#include "ccScalarField.h"
+#include "../include/cc3DFinDrawer.h"
 
 // plugin
-#include "cc3DFinUiConfig.h"
+#include "../include/cc3DFinUiConfig.h"
 
 // lib3DFin
 #include <lib3DFin/config.hpp>
 #include <lib3DFin/interface.hpp>
 #include <lib3DFin/types.hpp>
 
+// CCCore
+#include <CCGeom.h>
+#include <ScalarField.h>
+
+// qCC_db
+#include <cc2DLabel.h>
+#include <ccColorScalesManager.h>
+#include <ccHObject.h>
+#include <ccLog.h>
+#include <ccMesh.h>
+#include <ccPointCloud.h>
+#include <ccScalarField.h>
+
 // spdlog
 #include <spdlog/spdlog.h>
-
-// ccCoreLib
-#include <ScalarField.h>
 
 cc3DFinDrawer::cc3DFinDrawer(ccPointCloud* sourceCloud, ccHObject* group)
     : m_source(sourceCloud)
@@ -161,7 +159,7 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 	size_t tree_id = 0;
 
 	// Create a point cloud for circle points
-	ccPointCloud* circle_points_pc = new ccPointCloud(QString("Fitted sections"));
+	auto* circle_points_pc = new ccPointCloud(QString("Fitted sections"));
 	circle_points_pc->copyGlobalShiftAndScale(*m_source);
 
 	// Add scalar fields for circle properties
