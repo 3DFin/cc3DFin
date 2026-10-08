@@ -17,10 +17,10 @@
 
 #pragma once
 
-// CloudCompare
-#include "ccPointCloud.h"
+// qCC_db
+#include <ccPointCloud.h>
 
-// QT
+// Qt
 #include <QString>
 
 // lib3DFin
@@ -53,6 +53,6 @@ class cc3DFinDrawer : public lib3dfin::TDFDrawer
 	ccPointCloud* m_source;
 	ccHObject*    m_group;
 
-	static constexpr unsigned TreePointSize = 8;
+	static constexpr unsigned     TreePointSize = 8;
 	static constexpr ccColor::Rgb TreePointColor{255, 0, 255};
 };

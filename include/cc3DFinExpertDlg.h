@@ -17,28 +17,30 @@
 // #                                                                        #
 // ##########################################################################
 
-// local
-#include "ui_cc3DFinExpertDlg.h"
+// Ui
+#include <ui_cc3DFinExpertDlg.h>
 
-// QT
+// Qt
 #include <QDialog>
 
 //! Dialog for cc3DFin plugin
 class cc3DFinExpertDlg : public QDialog
-    , public Ui::cc3DfinExpertDlg
 {
 	Q_OBJECT
 
   public:
 	//! Default constructor
-	cc3DFinExpertDlg(QWidget* parent = nullptr)
+	explicit cc3DFinExpertDlg(QWidget* parent = nullptr)
 	    : QDialog(parent)
-	    , Ui::cc3DfinExpertDlg()
+	    , m_ui(std::make_unique<Ui::cc3DfinExpertDlg>())
 	{
-		setupUi(this);
-        connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+		m_ui->setupUi(this);
+		connect(m_ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
 	}
 
 	//! Destructor
 	~cc3DFinExpertDlg() override = default;
+
+  private:
+	std::unique_ptr<Ui::cc3DfinExpertDlg> m_ui;
 };

@@ -17,26 +17,32 @@
 // #                                                                        #
 // ##########################################################################
 
-// local
+// Local
 #include "cc3DFinUiConfig.h"
-#include "ui_cc3DFinDlg.h"
 
 // lib3dfin
 #include <lib3DFin/config.hpp>
 
-// QT
+// Qt
 #include <QDialog>
 #include <QStringList>
 
-// system
+// System
 #include <filesystem>
 #include <unordered_map>
+
+// Forward declaration
+namespace Ui
+{
+	class cc3DFinDlg;
+}
+
+class QLineEdit;
 
 namespace fs = std::filesystem;
 
 //! Dialog for cc3DFin plugin
 class cc3DFinDlg : public QDialog
-    , public Ui::cc3DFinDlg
 {
 	Q_OBJECT
 
@@ -45,7 +51,10 @@ class cc3DFinDlg : public QDialog
 	cc3DFinDlg(QWidget* parent, const QStringList& sfNames);
 
 	//! Destructor
-	~cc3DFinDlg() override = default;
+	~cc3DFinDlg() override;
+
+	QPushButton* getComputeButton();
+
 	lib3dfin::Params           get3DFinParameters();
 	bool                       checkFieldsValidity();
 	void                       setComputationMode(bool);
@@ -53,13 +62,13 @@ class cc3DFinDlg : public QDialog
 	std::optional<std::string> getZ0FieldName() const;
 
   protected:
-  	//! Methods
+	//! Methods
 	void populateFields();
 	void populateSfCombo();
 	void populateToolTipAndLabel(const tdf::UiField& field, QWidget* widget);
 	void closeEvent(QCloseEvent* event) override;
 
-  	//! Slots
+	//! Slots
 	void        askOutputPath();
 	void        showExpertDialog();
 	void        onTextChanged();
@@ -71,4 +80,5 @@ class cc3DFinDlg : public QDialog
 	std::unordered_map<QString, tdf::UiField> m_fields;
 	QSet<QLineEdit*>                          m_InvalidEditFields;
 	bool                                      m_isComputationActive{false};
+	std::unique_ptr<Ui::cc3DFinDlg>           m_ui;
 };

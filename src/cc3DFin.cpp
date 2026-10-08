@@ -15,42 +15,37 @@
 // #                                                                        #
 // ##########################################################################
 
-#include "cc3DFin.h"
+#include "../include/cc3DFin.h"
 
-// CCCore
-#include "CCGeom.h"
-
-// qCC
-
-#include "ccColorScalesManager.h"
-#include "ccHObject.h"
-#include "ccHObjectCaster.h"
-#include "ccLog.h"
-#include "ccPointCloud.h"
-
-// plugin
-#include "cc3DFinDlg.h"
-#include "cc3DFinDrawer.h"
-#include "cc3DFinUiConfig.h"
+// Local (plugin)
+#include "../include/cc3DFinDlg.h"
+#include "../include/cc3DFinDrawer.h"
+#include "../include/cc3DFinUiConfig.h"
 
 // lib3DFin
 #include <lib3DFin/config.hpp>
 #include <lib3DFin/interface.hpp>
 #include <lib3DFin/types.hpp>
 
-// spdlog
-#include <spdlog/sinks/qt_sinks.h>
-#include <spdlog/spdlog.h>
-
-// ccCoreLib
+// CCCore
+#include <CCGeom.h>
 #include <ScalarField.h>
 
-// QT
+// qCC_db
+#include <ccColorScalesManager.h>
+#include <ccHObject.h>
+#include <ccHObjectCaster.h>
+#include <ccLog.h>
+#include <ccPointCloud.h>
+
+// Qt
+#include <QApplication>
 #include <QMainWindow>
+#include <QPushButton>
 #include <QtConcurrent>
 #include <QtGui>
 
-// StdLib
+// System
 #include <optional>
 
 cc3DFin::cc3DFin(QObject* parent)
@@ -61,8 +56,6 @@ cc3DFin::cc3DFin(QObject* parent)
 	initCustomColorScale();
 }
 
-// This method should enable or disable your plugin actions
-// depending on the currently selected entities ('selectedEntities').
 void cc3DFin::onNewSelection(const ccHObject::Container& selectedEntities)
 {
 	if (m_action == nullptr)
@@ -72,8 +65,6 @@ void cc3DFin::onNewSelection(const ccHObject::Container& selectedEntities)
 	m_action->setEnabled(!selectedEntities.empty());
 }
 
-// This method returns all the 'actions' your plugin can perform.
-// getActions() will be called only once, when plugin is loaded.
 QList<QAction*> cc3DFin::getActions()
 {
 	// default action (if it has not been already created, this is the moment to do it)
@@ -130,17 +121,11 @@ void cc3DFin::do3DFinAction()
 		}
 	}
 
-	m_currentCloud->setEnabled(false);
-
+	// Create 3DFin Dialog
 	cc3DFinDlg tdfDlg(m_app->getMainWindow(), scalarFieldNames);
 
-	constexpr int spdlogMaxLines = 2000;
-	auto          logger   = spdlog::qt_color_logger_mt("3DFin", tdfDlg.logTextEdit, spdlogMaxLines);
-	logger->set_pattern("[%T] %^[%L]%$ %v");
-	spdlog::set_default_logger(logger);
-
-	m_app->freezeUI(true);
-	connect(tdfDlg.compute_btn, &QPushButton::clicked, [this, &tdfDlg]
+	// Bind compute_btn clicked signal to our async computation task
+	connect(tdfDlg.getComputeButton(), &QPushButton::clicked, [this, &tdfDlg]
 	        {
 				if(!tdfDlg.checkFieldsValidity())
 				{
@@ -149,10 +134,12 @@ void cc3DFin::do3DFinAction()
 				const auto params    = tdfDlg.get3DFinParameters();
 				tdfDlg.setComputationMode(true);
 		        compute3DFin(params, tdfDlg); });
-	tdfDlg.exec();
 
-	// Cleanup. Drop the logger and unfreeze ui
-	spdlog::drop("3DFin");
+	// Freeze CC UI to avoid bad surprise with concurrency
+	m_app->freezeUI(true);
+	m_currentCloud->setEnabled(false);
+	tdfDlg.exec();
+	// Cleanup. Unfreeze ui
 	m_app->freezeUI(false);
 
 	QApplication::processEvents();
@@ -241,12 +228,12 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 	auto          baseOutputDir = dialog.checkBaseOutputValidity(cloudName);
 	m_currentCloud->placeIteratorAtBeginning();
 
-	// Convert Cloud GS into lib3DFin "exchange" format
+	// Convert Cloud Global Shift into lib3DFin "exchange" format
 	lib3dfin::GlobalShift tdfGlobalShift{
-		.x_shift = m_currentCloud->getGlobalShift().x,
+	    .x_shift = m_currentCloud->getGlobalShift().x,
 	    .y_shift = m_currentCloud->getGlobalShift().y,
 	    .z_shift = m_currentCloud->getGlobalShift().z,
-	    .scale = m_currentCloud->getGlobalScale()};
+	    .scale   = m_currentCloud->getGlobalScale()};
 
 	auto tdfPointCloud = loadPointCloudCoordinates();
 
