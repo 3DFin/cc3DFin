@@ -99,7 +99,7 @@ namespace lib3dfin
 
 		taskflow.for_each_index(
 		    Eigen::Index(0), n_points, Eigen::Index(1), [&](Eigen::Index i)
-		    {
+		{
 			const int    worker_id = executor_.this_worker_id();
 			const size_t offset    = worker_id * N_NEIGHBORS;
 
@@ -118,10 +118,10 @@ namespace lib3dfin
             // is equivalent to identifying the 3 vertices of the Delaunay triangle
             // that encloses the query point (due to the circumcircle property of Delaunay triangulation).
             // Barycentric interpolation can then be computed using these 3 points.
-          	const Eigen::Vector2d& A = dtm2.row(indices[0]);
-           	const Eigen::Vector2d& B = dtm2.row(indices[1]);
-           	const Eigen::Vector2d& C = dtm2.row(indices[2]);
-           	const Eigen::Vector2d& P = point_cloud_.row(i).head<2>();
+          	const auto A = dtm2.row(indices[0]);
+           	const auto B = dtm2.row(indices[1]);
+           	const auto C = dtm2.row(indices[2]);
+           	const auto P = point_cloud_.row(i).head<2>();
 
            	Eigen::Matrix2d linear_system;
            	linear_system << B(0) - A(0), C(0) - A(0),
@@ -353,7 +353,7 @@ namespace lib3dfin
 
 		taskflow.for_each_index(
 		    Eigen::Index(0), n_points, Eigen::Index(1), [&](Eigen::Index i)
-		    {
+		{
 			    // Get current worker ID and calculate offset into pre-allocated vectors
 			    const int worker_id = executor_.this_worker_id();
 			    const size_t offset = worker_id * N_NEIGHBORS;
@@ -474,7 +474,7 @@ namespace lib3dfin
 
 		const auto [voxel_cloud, _] = voxelize(pseudo_ground_cloud, res_xy, res_z, executor, false);
 
-		//   # Area of the voxelated ground slice (n of voxels * area of voxel base)
+		// Area of the voxelated ground slice (n of voxels * area of voxel base)
 		double slice_area = static_cast<double>(voxel_cloud.rows()) * res_xy * res_xy;
 
 		double threshold_difference = threshold * original_area;

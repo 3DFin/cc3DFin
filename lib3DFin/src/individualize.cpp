@@ -107,7 +107,7 @@ namespace lib3dfin
 			{
 				if (stripe_.cluster_indicator(point_id) == stem_id)
 				{
-					const Vec3& stem_point = point_cloud_.row(point_id);
+					const auto& stem_point = point_cloud_.row(point_id);
 					coord_accumulator += stem_point;
 					z0_accumulator += z0_(point_id);
 					stem_cloud.row(stem_point_id++) = stem_point;
