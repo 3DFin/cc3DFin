@@ -72,8 +72,9 @@ namespace lib3dfin
 					uf.unite(curr_id, nn_id);
 				}
 			}
-		};
+		}
 
+		taskflow.clear();
 		// label core points in //
 		auto label_core = taskflow.for_each_index(
 		    size_t(0), n_points, size_t(1), [&](size_t curr_id)
@@ -107,7 +108,6 @@ namespace lib3dfin
             } });
 
 		label_border.succeed(label_core);
-
 		executor.run(taskflow).get();
 
 		return cluster_id;
