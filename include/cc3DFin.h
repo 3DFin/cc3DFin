@@ -47,8 +47,8 @@ class cc3DFin : public QObject
   private:
 	static void initCustomColorScale();
 
-	void                                 do3DFinAction();
-	void                                 compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog);
+	void                                               do3DFinAction();
+	void                                               compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog);
 	[[nodiscard]] std::optional<Eigen::VectorXd>       loadZ0Values(const std::string& sfName) const;
 	[[nodiscard]] std::optional<lib3dfin::PointCloud3> loadPointCloudCoordinates() const;
 

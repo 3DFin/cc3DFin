@@ -126,7 +126,7 @@ void cc3DFin::do3DFinAction()
 	// emits computeRequested once fields are valid.
 	// We can delegate the computation to the compute3DFin method
 	connect(&tdfDlg, &cc3DFinDlg::computeRequested, this, [this, &tdfDlg]
-	        { compute3DFin(tdfDlg.get3DFinParameters(), tdfDlg); });
+	{ compute3DFin(tdfDlg.get3DFinParameters(), tdfDlg); });
 
 	// Freeze CC UI to avoid bad surprise with concurrency
 	m_app->freezeUI(true);
@@ -266,9 +266,9 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 
 	auto TdfFutureResult = QtConcurrent::run(
 	    [tdf = tdfProcessing.get()]
-	    {
-		    return tdf->process();
-	    });
+	{
+		return tdf->process();
+	});
 
 	// Create watcher to notify when its done
 	// Will be cleaned by using QFutureWatcher::deleteLater()
@@ -276,7 +276,7 @@ void cc3DFin::compute3DFin(const lib3dfin::Params& params, cc3DFinDlg& dialog)
 
 	// We move z0vec and tdfPointCloud for memory clean up at the end of the computation
 	connect(tdfComputationWatcher, &QFutureWatcher<lib3dfin::Status>::finished, this, [tdfComputationWatcher, this, &dialog, tdfProcessing = std::move(tdfProcessing), resultGroup = std::move(tdfResultGroup)]() mutable
-	        {
+	{
 		if(tdfComputationWatcher->result() != lib3dfin::Status::Success)
 		{
 		    dialog.setComputationMode(false);

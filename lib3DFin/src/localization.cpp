@@ -228,8 +228,8 @@ namespace lib3dfin
 
 		// Last
 		// Check for any neighboring section with Overall Quality = 1
-		int              best_neighbor       = -1;
-		double           min_distance_to_dbh = std::numeric_limits<double>::max();
+		int    best_neighbor       = -1;
+		double min_distance_to_dbh = std::numeric_limits<double>::max();
 
 		for (size_t i = 0; i < maxNumSections; i++)
 		{

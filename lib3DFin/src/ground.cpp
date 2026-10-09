@@ -30,8 +30,8 @@
 namespace lib3dfin
 {
 
-	using CSFGrid               = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-	using CSFGridMapping        = Eigen::Map<CSFGrid>;
+	using CSFGrid        = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+	using CSFGridMapping = Eigen::Map<CSFGrid>;
 	//! in order to map / grid access only z Value in a xyz point cloud.
 	using CSFGridMappingStride3 = Eigen::Map<CSFGrid, Eigen::Unaligned, Eigen::InnerStride<3>>;
 
@@ -72,7 +72,7 @@ namespace lib3dfin
 		}
 
 		constexpr size_t N_NEIGHBORS = 3;
-		const auto     n_points    = point_cloud_.rows();
+		const auto       n_points    = point_cloud_.rows();
 
 		if (n_points < N_NEIGHBORS)
 		{
@@ -338,7 +338,6 @@ namespace lib3dfin
 			spdlog::warn("[HeighNorm] Input DTM has exactly 15 points.");
 		}
 
-
 		using kd_tree_t         = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2, 2, nanoflann::metric_L2_Simple>;
 		const PointCloud2& dtm2 = dtm_.leftCols<2>();
 		kd_tree_t          kd_tree(2, dtm2, 10);
@@ -381,7 +380,7 @@ namespace lib3dfin
 
 		// Compute MAD (median of absolute deviations)
 		const Eigen::Index half_n_points = n_points / 2;
-		Eigen::VectorXd abs_devs_copy = abs_devs;
+		Eigen::VectorXd    abs_devs_copy = abs_devs;
 
 		double mad = 0.0;
 		if (n_points % 2 != 0)
@@ -443,9 +442,9 @@ namespace lib3dfin
 		}
 
 		return {
-		    .dtm=dtm_,
-		    .tri_ids=std::move(tri_indices),
-		    .dtm_mask=mask_,
+		    .dtm      = dtm_,
+		    .tri_ids  = std::move(tri_indices),
+		    .dtm_mask = mask_,
 		};
 	}
 

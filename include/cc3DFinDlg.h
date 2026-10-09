@@ -54,7 +54,7 @@ class cc3DFinDlg : public QDialog
 	~cc3DFinDlg() override;
 
 	[[nodiscard]] lib3dfin::Params           get3DFinParameters();
-	void                       setComputationMode(bool);
+	void                                     setComputationMode(bool);
 	[[nodiscard]] std::optional<fs::path>    checkBaseOutputValidity(const QString& baseName);
 	[[nodiscard]] std::optional<std::string> getZ0FieldName() const;
 
@@ -64,10 +64,10 @@ class cc3DFinDlg : public QDialog
   protected:
 	//! Methods
 	[[nodiscard]] bool checkFieldsValidity();
-	void populateFields();
-	void populateSfCombo();
-	void populateToolTipAndLabel(const tdf::UiField& field, QWidget* widget);
-	void closeEvent(QCloseEvent* event) override;
+	void               populateFields();
+	void               populateSfCombo();
+	void               populateToolTipAndLabel(const tdf::UiField& field, QWidget* widget);
+	void               closeEvent(QCloseEvent* event) override;
 
 	//! Slots
 	void        askOutputPath();
