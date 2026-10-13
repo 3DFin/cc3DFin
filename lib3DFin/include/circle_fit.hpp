@@ -97,7 +97,7 @@ namespace lib3dfin
 
 	//! Taubin algorithm adapted from Nicolai Chernov's Matlab implementation
 	//! see https://people.cas.uab.edu/~mosya/ (Ok in August 2025, Down in July 2026)
-	Circle algebraicTaubinCircleFit(const PointCloud2& xy)
+	inline Circle algebraicTaubinCircleFit(const PointCloud2& xy)
 	{
 
 		// Linear system
@@ -138,7 +138,7 @@ namespace lib3dfin
 		return result;
 	}
 
-	Circle initializeByCentroid(const PointCloud2& xy)
+	inline Circle initializeByCentroid(const PointCloud2& xy)
 	{
 		Circle result;
 
@@ -161,7 +161,7 @@ namespace lib3dfin
 		return result;
 	}
 
-	Circle LMCircleFit(const PointCloud2& xy, double huber_threshold = 0.1)
+	inline Circle LMCircleFit(const PointCloud2& xy, double huber_threshold = 0.1)
 	{
 		if (xy.rows() < 3)
 			throw std::invalid_argument("Circle fit need at least 3 points");

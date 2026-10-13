@@ -255,7 +255,7 @@ namespace lib3dfin
 					max_z    = voxelated_cloud(voxel_id, 2);
 				}
 			}
-			tree_descriptor.setHeighestPoint(voxelated_cloud.row(max_z_id)); });
+			tree_descriptor.setHighestPoint(voxelated_cloud.row(max_z_id)); });
 
 		executor_.run(taskflow).get();
 	}
