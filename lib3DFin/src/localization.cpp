@@ -37,7 +37,6 @@ namespace lib3dfin
 		assert(!trees.tree_descriptors.empty());
 		num_sections_ = trees.tree_descriptors[0].circle_data.size();
 		computeDBHSectionID();
-		computeDBHRangeIDs();
 
 		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 		spdlog::info("[LocalizationExtractor] Computing tree DBH and localization...");
@@ -51,12 +50,6 @@ namespace lib3dfin
 		spdlog::info("[LocalizationExtractor] Computing tree DBH and localization done in {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 	}
 
-	void LocalizationExtractor::computeDBHRangeIDs()
-	{
-		lower_d_section_ = static_cast<size_t>(std::max(int(bh_section_id_ - 2), 0));
-		upper_d_section_ = static_cast<size_t>(std::min(num_sections_ - 1, bh_section_id_ + 2));
-		total_sections_  = static_cast<size_t>(upper_d_section_ - lower_d_section_ + 1);
-	}
 
 	TreeLocatorResult LocalizationExtractor::axisLocation(const TreeDescriptor& tree_descriptor) const
 	{
@@ -65,7 +58,7 @@ namespace lib3dfin
 
 		const double cos_deviation = std::cos(tree_descriptor.axis.vertical_deviation_deg * DEG_TO_RAD);
 		// axis_verical_deviation is filtered a priori, so there is no chance of division by zero.
-		assert(abs(cos_deviation) > 1e-8);
+		assert(std::abs(cos_deviation) > 1e-8);
 
 		const double diff_height       = params_.DBH - tree_descriptor.location.centroid_coordinates.z() + tree_descriptor.dims.height_difference;
 		const double dist_centroid_dbh = diff_height / cos_deviation;
