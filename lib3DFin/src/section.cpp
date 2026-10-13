@@ -96,7 +96,7 @@ namespace lib3dfin
 					const auto max_cc_section = fcluster_naive(section_cloud, params_.stem_section_clustering_distance);
 
 					// No luck with single linkage clustering, we pass this section
-					if (max_cc_section.size() < params_.stem_section_min_points)
+					if (max_cc_section.rows() < params_.stem_section_min_points)
 					{
 						cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
 						return;
