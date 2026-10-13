@@ -19,11 +19,11 @@ namespace lib3dfin
 				return {0., 0.};
 			}
 			const Eigen::Index max_id       = std::ceil(static_cast<double>(data_vector.size()) * bounds[1]);
-			const Eigen::Index num_elements = max_id + 1;
+			const Eigen::Index num_elements = std::min(max_id + 1, data_vector.size());
 
-			// Create a deep copy to sort the data
+			// Create a copy to host sorted data
 			Eigen::VectorXd partial_data_sorted(num_elements);
-			std::partial_sort_copy(std::begin(data_vector), std::begin(data_vector) + num_elements, std::begin(partial_data_sorted), std::end(partial_data_sorted));
+			std::partial_sort_copy(std::begin(data_vector), std::end(data_vector), std::begin(partial_data_sorted), std::end(partial_data_sorted));
 
 			std::array<double, 2> result{0., 0.};
 
@@ -31,8 +31,8 @@ namespace lib3dfin
 			for (Eigen::Index id_bound = 0; id_bound < 2; ++id_bound)
 			{
 				const double id_pos   = bounds[id_bound] * (data_vector.size() - 1);
-				const Eigen::Index id_left  = static_cast<Eigen::Index>(std::floor(id_pos));
-				const Eigen::Index id_right = static_cast<Eigen::Index>(std::ceil(id_pos));
+				const auto   id_left  = static_cast<Eigen::Index>(std::floor(id_pos));
+				const auto   id_right = static_cast<Eigen::Index>(std::ceil(id_pos));
 
 				if (id_left == id_right)
 				{
@@ -40,7 +40,7 @@ namespace lib3dfin
 					continue;
 				}
 
-				const double weight = id_pos - id_left;
+				const double weight = static_cast<double>(id_pos) - static_cast<double>(id_left);
 				result[id_bound]    = (partial_data_sorted(id_left) * (1.0 - weight)) + (partial_data_sorted(id_right) * weight);
 			}
 			return result;
@@ -50,6 +50,7 @@ namespace lib3dfin
 	inline Eigen::VectorX<bool> interquartile_range(const Eigen::VectorXd& data_vector,
 	                                                double                 n_range = 1.5)
 	{
+		assert(data_vector.allFinite());
 
 		const std::array<double, 2> quartiles = internal::compute_quartiles(data_vector);
 
