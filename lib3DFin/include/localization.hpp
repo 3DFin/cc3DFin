@@ -22,20 +22,18 @@ namespace lib3dfin
 		void extract(TreeData& trees);
 
 	  private:
-
-		//static members
+		// static members
 		static constexpr size_t maxNumSections = 5;
 
 		// static methods
 		static std::array<int, maxNumSections> getNeighborhood(const TreeDescriptor& tree_descriptor, size_t dbh_id);
 
-
 		// methods
-		void              computeDBHSectionID();
-		void              computeDBHRangeIDs();
+		void                            computeDBHSectionID();
+		void                            computeDBHRangeIDs();
 		[[nodiscard]] TreeLocatorResult axisLocation(const TreeDescriptor& tree_descriptor) const;
 		[[nodiscard]] TreeLocatorResult dbhLocation(const TreeDescriptor& tree_descriptor, size_t section_index, const CircleSections& circles, const DBHSource& dbh_source) const;
-		TreeLocatorResult treeLocator(const TreeDescriptor& tree_descriptor);
+		[[nodiscard]] TreeLocatorResult               treeLocator(const TreeDescriptor& tree_descriptor) const;
 
 		const StemSectionParams params_;
 		size_t                  num_sections_{0};

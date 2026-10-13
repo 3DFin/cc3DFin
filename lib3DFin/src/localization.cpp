@@ -4,6 +4,9 @@
 // local
 #include "localization.hpp"
 
+// taskflow
+#include <taskflow/algorithm/for_each.hpp>
+
 // spdlog
 #include <spdlog/spdlog.h>
 
@@ -34,22 +37,25 @@ namespace lib3dfin
 
 	void LocalizationExtractor::extract(TreeData& trees)
 	{
-		assert(!trees.tree_descriptors.empty());
+		if (trees.tree_descriptors.empty())
+		{
+			spdlog::warn("[LocalizationExtractor] No sections to process");
+			return;
+		}
+
 		num_sections_ = trees.tree_descriptors[0].circle_data.size();
+
 		computeDBHSectionID();
 
 		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 		spdlog::info("[LocalizationExtractor] Computing tree DBH and localization...");
-		for (auto& tree : trees.tree_descriptors)
-		{
-			// run tree localization on the fitted sections
-			const auto tree_localization = treeLocator(tree);
-			tree.setLocation(tree_localization);
-		}
+		tf::Taskflow taskflow;
+		taskflow.for_each(std::begin(trees.tree_descriptors), std::end(trees.tree_descriptors), [this](auto& tree)
+		{ tree.setLocation(treeLocator(tree)); });
+		executor_.run(taskflow).get();
 		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		spdlog::info("[LocalizationExtractor] Computing tree DBH and localization done in {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 	}
-
 
 	TreeLocatorResult LocalizationExtractor::axisLocation(const TreeDescriptor& tree_descriptor) const
 	{
@@ -84,7 +90,7 @@ namespace lib3dfin
 		for (int offset = -2; offset <= 2; ++offset)
 		{
 			int id = static_cast<int>(dbh_id) + offset;
-			if (id < 0 || id >= tree_descriptor.circle_data.size() || tree_descriptor.circle_data[id].status < CircleData::Status::SUCCESS)
+			if (id < 0 || static_cast<size_t>(id) >= tree_descriptor.circle_data.size() || tree_descriptor.circle_data[id].status < CircleData::Status::SUCCESS)
 			{
 				continue;
 			}
@@ -95,7 +101,7 @@ namespace lib3dfin
 		return indices;
 	}
 
-	TreeLocatorResult LocalizationExtractor::treeLocator(const TreeDescriptor& tree_descriptor)
+	TreeLocatorResult LocalizationExtractor::treeLocator(const TreeDescriptor& tree_descriptor) const
 	{
 		// Early return if DBH is not included in the range of admissible stem sizes
 		if (params_.stem_minimum_height >= params_.DBH || params_.stem_maximum_height <= params_.DBH)
