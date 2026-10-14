@@ -47,7 +47,7 @@ namespace lib3dfin
 		return cl_points;
 	}
 
-	PointCloud2 fcluster_naive(const PointCloud2& xy, double threshold)
+	inline PointCloud2 fcluster_naive(const PointCloud2& xy, double threshold)
 	{
 		const double sq_threshold = threshold * threshold;
 		const size_t num_points   = xy.rows();

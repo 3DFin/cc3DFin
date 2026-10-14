@@ -30,8 +30,8 @@
 namespace lib3dfin
 {
 
-	using CSFGrid               = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-	using CSFGridMapping        = Eigen::Map<CSFGrid>;
+	using CSFGrid        = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+	using CSFGridMapping = Eigen::Map<CSFGrid>;
 	//! in order to map / grid access only z Value in a xyz point cloud.
 	using CSFGridMappingStride3 = Eigen::Map<CSFGrid, Eigen::Unaligned, Eigen::InnerStride<3>>;
 
@@ -72,7 +72,7 @@ namespace lib3dfin
 		}
 
 		constexpr size_t N_NEIGHBORS = 3;
-		const auto     n_points    = point_cloud_.rows();
+		const auto       n_points    = point_cloud_.rows();
 
 		if (n_points < N_NEIGHBORS)
 		{
@@ -99,7 +99,7 @@ namespace lib3dfin
 
 		taskflow.for_each_index(
 		    Eigen::Index(0), n_points, Eigen::Index(1), [&](Eigen::Index i)
-		    {
+		{
 			const int    worker_id = executor_.this_worker_id();
 			const size_t offset    = worker_id * N_NEIGHBORS;
 
@@ -118,10 +118,10 @@ namespace lib3dfin
             // is equivalent to identifying the 3 vertices of the Delaunay triangle
             // that encloses the query point (due to the circumcircle property of Delaunay triangulation).
             // Barycentric interpolation can then be computed using these 3 points.
-          	const Eigen::Vector2d& A = dtm2.row(indices[0]);
-           	const Eigen::Vector2d& B = dtm2.row(indices[1]);
-           	const Eigen::Vector2d& C = dtm2.row(indices[2]);
-           	const Eigen::Vector2d& P = point_cloud_.row(i).head<2>();
+          	const auto A = dtm2.row(indices[0]);
+           	const auto B = dtm2.row(indices[1]);
+           	const auto C = dtm2.row(indices[2]);
+           	const auto P = point_cloud_.row(i).head<2>();
 
            	Eigen::Matrix2d linear_system;
            	linear_system << B(0) - A(0), C(0) - A(0),
@@ -338,7 +338,6 @@ namespace lib3dfin
 			spdlog::warn("[HeighNorm] Input DTM has exactly 15 points.");
 		}
 
-
 		using kd_tree_t         = nanoflann::KDTreeEigenMatrixAdaptor<PointCloud2, 2, nanoflann::metric_L2_Simple>;
 		const PointCloud2& dtm2 = dtm_.leftCols<2>();
 		kd_tree_t          kd_tree(2, dtm2, 10);
@@ -354,7 +353,7 @@ namespace lib3dfin
 
 		taskflow.for_each_index(
 		    Eigen::Index(0), n_points, Eigen::Index(1), [&](Eigen::Index i)
-		    {
+		{
 			    // Get current worker ID and calculate offset into pre-allocated vectors
 			    const int worker_id = executor_.this_worker_id();
 			    const size_t offset = worker_id * N_NEIGHBORS;
@@ -381,7 +380,7 @@ namespace lib3dfin
 
 		// Compute MAD (median of absolute deviations)
 		const Eigen::Index half_n_points = n_points / 2;
-		Eigen::VectorXd abs_devs_copy = abs_devs;
+		Eigen::VectorXd    abs_devs_copy = abs_devs;
 
 		double mad = 0.0;
 		if (n_points % 2 != 0)
@@ -443,9 +442,9 @@ namespace lib3dfin
 		}
 
 		return {
-		    .dtm=dtm_,
-		    .tri_ids=std::move(tri_indices),
-		    .dtm_mask=mask_,
+		    .dtm      = dtm_,
+		    .tri_ids  = std::move(tri_indices),
+		    .dtm_mask = mask_,
 		};
 	}
 
@@ -475,7 +474,7 @@ namespace lib3dfin
 
 		const auto [voxel_cloud, _] = voxelize(pseudo_ground_cloud, res_xy, res_z, executor, false);
 
-		//   # Area of the voxelated ground slice (n of voxels * area of voxel base)
+		// Area of the voxelated ground slice (n of voxels * area of voxel base)
 		double slice_area = static_cast<double>(voxel_cloud.rows()) * res_xy * res_xy;
 
 		double threshold_difference = threshold * original_area;

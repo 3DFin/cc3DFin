@@ -4,6 +4,9 @@
 // local
 #include "localization.hpp"
 
+// taskflow
+#include <taskflow/algorithm/for_each.hpp>
+
 // spdlog
 #include <spdlog/spdlog.h>
 
@@ -34,28 +37,24 @@ namespace lib3dfin
 
 	void LocalizationExtractor::extract(TreeData& trees)
 	{
-		assert(!trees.tree_descriptors.empty());
+		if (trees.tree_descriptors.empty())
+		{
+			spdlog::warn("[LocalizationExtractor] No sections to process");
+			return;
+		}
+
 		num_sections_ = trees.tree_descriptors[0].circle_data.size();
+
 		computeDBHSectionID();
-		computeDBHRangeIDs();
 
 		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 		spdlog::info("[LocalizationExtractor] Computing tree DBH and localization...");
-		for (auto& tree : trees.tree_descriptors)
-		{
-			// run tree localization on the fitted sections
-			const auto tree_localization = treeLocator(tree);
-			tree.setLocation(tree_localization);
-		}
+		tf::Taskflow taskflow;
+		taskflow.for_each(std::begin(trees.tree_descriptors), std::end(trees.tree_descriptors), [this](auto& tree)
+		{ tree.setLocation(treeLocator(tree)); });
+		executor_.run(taskflow).get();
 		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		spdlog::info("[LocalizationExtractor] Computing tree DBH and localization done in {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
-	}
-
-	void LocalizationExtractor::computeDBHRangeIDs()
-	{
-		lower_d_section_ = static_cast<size_t>(std::max(int(bh_section_id_ - 2), 0));
-		upper_d_section_ = static_cast<size_t>(std::min(num_sections_ - 1, bh_section_id_ + 2));
-		total_sections_  = static_cast<size_t>(upper_d_section_ - lower_d_section_ + 1);
 	}
 
 	TreeLocatorResult LocalizationExtractor::axisLocation(const TreeDescriptor& tree_descriptor) const
@@ -65,7 +64,7 @@ namespace lib3dfin
 
 		const double cos_deviation = std::cos(tree_descriptor.axis.vertical_deviation_deg * DEG_TO_RAD);
 		// axis_verical_deviation is filtered a priori, so there is no chance of division by zero.
-		assert(abs(cos_deviation) > 1e-8);
+		assert(std::abs(cos_deviation) > 1e-8);
 
 		const double diff_height       = params_.DBH - tree_descriptor.location.centroid_coordinates.z() + tree_descriptor.dims.height_difference;
 		const double dist_centroid_dbh = diff_height / cos_deviation;
@@ -91,7 +90,7 @@ namespace lib3dfin
 		for (int offset = -2; offset <= 2; ++offset)
 		{
 			int id = static_cast<int>(dbh_id) + offset;
-			if (id < 0 || id >= tree_descriptor.circle_data.size() || tree_descriptor.circle_data[id].status < CircleData::Status::SUCCESS)
+			if (id < 0 || static_cast<size_t>(id) >= tree_descriptor.circle_data.size() || tree_descriptor.circle_data[id].status < CircleData::Status::SUCCESS)
 			{
 				continue;
 			}
@@ -102,7 +101,7 @@ namespace lib3dfin
 		return indices;
 	}
 
-	TreeLocatorResult LocalizationExtractor::treeLocator(const TreeDescriptor& tree_descriptor)
+	TreeLocatorResult LocalizationExtractor::treeLocator(const TreeDescriptor& tree_descriptor) const
 	{
 		// Early return if DBH is not included in the range of admissible stem sizes
 		if (params_.stem_minimum_height >= params_.DBH || params_.stem_maximum_height <= params_.DBH)
@@ -228,8 +227,8 @@ namespace lib3dfin
 
 		// Last
 		// Check for any neighboring section with Overall Quality = 1
-		int              best_neighbor       = -1;
-		double           min_distance_to_dbh = std::numeric_limits<double>::max();
+		int    best_neighbor       = -1;
+		double min_distance_to_dbh = std::numeric_limits<double>::max();
 
 		for (size_t i = 0; i < maxNumSections; i++)
 		{

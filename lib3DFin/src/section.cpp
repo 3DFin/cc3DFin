@@ -61,7 +61,7 @@ namespace lib3dfin
 
 			tf::Taskflow taskflow;
 			auto         compute_section = taskflow.for_each_index(Eigen::Index(0), static_cast<Eigen::Index>(num_sections_), Eigen::Index(1), [&](Eigen::Index section_id)
-                                                           {
+            {
 				const auto section_start = params_.stem_minimum_height + (static_cast<double>(section_id) * params_.stem_section_interval);
 				const auto section_end   = section_start + params_.stem_section_thickness;
 				auto&      cur_circle    = circles[section_id];
@@ -96,7 +96,7 @@ namespace lib3dfin
 					const auto max_cc_section = fcluster_naive(section_cloud, params_.stem_section_clustering_distance);
 
 					// No luck with single linkage clustering, we pass this section
-					if (max_cc_section.size() < params_.stem_section_min_points)
+					if (max_cc_section.rows() < params_.stem_section_min_points)
 					{
 						cur_circle.status = CircleData::Status::NOT_ENOUGH_POINTS;
 						return;
@@ -172,8 +172,8 @@ namespace lib3dfin
 
 		for (Eigen::Index point_id = 0; point_id < n_points; ++point_id)
 		{
-			const Vec2& point     = circle_cloud.row(point_id);
-			const Vec2  red_point = point - circle_params.center;
+			const Vec2 point     = circle_cloud.row(point_id);
+			const Vec2 red_point = point - circle_params.center;
 
 			// Check radial constraint using squared distances
 			const double r_sq = red_point.squaredNorm();

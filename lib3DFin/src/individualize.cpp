@@ -107,7 +107,7 @@ namespace lib3dfin
 			{
 				if (stripe_.cluster_indicator(point_id) == stem_id)
 				{
-					const Vec3& stem_point = point_cloud_.row(point_id);
+					const auto& stem_point = point_cloud_.row(point_id);
 					coord_accumulator += stem_point;
 					z0_accumulator += z0_(point_id);
 					stem_cloud.row(stem_point_id++) = stem_point;
@@ -255,7 +255,7 @@ namespace lib3dfin
 					max_z    = voxelated_cloud(voxel_id, 2);
 				}
 			}
-			tree_descriptor.setHeighestPoint(voxelated_cloud.row(max_z_id)); });
+			tree_descriptor.setHighestPoint(voxelated_cloud.row(max_z_id)); });
 
 		executor_.run(taskflow).get();
 	}

@@ -149,7 +149,7 @@ namespace lib3dfin
 			axis.valid                  = axis.vertical_deviation_deg < max_deviation;
 		}
 
-		void setHeighestPoint(const Vec3& highest_point_)
+		void setHighestPoint(const Vec3& highest_point_)
 		{
 			dims.highest_point = highest_point_;
 			dims.highest_z0    = dims.highest_point(2) - dims.height_difference;

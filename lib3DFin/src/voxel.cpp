@@ -49,19 +49,16 @@ namespace lib3dfin
 		};
 
 		// Parallel min coeff, init in the lambda
-		double min_x;
-		double min_y;
-		double min_z;
-
-		tf.emplace([&]()
-		           { min_one_dim(0, min_x); });
-		tf.emplace([&]()
-		           { min_one_dim(1, min_y); });
-		tf.emplace([&]()
-		           { min_one_dim(2, min_z); });
-		executor.run(tf).wait();
-
-		const Vec3 min_vec(min_x, min_y, min_z);
+		Vec3 min_vec{};
+		auto compute_min = tf.emplace([&](tf::Subflow& min_subflow)
+		{
+			min_subflow.emplace([&]()
+			{ min_one_dim(0, min_vec.x()); });
+			min_subflow.emplace([&]()
+			{ min_one_dim(1, min_vec.y()); });
+			min_subflow.emplace([&]()
+			{ min_one_dim(2, min_vec.z()); });
+		});
 
 		// Lambda to compute voxel hashing
 		const auto create_hash = [&](const Vec3& point) -> uint64_t
@@ -82,22 +79,26 @@ namespace lib3dfin
 		auto                      end_it_indices   = std::end(sorted_indices);
 		std::iota(first_it_indices, end_it_indices, 0);
 
+		double centroid_shift_x;
+		double centroid_shift_y;
+		double centroid_shift_z;
+
 		// Create hashes
 		auto hashing = tf.for_each(
 		                     std::cref(first_it_indices), std::cref(end_it_indices), [&](const Eigen::Index point_id)
-		                     { hashes[point_id] = create_hash(xyz.row(point_id)); })
+		{ hashes[point_id] = create_hash(xyz.row(point_id)); })
 		                   .name("hashing");
 
 		// second order point by dimensions
 		auto sort_indices = tf.sort(
 		                          std::cref(first_it_indices), std::cref(end_it_indices), [&](const Eigen::Index a, Eigen::Index b)
-		                          { return hashes[a] < hashes[b]; })
+		{ return hashes[a] < hashes[b]; })
 		                        .name("sort_indices"); // note this is not a stable sort
 
-		// In the sorted index find first representent one voxel cell
+		// In the sorted index find first sample of one voxel cell
 		auto unique = tf.for_each_index(
 		                    Eigen::Index(1), Eigen::Index(num_points), Eigen::Index(1), [&](const Eigen::Index point_id)
-		                    {
+		{
                                   if (hashes[sorted_indices[point_id]] != hashes[sorted_indices[point_id - 1]])
                                   {
                                       first_point_in_vox[point_id] = 1;
@@ -107,24 +108,23 @@ namespace lib3dfin
 		// count and generate voxel id with a parallel scan
 		auto count_voxels =
 		    tf.inclusive_scan(
-		          first_point_in_vox.begin(), first_point_in_vox.end(), first_point_in_vox.begin(), std::plus<int>{})
+		          first_point_in_vox.begin(), first_point_in_vox.end(), first_point_in_vox.begin(), std::plus<>{})
 		        .name("count_voxels");
 
 		// allocate voxel point cloud and vox_to_cloud
+		// and precompute shifts for each dimensional component of a full hashed code
 		auto allocate = tf.emplace(
 		    [&]()
-		    {
-			    vox_pc = PointCloud3(first_point_in_vox.back(), 3);
-		    });
-
-		// Precomputed shifts for each dimensional composant of a full hashed code
-		const double centroid_shift_x = min_vec(0) + (res_xy / 2.0);
-		const double centroid_shift_y = min_vec(1) + (res_xy / 2.0);
-		const double centroid_shift_z = min_vec(2) + (res_z / 2.0);
+		{
+			centroid_shift_x = min_vec(0) + (res_xy / 2.0);
+			centroid_shift_y = min_vec(1) + (res_xy / 2.0);
+			centroid_shift_z = min_vec(2) + (res_z / 2.0);
+			vox_pc           = PointCloud3(first_point_in_vox.back(), 3);
+		});
 
 		auto fill_vox_pc = tf.for_each_index(
 		                         Eigen::Index(0), Eigen::Index(num_points), Eigen::Index(1), [&](const Eigen::Index point_id)
-		                         {
+		{
                                        const auto voxel_id             = first_point_in_vox[point_id] - 1;  // it starts at 1
                                        const auto real_point_id        = sorted_indices[point_id];
                                        cloud_to_vox_ind(real_point_id) = voxel_id;
@@ -145,6 +145,7 @@ namespace lib3dfin
 		                       .name("fill_vox_pc");
 
 		// Taskflow workflow
+		compute_min.precede(hashing);
 		hashing.precede(sort_indices);
 		sort_indices.precede(unique);
 		unique.precede(count_voxels);
@@ -156,7 +157,7 @@ namespace lib3dfin
 
 		if (verbose)
 		{
-			std::stringstream log;
+			std::ostringstream log;
 
 			log << "[Voxelization] Total time: "
 			    << std::chrono::duration_cast<std::chrono::milliseconds>(

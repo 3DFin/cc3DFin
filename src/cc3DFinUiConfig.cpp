@@ -203,7 +203,7 @@ namespace tdf
 		return findField(name) != nullptr;
 	}
 
-	 // NOLINTBEGIN
+	// NOLINTBEGIN
 	void UiConfig::populateFieldFromLib3DFin(UiField& field, const lib3dfin::Params& libParams)
 	{
 		// Map UI field names to Lib3DFin parameter values
@@ -354,7 +354,7 @@ namespace tdf
 		// Note: export_txt doesn't have a direct mapping in Lib3DFin Params
 		// as it's a UI-specific setting for output format
 	}
- 	// NOLINTEND
+	// NOLINTEND
 	std::unordered_map<QString, UiField> UiConfig::getAllFieldsFromLib3DFin()
 	{
 		const lib3dfin::Params               libParams{};

@@ -36,7 +36,7 @@ namespace lib3dfin
 
 		taskflow.for_each_index(
 		    Eigen::Index(0), static_cast<Eigen::Index>(n_points), Eigen::Index(1), [&](Eigen::Index point_id)
-		    {
+		{
             std::vector<nanoflann::ResultItem<Eigen::Index, double>> result_set;
 
             nanoflann::RadiusResultSet<double, Eigen::Index> radius_result_set(sq_search_radius, result_set);
@@ -72,12 +72,13 @@ namespace lib3dfin
 					uf.unite(curr_id, nn_id);
 				}
 			}
-		};
+		}
 
+		taskflow.clear();
 		// label core points in //
 		auto label_core = taskflow.for_each_index(
 		    size_t(0), n_points, size_t(1), [&](size_t curr_id)
-		    {
+		{
             if (!is_core[curr_id])
             {
             	return;
@@ -88,7 +89,7 @@ namespace lib3dfin
 		// borders are attributed to their nearest cluster
 		auto label_border = taskflow.for_each_index(
 		    size_t(0), n_points, size_t(1), [&](size_t curr_id)
-		    {
+		{
             if (!is_core[curr_id])
             {
                 double min_dist = std::numeric_limits<double>::max();
@@ -107,7 +108,6 @@ namespace lib3dfin
             } });
 
 		label_border.succeed(label_core);
-
 		executor.run(taskflow).get();
 
 		return cluster_id;

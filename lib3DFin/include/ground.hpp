@@ -30,7 +30,6 @@ namespace lib3dfin
 		void        cleanDTMmad();
 		void        smoothDTMmedian();
 		void        smoothDTMLaplacian();
-		void        normalizeGrid();
 
 		// members
 		const PointCloud3& point_cloud_;

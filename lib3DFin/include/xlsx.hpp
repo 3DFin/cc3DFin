@@ -10,7 +10,7 @@
 namespace lib3dfin
 {
 
-	void export_xlsx(const TreeData& tree_data, const std::string& filename, const ProjectMeta& meta)
+	inline void export_xlsx(const TreeData& tree_data, const std::string& filename, const ProjectMeta& meta)
 	{
 		enum WorkSheet
 		{
