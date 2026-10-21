@@ -355,6 +355,9 @@ void cc3DFinDrawer::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, con
 	auto enriched_cloud = std::make_unique<ccPointCloud>(m_source->getName());
 
 	enriched_cloud->copyGlobalShiftAndScale(*m_source);
+	int dist_axes_id = enriched_cloud->addScalarField("dist_axes");
+	int tree_id_id   = enriched_cloud->addScalarField("tree_ID");
+	int z0_id        = enriched_cloud->addScalarField("Z0");
 
 	if (!enriched_cloud->reserve(m_source->size()))
 	{
@@ -362,25 +365,10 @@ void cc3DFinDrawer::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, con
 		return;
 	}
 
-	int dist_axes_id = enriched_cloud->addScalarField("dist_axes");
-	int tree_id_id   = enriched_cloud->addScalarField("tree_ID");
-	int z0_id        = enriched_cloud->addScalarField("Z0");
 
 	auto dist_axes_sf = enriched_cloud->getScalarField(dist_axes_id);
 	auto tree_id_sf   = enriched_cloud->getScalarField(tree_id_id);
 	auto z0_sf        = enriched_cloud->getScalarField(z0_id);
-
-	try
-	{
-		dist_axes_sf->reserve(enriched_cloud->size());
-		tree_id_sf->reserve(enriched_cloud->size());
-		z0_sf->reserve(enriched_cloud->size());
-	}
-	catch (const std::bad_alloc&)
-	{
-		ccLog::Error("[3DFin] Failed to reserve memory for scalar fields");
-		return;
-	}
 
 	for (unsigned i = 0; i < m_source->size(); i++)
 	{
@@ -409,8 +397,7 @@ void cc3DFinDrawer::exportStripe(const lib3dfin::ArrayClusterIndicator& stem_ind
 	auto stripe_cloud = std::make_unique<ccPointCloud>("Stems in stripe");
 
 	stripe_cloud->copyGlobalShiftAndScale(*m_source);
-	int  tree_id_id = stripe_cloud->addScalarField("tree_ID");
-	auto tree_id_sf = stripe_cloud->getScalarField(tree_id_id);
+	int tree_id_id   = stripe_cloud->addScalarField("tree_ID");
 
 	if (!stripe_cloud->reserve(m_source->size()))
 	{
@@ -418,15 +405,7 @@ void cc3DFinDrawer::exportStripe(const lib3dfin::ArrayClusterIndicator& stem_ind
 		return;
 	}
 
-	try
-	{
-		tree_id_sf->reserve(stripe_cloud->size());
-	}
-	catch (const std::bad_alloc)
-	{
-		ccLog::Error("[3DFin] Failed to reserve memory for scalar fields");
-		return;
-	}
+	auto tree_id_sf = stripe_cloud->getScalarField(tree_id_id);
 
 	for (Eigen::Index point_id = 0; point_id < stem_indicator.size(); point_id++)
 	{
