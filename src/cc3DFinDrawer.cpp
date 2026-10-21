@@ -180,7 +180,7 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 	{
 		for (const auto& circle_data : tree_data.circle_data)
 		{
-			// Only draw successful circles
+			// Only draw successful FItted circles (but also problatic ones apart ones with diameters issues)
 			if (circle_data.status >= lib3dfin::CircleData::Status::SUCCESS
 			    && circle_data.status != lib3dfin::CircleData::Status::DIAMETER_TOO_LARGE
 			    && circle_data.status != lib3dfin::CircleData::Status::DIAMETER_TOO_SMALL) // Maybe we could display diameters too small, it wont hurt the display scale/
@@ -196,7 +196,7 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 				                            f_height});
 
 				// Set scalar field values
-				tree_id_sf->addElement(static_cast<double>(tree_id));
+				tree_id_sf->addElement(static_cast<double>(tree_id+1));
 				radius_sf->addElement(circle.radius);
 				height_sf->addElement(height);
 				status_sf->addElement(static_cast<double>(circle_data.status));
@@ -216,7 +216,7 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 					                            static_cast<PointCoordinateType>(y),
 					                            f_height});
 
-					tree_id_sf->addElement(static_cast<double>(tree_id));
+					tree_id_sf->addElement(static_cast<double>(tree_id+1));
 					radius_sf->addElement(circle.radius);
 					height_sf->addElement(height);
 					status_sf->addElement(static_cast<double>(circle_data.status));
@@ -239,7 +239,7 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 		sector_sf->computeMinAndMax();
 		outlier_sf->computeMinAndMax();
 
-		// Set default displayed scalar field to radius
+		// Set default displayed scalar field to status
 		circle_points_pc->setCurrentDisplayedScalarField(status_sf_id);
 		circle_points_pc->toggleSF();
 		m_group->addChild(circle_points_pc.release());
