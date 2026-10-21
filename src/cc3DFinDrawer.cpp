@@ -365,7 +365,6 @@ void cc3DFinDrawer::exportEnrichedCloud(const lib3dfin::TreeData& tree_data, con
 		return;
 	}
 
-
 	auto dist_axes_sf = enriched_cloud->getScalarField(dist_axes_id);
 	auto tree_id_sf   = enriched_cloud->getScalarField(tree_id_id);
 	auto z0_sf        = enriched_cloud->getScalarField(z0_id);
@@ -397,7 +396,7 @@ void cc3DFinDrawer::exportStripe(const lib3dfin::ArrayClusterIndicator& stem_ind
 	auto stripe_cloud = std::make_unique<ccPointCloud>("Stems in stripe");
 
 	stripe_cloud->copyGlobalShiftAndScale(*m_source);
-	int tree_id_id   = stripe_cloud->addScalarField("tree_ID");
+	int tree_id_id = stripe_cloud->addScalarField("tree_ID");
 
 	if (!stripe_cloud->reserve(m_source->size()))
 	{
