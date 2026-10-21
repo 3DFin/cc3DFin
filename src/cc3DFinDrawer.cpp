@@ -97,7 +97,7 @@ void cc3DFinDrawer::drawDTM(const lib3dfin::DTMData& dtm)
 	filteredMesh->copyGlobalShiftAndScale(*m_source);
 	filteredVertices->copyGlobalShiftAndScale(*m_source);
 
-	if (!fullVertices->reserve(dtmCloud.size()) || !filteredVertices->reserve(dtmCloud.size())
+	if (!fullVertices->reserve(dtmCloud.rows()) || !filteredVertices->reserve(dtmCloud.rows())
 	    || !fullMesh->reserve(triIds.size() / 3) || !filteredMesh->reserve(triIds.size() / 3))
 	{
 		ccLog::Error("[3DFin] Unable to initialize DTM entity");
