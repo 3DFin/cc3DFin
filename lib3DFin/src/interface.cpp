@@ -59,7 +59,6 @@ namespace lib3dfin
 		{
 			if (!params_.compute_height_normalization && z0_.size() == 0)
 			{
-
 				spdlog::warn("Input height normalization is empty, force computation of height normalization");
 			}
 

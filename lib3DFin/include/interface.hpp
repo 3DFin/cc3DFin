@@ -78,7 +78,7 @@ namespace lib3dfin
 		{
 			if (drawer_)
 			{
-				drawer_->drawAll(*this);
+				drawer_->drawAll(*this, params_.draw);
 			}
 		}
 

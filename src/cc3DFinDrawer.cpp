@@ -47,8 +47,9 @@ cc3DFinDrawer::cc3DFinDrawer(ccPointCloud* sourceCloud, ccHObject* group)
 {
 }
 
-void cc3DFinDrawer::drawAll(const lib3dfin::TDFProcessing& result)
+void cc3DFinDrawer::drawAll(const lib3dfin::TDFProcessing& result, const lib3dfin::DrawResultParams& params)
 {
+	m_params = params;
 	assert(m_source);
 	assert(m_group);
 
@@ -205,10 +206,9 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 				outlier_sf->addElement(circle_data.outlier_probability);
 
 				// Generate circle points for visualization
-				const uint32_t num_circle_points = 200; // sampling
-				for (uint32_t i = 0; i < num_circle_points; ++i)
+				for (uint32_t i = 0; i < m_params.circa; ++i)
 				{
-					const double angle = 2.0 * M_PI * i / num_circle_points;
+					const double angle = 2.0 * std::numbers::pi * i / m_params.circa;
 					const double x     = circle.center.x() + (circle.radius * cos(angle));
 					const double y     = circle.center.y() + (circle.radius * sin(angle));
 
@@ -248,15 +248,14 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 
 void cc3DFinDrawer::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_descriptors)
 {
-	const double step_size = 0.1; // TODO(RJ) parameters
-
-	auto axis_points  = std::make_unique<ccPointCloud>("Tree axes");
+	auto axis_points = std::make_unique<ccPointCloud>("Tree axes");
+	axis_points->copyGlobalShiftAndScale(*m_source);
 	int  axis_tilt_id = axis_points->addScalarField("tilting_degree");
 	auto axis_tilt_sf = axis_points->getScalarField(axis_tilt_id);
 
 	for (const auto& desc : tree_descriptors)
 	{
-		const Eigen::Vector3d  axis_step      = step_size * desc.axis.direction; // TODO(RJ) parameters
+		const Eigen::Vector3d  axis_step      = m_params.p_interval * desc.axis.direction;
 		const double           tilting_degree = desc.axis.vertical_deviation_deg;
 		const Eigen::Vector3d& top_point      = desc.axis.top_point;
 		Eigen::Vector3d        curr_point     = desc.axis.bottom_point;

@@ -39,7 +39,7 @@ class cc3DFinDrawer : public lib3dfin::TDFDrawer
 {
   public:
 	cc3DFinDrawer(ccPointCloud* sourceCloud, ccHObject* group);
-	void drawAll(const lib3dfin::TDFProcessing& result) override;
+	void drawAll(const lib3dfin::TDFProcessing& result, const lib3dfin::DrawResultParams& param) override;
 
   private:
 	void drawDTM(const lib3dfin::DTMData& dtm);
@@ -52,6 +52,7 @@ class cc3DFinDrawer : public lib3dfin::TDFDrawer
 
 	ccPointCloud* m_source;
 	ccHObject*    m_group;
+	lib3dfin::DrawResultParams m_params{};
 
 	static constexpr unsigned     TreePointSize = 8;
 	static constexpr ccColor::Rgb TreePointColor{255, 0, 255};
