@@ -41,6 +41,13 @@
 // spdlog
 #include <spdlog/spdlog.h>
 
+// System
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <limits>
+#include <numbers>
+
 cc3DFinDrawer::cc3DFinDrawer(ccPointCloud* sourceCloud, ccHObject* group)
     : m_source(sourceCloud)
     , m_group(group)
@@ -74,7 +81,6 @@ void cc3DFinDrawer::drawAll(const lib3dfin::TDFProcessing& result, const lib3dfi
 
 void cc3DFinDrawer::drawDTM(const lib3dfin::DTMData& dtm)
 {
-
 	const auto& triIds   = dtm.tri_ids;
 	const auto& dtmMask  = dtm.dtm_mask;
 	const auto& dtmCloud = dtm.dtm;
@@ -197,7 +203,7 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 				                            f_height});
 
 				// Set scalar field values
-				tree_id_sf->addElement(static_cast<double>(tree_id+1));
+				tree_id_sf->addElement(static_cast<double>(tree_id + 1));
 				radius_sf->addElement(circle.radius);
 				height_sf->addElement(height);
 				status_sf->addElement(static_cast<double>(circle_data.status));
@@ -216,7 +222,7 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 					                            static_cast<PointCoordinateType>(y),
 					                            f_height});
 
-					tree_id_sf->addElement(static_cast<double>(tree_id+1));
+					tree_id_sf->addElement(static_cast<double>(tree_id + 1));
 					radius_sf->addElement(circle.radius);
 					height_sf->addElement(height);
 					status_sf->addElement(static_cast<double>(circle_data.status));
@@ -255,20 +261,44 @@ void cc3DFinDrawer::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_d
 
 	for (const auto& desc : tree_descriptors)
 	{
-		const Eigen::Vector3d  axis_step      = m_params.p_interval * desc.axis.direction;
+		const Eigen::Vector3d& axis_direction = desc.axis.direction;
 		const double           tilting_degree = desc.axis.vertical_deviation_deg;
-		const Eigen::Vector3d& top_point      = desc.axis.top_point;
-		Eigen::Vector3d        curr_point     = desc.axis.bottom_point;
-		while (curr_point.z() < top_point.z())
+
+		if (!desc.axis.valid)
 		{
-			axis_points->addPoint({static_cast<PointCoordinateType>(curr_point.x()),
-			                       static_cast<PointCoordinateType>(curr_point.y()),
-			                       static_cast<PointCoordinateType>(curr_point.z())});
-			curr_point += axis_step;
+			// should not occur in practice
+			continue;
+		}
+
+		// the base of the tree is at z0 = 0 / z = height_difference:
+		const double base_z = desc.dims.height_difference;
+
+		// project z0 on the axis
+		const Eigen::Vector3d base_point = desc.axis.bottom_point
+		                                   + ((base_z - desc.axis.bottom_point.z()) / axis_direction.z()) * axis_direction;
+
+		// project top point on the axis
+		const double axis_length = (desc.dims.highest_point - base_point).dot(axis_direction);
+		if (axis_length <= 0.0)
+		{
+			continue;
+		}
+
+		// the axis is a unit vector: distances are the ones measured along the axis
+		const double step      = m_params.p_interval;
+		const auto   num_steps = static_cast<size_t>(axis_length / step);
+
+		for (size_t step_id = 0; step_id <= num_steps; ++step_id)
+		{
+			const auto point = base_point + (static_cast<double>(step_id) * step) * axis_direction;
+			axis_points->addPoint({static_cast<PointCoordinateType>(point.x()),
+			                       static_cast<PointCoordinateType>(point.y()),
+			                       static_cast<PointCoordinateType>(point.z())});
 			axis_tilt_sf->addElement(tilting_degree);
 		}
 	}
 
+	axis_points->setPointSize(2);
 	axis_tilt_sf->computeMinAndMax();
 	axis_points->setCurrentDisplayedScalarField(axis_tilt_id);
 	axis_points->toggleSF();
