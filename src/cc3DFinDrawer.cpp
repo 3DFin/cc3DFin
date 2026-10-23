@@ -270,7 +270,7 @@ void cc3DFinDrawer::drawAxis(const std::vector<lib3dfin::TreeDescriptor>& tree_d
 			continue;
 		}
 
-		// the base of the tree is at z0 = 0 / z = height_difference:
+		// the base of the tree is at z0 = 0 / z = height_difference
 		const double base_z = desc.dims.height_difference;
 
 		// project z0 on the axis

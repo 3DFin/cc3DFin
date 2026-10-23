@@ -69,8 +69,6 @@ namespace lib3dfin
 	{
 		uint32_t circa{200};
 		double   p_interval{0.01};
-		double   axis_downstep{0.5};
-		double   axis_upstep{10.0};
 	};
 
 	/// Parameter struct.
