@@ -197,19 +197,23 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 				const double height   = circle_data.z0 + tree_data.dims.height_difference;
 				const auto   f_height = static_cast<PointCoordinateType>(height);
 
-				// Add circle center
-				circle_points_pc->addPoint({static_cast<PointCoordinateType>(circle.center.x()),
-				                            static_cast<PointCoordinateType>(circle.center.y()),
-				                            f_height});
+				// Add a point and its scalar field values (same for all points of this circle)
+				const auto addCirclePoint = [&](PointCoordinateType x, PointCoordinateType y, PointCoordinateType z)
+				{
+					circle_points_pc->addPoint({x, y, z});
+					tree_id_sf->addElement(static_cast<double>(tree_id + 1));
+					radius_sf->addElement(circle.radius);
+					height_sf->addElement(height);
+					status_sf->addElement(static_cast<double>(circle_data.status));
+					num_points_sf->addElement(circle_data.number_points_inner);
+					sector_sf->addElement(circle_data.sector_percentage);
+					outlier_sf->addElement(circle_data.outlier_probability);
+				};
 
-				// Set scalar field values
-				tree_id_sf->addElement(static_cast<double>(tree_id + 1));
-				radius_sf->addElement(circle.radius);
-				height_sf->addElement(height);
-				status_sf->addElement(static_cast<double>(circle_data.status));
-				num_points_sf->addElement(circle_data.number_points_inner);
-				sector_sf->addElement(circle_data.sector_percentage);
-				outlier_sf->addElement(circle_data.outlier_probability);
+				// Add circle center
+				addCirclePoint(static_cast<PointCoordinateType>(circle.center.x()),
+				               static_cast<PointCoordinateType>(circle.center.y()),
+				               f_height);
 
 				// Generate circle points for visualization
 				for (uint32_t i = 0; i < m_params.circa; ++i)
@@ -218,17 +222,9 @@ void cc3DFinDrawer::drawCircles(const std::vector<lib3dfin::TreeDescriptor>& tre
 					const double x     = circle.center.x() + (circle.radius * cos(angle));
 					const double y     = circle.center.y() + (circle.radius * sin(angle));
 
-					circle_points_pc->addPoint({static_cast<PointCoordinateType>(x),
-					                            static_cast<PointCoordinateType>(y),
-					                            f_height});
-
-					tree_id_sf->addElement(static_cast<double>(tree_id + 1));
-					radius_sf->addElement(circle.radius);
-					height_sf->addElement(height);
-					status_sf->addElement(static_cast<double>(circle_data.status));
-					num_points_sf->addElement(circle_data.number_points_inner);
-					sector_sf->addElement(circle_data.sector_percentage);
-					outlier_sf->addElement(circle_data.outlier_probability);
+					addCirclePoint(static_cast<PointCoordinateType>(x),
+					               static_cast<PointCoordinateType>(y),
+					               f_height);
 				}
 			}
 		}
