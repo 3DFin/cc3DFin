@@ -324,7 +324,7 @@ lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 
 	// Drawing params
 	params.draw.circa = m_ui->circa_in->text().toInt();
-	params.draw.p_interval = m_ui->p_interval_in->text().toInt();
+	params.draw.p_interval = m_ui->p_interval_in->text().toDouble();
 
 	return params;
 }
