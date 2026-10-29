@@ -12,7 +12,10 @@ if (${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
 	set(3DFin_MAIN_PROJECT ON)
 endif()
 
-
+if( NOT 3DFin_BUILD_SHARED )
+	set( CMAKE_CXX_VISIBILITY_PRESET hidden )
+	set( CMAKE_VISIBILITY_INLINES_HIDDEN ON )
+endif()
 
 # Define the library target
 if (3DFin_BUILD_SHARED)
