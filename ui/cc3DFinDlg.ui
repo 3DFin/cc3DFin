@@ -851,23 +851,6 @@ You can get a brief description of what they do by hovering the mouse over the i
        <string>Expert</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_9">
-       <item row="13" column="6">
-        <widget class="QLabel" name="axis_upstep_ht">
-         <property name="text">
-          <string>meters</string>
-         </property>
-        </widget>
-       </item>
-       <item row="13" column="5">
-        <widget class="QLineEdit" name="axis_upstep_in">
-         <property name="maximumSize">
-          <size>
-           <width>72</width>
-           <height>16777215</height>
-          </size>
-         </property>
-        </widget>
-       </item>
        <item row="2" column="4">
         <widget class="QLabel" name="stem_section_diameter_proportion_lbl">
          <property name="text">
@@ -940,13 +923,6 @@ You can get a brief description of what they do by hovering the mouse over the i
         <widget class="Line" name="expert_vert_line">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="12" column="4">
-        <widget class="QLabel" name="axis_downstep_lbl">
-         <property name="text">
-          <string>Axis downstep from stripe center</string>
          </property>
         </widget>
        </item>
@@ -1108,13 +1084,6 @@ You can get a brief description of what they do by hovering the mouse over the i
          </property>
         </widget>
        </item>
-       <item row="12" column="6">
-        <widget class="QLabel" name="axis_downstep_ht">
-         <property name="text">
-          <string>meters</string>
-         </property>
-        </widget>
-       </item>
        <item row="4" column="2">
         <widget class="QLabel" name="verticality_radius_stripe_ht">
          <property name="text">
@@ -1153,7 +1122,7 @@ You can get a brief description of what they do by hovering the mouse over the i
          </property>
         </widget>
        </item>
-       <item row="14" column="4" colspan="2">
+       <item row="12" column="4" colspan="2">
         <widget class="QLabel" name="height_normalization_lb">
          <property name="font">
           <font>
@@ -1269,13 +1238,6 @@ You can get a brief description of what they do by hovering the mouse over the i
          </property>
         </widget>
        </item>
-       <item row="13" column="4">
-        <widget class="QLabel" name="axis_upstep_lbl">
-         <property name="text">
-          <string>Axis upstep from stripe center</string>
-         </property>
-        </widget>
-       </item>
        <item row="4" column="1">
         <widget class="QLineEdit" name="verticality_radius_stripe_in">
          <property name="sizePolicy">
@@ -1346,16 +1308,6 @@ You can get a brief description of what they do by hovering the mouse over the i
        </item>
        <item row="8" column="5">
         <widget class="QLineEdit" name="stem_section_circle_width_in">
-         <property name="maximumSize">
-          <size>
-           <width>72</width>
-           <height>16777215</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item row="12" column="5">
-        <widget class="QLineEdit" name="axis_downstep_in">
          <property name="maximumSize">
           <size>
            <width>72</width>
@@ -1477,21 +1429,21 @@ You can get a brief description of what they do by hovering the mouse over the i
          </property>
         </widget>
        </item>
-       <item row="15" column="4">
+       <item row="13" column="4">
         <widget class="QLabel" name="denoise_resolution_lbl">
          <property name="text">
           <string>(x, y) voxel resolution</string>
          </property>
         </widget>
        </item>
-       <item row="16" column="4">
+       <item row="14" column="4">
         <widget class="QLabel" name="denoise_minimum_points_lbl">
          <property name="text">
           <string>Minimum number of points</string>
          </property>
         </widget>
        </item>
-        <item row="17" column="4">
+       <item row="15" column="4">
         <widget class="QLabel" name="dtm_smooth_laplacian_lambda_lbl">
          <property name="text">
           <string>DTM smoothing strength</string>
@@ -1526,7 +1478,7 @@ You can get a brief description of what they do by hovering the mouse over the i
          </property>
         </widget>
        </item>
-       <item row="15" column="6">
+       <item row="13" column="6">
         <widget class="QLabel" name="denoise_resolution_ht">
          <property name="text">
           <string>meters</string>
@@ -1547,7 +1499,7 @@ You can get a brief description of what they do by hovering the mouse over the i
          </property>
         </widget>
        </item>
-       <item row="15" column="5">
+       <item row="13" column="5">
         <widget class="QLineEdit" name="denoise_resolution_in">
          <property name="maximumSize">
           <size>
@@ -1664,7 +1616,7 @@ You can get a brief description of what they do by hovering the mouse over the i
          </property>
         </widget>
        </item>
-       <item row="16" column="5">
+       <item row="14" column="5">
         <widget class="QLineEdit" name="denoise_minimum_points_in">
          <property name="maximumSize">
           <size>
@@ -1674,7 +1626,7 @@ You can get a brief description of what they do by hovering the mouse over the i
          </property>
         </widget>
        </item>
-        <item row="17" column="5">
+       <item row="15" column="5">
         <widget class="QLineEdit" name="dtm_smooth_laplacian_lambda_in">
          <property name="maximumSize">
           <size>
@@ -1719,7 +1671,7 @@ You can get a brief description of what they do by hovering the mouse over the i
          </property>
         </widget>
        </item>
-       <item row="16" column="6">
+       <item row="14" column="6">
         <widget class="QLabel" name="denoise_minimum_points_ht">
          <property name="text">
           <string/>

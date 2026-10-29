@@ -36,8 +36,8 @@ namespace lib3dfin
 		{
 		}
 
-		virtual ~StripeFilterPredicate() = default;
-		virtual ArrayClusterIndicator filter(const PointCloud3& point_cloud, const Eigen::VectorXd& z0)
+		~StripeFilterPredicate() override = default;
+		ArrayClusterIndicator filter(const PointCloud3& point_cloud, const Eigen::VectorXd& z0) override
 		{
 			ArrayClusterIndicator stripe_cluster_indicator(z0.size());
 			stripe_cluster_indicator.setConstant(NO_CLUSTER_ID);
@@ -61,8 +61,8 @@ namespace lib3dfin
 		{
 		}
 
-		virtual ~StemFilterPredicate() = default;
-		virtual ArrayClusterIndicator filter(const PointCloud3& point_cloud, const Eigen::VectorXd& z0)
+		~StemFilterPredicate() override = default;
+		ArrayClusterIndicator filter(const PointCloud3& point_cloud, const Eigen::VectorXd& z0) override
 		{
 			assert(z0.size() == axis_distance_.size());
 			ArrayClusterIndicator stripe_cluster_indicator(z0.size());

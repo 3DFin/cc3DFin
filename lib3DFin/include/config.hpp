@@ -65,6 +65,12 @@ namespace lib3dfin
 		double   DBH{1.3};
 	};
 
+	struct DrawResultParams
+	{
+		uint32_t circa{200};
+		double   p_interval{0.01};
+	};
+
 	/// Parameter struct.
 	/// This is not aligned on purpose
 	struct Params
@@ -82,7 +88,10 @@ namespace lib3dfin
 		TreeIndividualizerParams tree;
 
 		// Section extraction: stem filtering / peeling
-		StemSectionParams stem;
+		StemSectionParams stem{};
+
+		// Draw
+		DrawResultParams draw{};
 	};
 	// NOLINTEND
 } // namespace lib3dfin

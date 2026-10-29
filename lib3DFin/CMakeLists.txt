@@ -12,7 +12,10 @@ if (${PROJECT_NAME} STREQUAL ${CMAKE_PROJECT_NAME})
 	set(3DFin_MAIN_PROJECT ON)
 endif()
 
-
+if( NOT 3DFin_BUILD_SHARED )
+	set( CMAKE_CXX_VISIBILITY_PRESET hidden )
+	set( CMAKE_VISIBILITY_INLINES_HIDDEN ON )
+endif()
 
 # Define the library target
 if (3DFin_BUILD_SHARED)
@@ -30,6 +33,34 @@ set_target_properties(${PROJECT_NAME}
 		CXX_EXTENSIONS NO
 		POSITION_INDEPENDENT_CODE ON
 )
+
+# Clang form conda/hombrew on macOS does not get the INFINITY/NAN
+# macros from the SDK math.h. libc++'s <complex> needs them in C++20 mode,
+# so force-include a header defining them when the SDK does not provide them.
+# (which is the case for macOS 27!)
+# PUBLIC so that consumers of the library (cc3DFin plugin)
+# get the same fix.
+if( APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
+	include( CheckCXXSourceCompiles )
+	# The macros must be checked in C++20 mode: this is where libc++'s <complex>
+	# needs them, so force the standard for the test.
+	set( 3DFIN_TEMP_CMAKE_CXX_STANDARD ${CMAKE_CXX_STANDARD} )
+	set( CMAKE_CXX_STANDARD 20 )
+	check_cxx_source_compiles( [[
+#include <math.h>
+#if !defined( INFINITY ) || !defined( NAN )
+#error "math.h does not define the INFINITY/NAN macros"
+#endif
+int main() { return 0; }
+]] 3DFIN_CXX_20_MACOS27_SDK_NAN )
+	set( CMAKE_CXX_STANDARD ${3DFIN_TEMP_CMAKE_CXX_STANDARD} )
+	if( NOT 3DFIN_CXX_20_MACOS27_SDK_NAN )
+		target_compile_options( ${PROJECT_NAME} PUBLIC
+			"$<BUILD_INTERFACE:-include>"
+			"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/apple_math_macros.h>"
+		)
+	endif()
+endif()
 
 if (3DFin_BUILD_SHARED)
 	set_target_properties(${PROJECT_NAME}

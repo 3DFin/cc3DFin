@@ -252,7 +252,7 @@ std::optional<fs::path> cc3DFinDlg::checkBaseOutputValidity(const QString& baseN
 		return outPath;
 	}
 
-	auto userchoice = QMessageBox::question(this, "", "Results of previous computations exists in " + m_ui->output_dir_in->text() + " do you want to ovewrite?");
+	const auto userchoice = QMessageBox::question(this, "", "Results of previous computations exists in " + m_ui->output_dir_in->text() + " do you want to ovewrite?");
 
 	if (userchoice == QMessageBox::Yes)
 	{
@@ -322,6 +322,10 @@ lib3dfin::Params cc3DFinDlg::get3DFinParameters()
 	params.stem.stem_section_sector_count          = m_ui->stem_section_sector_count_in->text().toInt();
 	params.stem.stem_section_min_occupied_sectors  = m_ui->stem_section_min_occupied_sectors_in->text().toInt();
 
+	// Drawing params
+	params.draw.circa = m_ui->circa_in->text().toInt();
+	params.draw.p_interval = m_ui->p_interval_in->text().toDouble();
+
 	return params;
 }
 
@@ -363,8 +367,8 @@ void cc3DFinDlg::showDocumentation()
 	}
 
 	// We need to create a temporary file to open with system PDF viewer
-	QString tempPath  = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
-	QString outputPdf = tempPath + QDir::separator() + "3dfin_documentation.pdf";
+	const QString tempPath  = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+	const QString outputPdf = tempPath + QDir::separator() + "3dfin_documentation.pdf";
 
 	QFile outFile(outputPdf);
 	if (!outFile.open(QIODevice::WriteOnly))
